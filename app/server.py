@@ -60,6 +60,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if os.environ.get("ATRIUM_DEBUG"):
             sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
+    def end_headers(self):
+        # L'interface ne doit jamais rester en cache : sinon une mise a jour du
+        # conteneur laisse tourner l'ancien code dans le navigateur.
+        if self.path.split("?")[0].rstrip("/") in ("", "/index.html") or self.path.endswith(".html"):
+            self.send_header("Cache-Control", "no-store, must-revalidate")
+        super().end_headers()
+
     # ---------- utilitaires ----------
     def cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -312,10 +319,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.reply(400, json.dumps({"error": "json invalide"}).encode())
             return
 
+        actuel = self.lire_config()
+        users_actuels = actuel.get("users") or []
+
+        # Garde-fou : un navigateur qui repart d'un etat vide ne doit pas
+        # effacer les comptes existants. Supprimer un profil passe par une
+        # liste qui en contient encore au moins un.
+        if users_actuels and not (recu.get("users") or []):
+            self.reply(409, json.dumps(
+                {"error": "Refus : cette requête supprimerait tous les profils."},
+                ensure_ascii=False).encode())
+            return
+
         # Les empreintes de mots de passe restent l'affaire du serveur : le
         # navigateur ne peut ni les lire ni les remplacer via cette route.
-        actuel = self.lire_config()
-        anciens = {u.get("nom"): u.get("pwd", "") for u in (actuel.get("users") or [])}
+        anciens = {u.get("nom"): u.get("pwd", "") for u in users_actuels}
         for u in (recu.get("users") or []):
             u["pwd"] = anciens.get(u.get("nom"), "")
 

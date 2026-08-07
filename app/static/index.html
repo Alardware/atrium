@@ -1787,22 +1787,12 @@ async function probeAll() {
 /* ---------- connexions directes Unraid / UniFi (via relais /px du lanceur PC) ---------- */
 /* Le relais peut être : la même origine (page servie par lancer.bat) ou localhost:8420
    (page servie par HA mais navigateur sur le PC où tourne lancer.bat). */
-/* Le backend d'Atrium sert cette page : il est sur la même origine.
-   Les autres bases ne servent qu'au cas où la page est ouverte depuis ailleurs
-   (fichier local, autre serveur) alors que le conteneur tourne à côté. */
-let RELAY_BASE = null;
-async function relayFetch(path, opts) {
-  const bases = RELAY_BASE !== null ? [RELAY_BASE] : ['', 'http://localhost:8420', 'http://127.0.0.1:8420'];
-  for (const b of bases) {
-    try {
-      const r = await fetch(b + path, opts);
-      if (r.status === 404 || r.status === 405 || r.status === 501) continue;
-      RELAY_BASE = b;
-      return r;
-    } catch (e) { /* base suivante */ }
-  }
-  RELAY_BASE = null;
-  throw new Error('serveur Atrium injoignable');
+/* Le backend d'Atrium sert cette page : on ne parle qu'à sa propre origine.
+   Aucune adresse de secours : viser un autre serveur reviendrait à lire et
+   écrire la configuration d'une autre installation. */
+function relayFetch(path, opts) {
+  const o = Object.assign({ credentials: 'same-origin' }, opts || {});
+  return fetch(path, o);
 }
 const pxFetch = (target, opts) => relayFetch('/px?u=' + encodeURIComponent(target), opts);
 
@@ -1901,7 +1891,7 @@ async function pollDirect() {
           dur: (m.duration || 0) / 1000,
           pos: (m.viewOffset || 0) / 1000,
           posAt: Date.now(),
-          poster: thumb ? (RELAY_BASE || '') + '/px?u=' + encodeURIComponent(pUrl + thumb + '?X-Plex-Token=' + pKey) : '',
+          poster: thumb ? '/px?u=' + encodeURIComponent(pUrl + thumb + '?X-Plex-Token=' + pKey) : '',
           appLabel: 'Plex',
           entId: '',
           type: m.type === 'track' ? 'musique' : 'video',
