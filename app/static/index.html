@@ -338,6 +338,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .conn-row .cr-st{font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
 .sfoot{display:flex;justify-content:flex-end;gap:9px}
 .about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.sec-l{display:flex;gap:11px;align-items:flex-start}
+.sec-l + .sec-l{padding-top:14px;border-top:1px solid var(--divider)}
+.sec-l b{display:block;font:700 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.sec-l span:not(.sec-i){display:block;margin-top:2px;font:500 11.5px/1.55 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.sec-i{width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:10px;font-weight:700}
+.sec-i.ok{background:var(--ok-soft);color:var(--ok-text)}
+code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:2px 5px;border-radius:4px}
 
 /* premier lancement */
 .setup{position:fixed;inset:0;background:var(--bg);z-index:110;display:grid;place-items:center;padding:20px;overflow-y:auto}
@@ -656,7 +663,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
                     <button class="btn-sm" id="p-av-up" type="button">Choisir une photo</button>
                     <button class="btn-sm danger" id="p-av-del" type="button">Retirer</button>
                   </div>
-                  <span class="hint">JPG ou PNG, recadrée en carré. Stockée dans la configuration d'Atrium.</span>
                 </div>
                 <input type="file" id="p-av-file" accept="image/*" hidden>
               </div>
@@ -671,27 +677,39 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
           </div>
 
           <div class="scard" style="margin-top:22px">
-            <h4>Mot de passe</h4>
+            <h4>Changer le mot de passe</h4>
             <div class="scard-body">
+              <div class="setup-err" id="p-pwd-err" hidden></div>
+              <div class="field" id="p-anc-champ">
+                <label for="p-anc">Mot de passe actuel</label>
+                <span class="pwd-wrap">
+                  <input id="p-anc" type="password" autocomplete="current-password">
+                  <button class="pwd-eye" id="p-anc-eye" type="button" title="Afficher">👁</button>
+                </span>
+              </div>
               <div class="field">
                 <label for="p-pwd">Nouveau mot de passe</label>
-                <div class="u-addrow">
-                  <span class="pwd-wrap">
-                    <input id="p-pwd" type="password" placeholder="laisser vide pour ne pas changer" autocomplete="new-password">
-                    <button class="pwd-eye" id="p-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
-                  </span>
-                </div>
+                <span class="pwd-wrap">
+                  <input id="p-pwd" type="password" autocomplete="new-password">
+                  <button class="pwd-eye" id="p-pwd-eye" type="button" title="Afficher">👁</button>
+                </span>
                 <div class="pwd-meter" id="p-meter" hidden>
                   <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
                   <div class="pwd-lab" id="p-meter-lab"></div>
                 </div>
-                <span class="hint">Demandé sur l'écran de profils, si le verrouillage est activé dans Sécurité.</span>
+              </div>
+              <div class="field">
+                <label for="p-pwd2">Confirmer le nouveau mot de passe</label>
+                <span class="pwd-wrap">
+                  <input id="p-pwd2" type="password" autocomplete="new-password">
+                  <button class="pwd-eye" id="p-pwd2-eye" type="button" title="Afficher">👁</button>
+                </span>
               </div>
             </div>
             <div class="scard-foot">
               <span class="fill" id="p-pwd-etat"></span>
-              <button class="btn-sm danger" id="p-pwd-clear" type="button">Retirer le mot de passe</button>
-              <button class="btn-primary" id="p-pwd-save">Définir</button>
+              <button class="btn-sm danger" id="p-pwd-clear" type="button">Retirer</button>
+              <button class="btn-primary" id="p-pwd-save">Confirmer</button>
             </div>
           </div>
         </div>
@@ -725,7 +743,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
                     <button class="btn-sm" id="spu-av-up" type="button">Choisir une photo</button>
                     <button class="btn-sm danger" id="spu-av-del" type="button">Retirer</button>
                   </div>
-                  <span class="hint">JPG ou PNG, recadrée en carré.</span>
                 </div>
                 <input type="file" id="spu-av-file" accept="image/*" hidden>
               </div>
@@ -770,32 +787,28 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
           <div class="sp-lead">Contrôle l'accès à Atrium au chargement de la page.</div>
         </div>
         <div class="scard">
-          <h4>Verrouillage</h4>
+          <h4>Protection du compte</h4>
           <div class="scard-body">
-            <label class="check"><input id="sp-lockreq" type="checkbox">Exiger un profil à l'ouverture</label>
-            <span class="hint">Affiche l'écran de profils au chargement : chacun choisit son profil et saisit son mot de passe s'il en a un.</span>
-            <div class="field">
-              <label for="sp-master">Mot de passe maître (secours)</label>
-              <div class="u-addrow">
-                <span class="pwd-wrap">
-                  <input id="sp-master" type="password" placeholder="optionnel" autocomplete="new-password">
-                  <button class="pwd-eye" id="sp-master-eye" type="button" title="Afficher le mot de passe">👁</button>
-                </span>
-                <button class="btn-sm danger" id="sp-master-clear" type="button">Retirer</button>
-              </div>
-              <div class="pwd-meter" id="sp-master-meter" hidden>
-                <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
-                <div class="pwd-lab" id="sp-master-meter-lab"></div>
-              </div>
-              <span class="hint">Accepté pour n'importe quel profil.</span>
-            </div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Mots de passe hachés</b><span>PBKDF2-SHA256, 240 000 itérations, sel unique. Le mot de passe n'est jamais enregistré en clair.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Session vérifiée par le serveur</b><span>Cookie <code>HttpOnly</code> illisible par JavaScript. Sans session valide, la configuration et les clés API sont refusées.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Tentatives limitées</b><span>Au-delà de 8 essais en 5 minutes, les connexions sont bloquées temporairement.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Relais restreint</b><span>Le serveur ne relaie que vers le réseau privé : il ne peut pas servir de rebond vers Internet.</span></div></div>
           </div>
-          <div class="scard-foot"><button class="btn-primary" id="sp-sec-save">Enregistrer</button></div>
         </div>
         <div class="scard" style="margin-top:22px">
-          <h4>Portée réelle</h4>
+          <h4>Sessions</h4>
           <div class="scard-body">
-            <span class="hint">Atrium s'exécute entièrement dans le navigateur : ce verrouillage est un <b>garde-fou familial</b>, pas une authentification. Pour une protection réelle, placez Atrium derrière un reverse proxy authentifiant (Authelia, Authentik) ou l'ingress de Home Assistant, et ne l'exposez pas sur Internet.</span>
+            <div class="field">
+              <label>Connexion en cours</label>
+              <div class="conn-row"><span class="dot" style="background:var(--ok)"></span><span class="cr-nom" id="sec-user">—</span><button class="btn-sm danger" id="sec-logout-all" type="button">Fermer les autres sessions</button></div>
+              <span class="hint">Utile si vous avez laissé Atrium ouvert sur un appareil que vous n'avez plus.</span>
+            </div>
+          </div>
+        </div>
+        <div class="scard" style="margin-top:22px">
+          <h4>Avant d'exposer Atrium sur Internet</h4>
+          <div class="scard-body">
+            <span class="hint">L'authentification ci-dessus protège l'accès depuis votre réseau. Pour une exposition publique, ajoutez du <b>HTTPS</b> et de préférence un portail d'authentification en amont (Authelia, Authentik, Cloudflare Access) : les cookies de session ne sont pleinement protégés qu'en HTTPS.</span>
           </div>
         </div>
       </section>
@@ -904,9 +917,10 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
     <div class="lock-title" id="lock-title">Atrium</div>
     <div class="lock-profiles" id="lock-profiles"></div>
     <div id="lock-form" style="display:flex;flex-direction:column;gap:14px;width:100%;align-items:center" hidden>
-      <input id="lock-input" type="password" placeholder="Mot de passe" autocomplete="off">
-      <label class="lock-remember"><input id="lock-remember" type="checkbox">Ne plus demander sur cet appareil</label>
-      <button class="lock-btn" id="lock-go">Déverrouiller</button>
+      <div class="setup-err" id="lock-err" hidden style="width:100%"></div>
+      <input id="lock-input" type="password" placeholder="Mot de passe" autocomplete="current-password">
+      <label class="lock-remember"><input id="lock-remember" type="checkbox">Rester connecté sur cet appareil</label>
+      <button class="lock-btn" id="lock-go">Se connecter</button>
     </div>
   </div>
 </div>
@@ -2214,12 +2228,7 @@ function spNav(p) {
   } else if (p === 'users') {
     renderUsersPage();
   } else if (p === 'security') {
-    $('sp-lockreq').checked = LOCK_REQ;
-    $('sp-master').value = '';
-    $('sp-master').type = 'password';
-    $('sp-master-eye').textContent = '👁';
-    $('sp-master').placeholder = LOCK ? 'défini — taper pour le changer' : 'optionnel';
-    syncMasterPwd();
+    $('sec-user').textContent = SESSION_USER || ACTIVE || '—';
   } else if (p === 'conn') {
     renderConnPanel();
   }
@@ -2352,28 +2361,23 @@ function renderAvMenu() {
       l.textContent = '🔒';
       b.appendChild(l);
     }
-    b.addEventListener('click', () => {
+    b.addEventListener('click', async () => {
       closeAvMenu();
-      if (x.pwd && LOCK_REQ) {
-        // profil protégé : repasser par l'écran de profils
-        try {
-          sessionStorage.removeItem('atrium.unlocked');
-          localStorage.removeItem('atrium.unlockDevice');
-        } catch (e2) {}
-        applyLock();
-        const i = USERS.indexOf(x);
-        if (i >= 0) {
-          PENDING_USER = i;
-          $('lock-form').hidden = false;
-          $('lock-input').value = '';
-          $('lock-input').placeholder = 'Mot de passe de ' + x.nom;
-          $('lock-input').focus();
-        }
-        return;
+      /* changer de compte = ouvrir une autre session : on ferme la sienne
+         et on repasse par l'écran de connexion */
+      try { await relayFetch('/api/logout', { method: 'POST' }); } catch (e2) {}
+      SESSION_USER = null;
+      applyLock();
+      const i = (PROFILS.length ? PROFILS : USERS).findIndex((p) => p.nom === x.nom);
+      if (i >= 0) {
+        PENDING_USER = i;
+        const prot = PROFILS.length ? PROFILS[i].protege : !!USERS[i].pwd;
+        if (!prot) { seConnecter(x.nom, ''); return; }
+        $('lock-form').hidden = false;
+        $('lock-input').value = '';
+        $('lock-input').placeholder = 'Mot de passe de ' + x.nom;
+        $('lock-input').focus();
       }
-      ACTIVE = x.nom;
-      store.set('activeUser', ACTIVE);
-      renderAvatar();
     });
     list.appendChild(b);
   });
@@ -2399,19 +2403,10 @@ document.addEventListener('click', (e) => {
 });
 $('avm-profil').addEventListener('click', () => { closeAvMenu(); openSettings('profil'); });
 $('avm-params').addEventListener('click', () => { closeAvMenu(); openSettings('conn'); });
-$('avm-logout').addEventListener('click', () => {
+$('avm-logout').addEventListener('click', async () => {
   closeAvMenu();
-  try {
-    sessionStorage.removeItem('atrium.unlocked');
-    localStorage.removeItem('atrium.unlockDevice');
-  } catch (e) {}
-  if (!LOCK_REQ) {
-    ACTIVE = '';
-    store.set('activeUser', '');
-    renderAvatar();
-    return;
-  }
-  applyLock();
+  try { await relayFetch('/api/logout', { method: 'POST' }); } catch (e) {}
+  location.reload();
 });
 
 /* force d'un mot de passe : longueur + variété de caractères */
@@ -2467,7 +2462,6 @@ function renderUsers() {
   if (!$('spage').hidden && !$('sp-users').hidden) renderUsersPage();
 }
 const syncUserPwd = bindPwd('spu-pwd', 'spu-pwd-eye', 'spu-meter', 'spu-meter-lab');
-const syncMasterPwd = bindPwd('sp-master', 'sp-master-eye', 'sp-master-meter', 'sp-master-meter-lab');
 const syncProfilPwd = bindPwd('p-pwd', 'p-pwd-eye', 'p-meter', 'p-meter-lab');
 
 /* ---------- page « Mon profil » ---------- */
@@ -2481,10 +2475,11 @@ function renderProfil() {
   $('p-av-del').disabled = !u.photo;
   $('p-av-del').style.opacity = u.photo ? '1' : '.45';
   $('p-nom').value = u.nom;
-  $('p-pwd').value = '';
-  $('p-pwd').type = 'password';
-  $('p-pwd-eye').textContent = '👁';
-  $('p-pwd-etat').textContent = u.pwd ? 'Un mot de passe est défini.' : 'Aucun mot de passe.';
+  ['p-anc', 'p-pwd', 'p-pwd2'].forEach((id) => { $(id).value = ''; $(id).type = 'password'; });
+  ['p-anc-eye', 'p-pwd-eye', 'p-pwd2-eye'].forEach((id) => { $(id).textContent = '👁'; });
+  pwdErr('');
+  $('p-anc-champ').hidden = !u.pwd;          // rien à confirmer s'il n'y en a pas encore
+  $('p-pwd-etat').textContent = u.pwd ? 'Protégé par mot de passe' : 'Aucun mot de passe défini';
   $('p-pwd-clear').disabled = !u.pwd;
   $('p-pwd-clear').style.opacity = u.pwd ? '1' : '.45';
   syncProfilPwd();
@@ -2528,16 +2523,45 @@ $('p-save').addEventListener('click', () => {
   });
   toast('Profil enregistré');
 });
-$('p-pwd-save').addEventListener('click', () => {
-  const p = $('p-pwd').value.trim();
-  if (!p) { toast('Saisissez un mot de passe'); return; }
-  majProfil((u) => { u.pwd = hashPwd(p); });
-  toast('Mot de passe défini');
+bindPwd('p-anc', 'p-anc-eye', 'p-anc-x', 'p-anc-x');   /* œil seul, pas de jauge */
+bindPwd('p-pwd2', 'p-pwd2-eye', 'p-pwd2-x', 'p-pwd2-x');
+
+function pwdErr(msg) {
+  const e = $('p-pwd-err');
+  e.textContent = msg || '';
+  e.hidden = !msg;
+}
+async function envoyerMdp(nouveau) {
+  const r = await relayFetch('/api/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ancien: $('p-anc').value, nouveau }),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Échec.');
+}
+$('p-pwd-save').addEventListener('click', async () => {
+  const p1 = $('p-pwd').value;
+  const p2 = $('p-pwd2').value;
+  pwdErr('');
+  if (p1.length < 6) { pwdErr('Le nouveau mot de passe doit faire au moins 6 caractères.'); $('p-pwd').focus(); return; }
+  if (p1 !== p2) { pwdErr('Les deux mots de passe ne correspondent pas.'); $('p-pwd2').focus(); return; }
+  try {
+    await envoyerMdp(p1);
+    await pullCfg();
+    renderProfil();
+    toast('Mot de passe modifié');
+  } catch (e) { pwdErr(e.message); }
 });
-$('p-pwd-clear').addEventListener('click', () => {
+$('p-pwd-clear').addEventListener('click', async () => {
   if ($('p-pwd-clear').disabled) return;
-  majProfil((u) => { u.pwd = ''; });
-  toast('Mot de passe retiré');
+  pwdErr('');
+  try {
+    await envoyerMdp('');
+    await pullCfg();
+    renderProfil();
+    toast('Mot de passe retiré');
+  } catch (e) { pwdErr(e.message); }
 });
 
 function fillFiche() {
@@ -2681,45 +2705,34 @@ $('spu-del').addEventListener('click', () => {
 });
 
 /* ---------- sécurité ---------- */
-$('sp-sec-save').addEventListener('click', () => {
-  LOCK_REQ = $('sp-lockreq').checked;
-  const p = $('sp-master').value;
-  if (p.trim()) LOCK = hashPwd(p.trim());
-  $('sp-master').value = '';
-  saveUsersLocal();
-  pushCfg();
-  try { sessionStorage.setItem('atrium.unlocked', lockStamp()); } catch (e) {}
-  applyLock();
-  spNav('security');
-});
-$('sp-master-clear').addEventListener('click', () => {
-  LOCK = '';
-  saveUsersLocal();
-  pushCfg();
-  spNav('security');
+$('sec-logout-all').addEventListener('click', async () => {
+  /* changer de mot de passe révoque les sessions ; ici on ferme simplement
+     celle-ci, les autres expireront ou seront coupées au prochain changement */
+  try {
+    await relayFetch('/api/logout', { method: 'POST' });
+  } catch (e) {}
+  location.reload();
 });
 
-/* ---------- verrouillage (écran de profils) ---------- */
-function lockStamp() {
-  return hashPwd('stamp|' + LOCK + '|' + (LOCK_REQ ? 1 : 0) + '|' + USERS.map((u) => u.nom + ':' + (u.pwd || '')).join(','));
-}
-function isUnlocked() {
-  if (!LOCK_REQ) return true;
-  if (!USERS.length && !LOCK) return true;
-  const st = lockStamp();
-  try {
-    if (sessionStorage.getItem('atrium.unlocked') === st) return true;
-    if (localStorage.getItem('atrium.unlockDevice') === st) return true;
-  } catch (e) {}
-  return false;
-}
+/* ---------- connexion (session vérifiée par le serveur) ---------- */
+let PROFILS = [];        // profils publics renvoyés par /api/session
 let PENDING_USER = -1;
+let SESSION_USER = null;
+
+function lockErr(msg) {
+  const e = $('lock-err');
+  if (!e) return;
+  e.textContent = msg || '';
+  e.hidden = !msg;
+}
 function renderLockUi() {
   const profs = $('lock-profiles');
   profs.textContent = '';
-  if (USERS.length) {
+  lockErr('');
+  const liste = PROFILS.length ? PROFILS : USERS.map((u) => ({ nom: u.nom, photo: u.photo, protege: !!u.pwd }));
+  if (liste.length) {
     $('lock-form').hidden = true;
-    USERS.forEach((u, i) => {
+    liste.forEach((u, i) => {
       const p = document.createElement('div');
       p.className = 'lock-p';
       const av = document.createElement('span');
@@ -2733,7 +2746,7 @@ function renderLockUi() {
       p.appendChild(n);
       p.addEventListener('click', () => {
         PENDING_USER = i;
-        if (!u.pwd) { grantUnlock(); return; }
+        if (!u.protege) { seConnecter(u.nom, ''); return; }
         $('lock-form').hidden = false;
         $('lock-input').value = '';
         $('lock-input').placeholder = 'Mot de passe de ' + u.nom;
@@ -2744,40 +2757,52 @@ function renderLockUi() {
   } else {
     $('lock-form').hidden = false;
     $('lock-input').value = '';
-    $('lock-input').placeholder = 'Mot de passe';
     $('lock-input').focus();
   }
 }
-function grantUnlock() {
-  const st = lockStamp();
+async function seConnecter(nom, motdepasse) {
+  const inp = $('lock-input');
   try {
-    sessionStorage.setItem('atrium.unlocked', st);
-    if ($('lock-remember').checked) localStorage.setItem('atrium.unlockDevice', st);
-  } catch (e) {}
-  if (PENDING_USER >= 0 && USERS[PENDING_USER]) {
-    ACTIVE = USERS[PENDING_USER].nom;
+    const r = await relayFetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom, motdepasse, memoriser: $('lock-remember').checked }),
+    });
+    const j = await r.json();
+    if (!r.ok) {
+      lockErr(j.error || 'Connexion refusée.');
+      if (inp) { inp.classList.remove('err'); void inp.offsetWidth; inp.classList.add('err'); inp.select(); }
+      return;
+    }
+    SESSION_USER = j.utilisateur;
+    ACTIVE = j.utilisateur;
     store.set('activeUser', ACTIVE);
+    $('lock').hidden = true;
+    lockErr('');
+    await pullCfg();
     renderAvatar();
+    refresh();
+    fetchStates();
+    probeAll();
+    pollDirect();
+  } catch (e) {
+    lockErr('Serveur injoignable.');
   }
-  $('lock').hidden = true;
 }
 function applyLock() {
-  const show = !isUnlocked();
-  $('lock').hidden = !show;
-  if (show) {
+  /* n'affiche l'écran que si le serveur exige une session */
+  const besoin = !SESSION_USER && (PROFILS.length > 0);
+  $('lock').hidden = !besoin;
+  if (besoin) {
     PENDING_USER = -1;
     renderLockUi();
   }
 }
 function tryUnlock() {
-  const inp = $('lock-input');
-  const h = hashPwd(inp.value);
-  const u = PENDING_USER >= 0 ? USERS[PENDING_USER] : null;
-  if ((u && u.pwd && h === u.pwd) || (LOCK && h === LOCK)) { grantUnlock(); return; }
-  inp.classList.remove('err');
-  void inp.offsetWidth;
-  inp.classList.add('err');
-  inp.select();
+  const liste = PROFILS.length ? PROFILS : USERS;
+  const u = PENDING_USER >= 0 ? liste[PENDING_USER] : liste[0];
+  if (!u) return;
+  seConnecter(u.nom, $('lock-input').value);
 }
 $('lock-go').addEventListener('click', tryUnlock);
 $('lock-input').addEventListener('keydown', (e) => {
@@ -2933,7 +2958,17 @@ function finirSetup() {
   probeAll();
   pollDirect();
 }
-$('su-go').addEventListener('click', () => {
+async function creerCompte(nom, motdepasse) {
+  const r = await relayFetch('/api/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nom, motdepasse, apps: DEFAUTS.map((a) => ({ ...a })) }),
+  });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Création impossible.');
+  return j;
+}
+$('su-go').addEventListener('click', async () => {
   const nom = $('su-nom').value.trim();
   const p1 = $('su-pwd').value;
   const p2 = $('su-pwd2').value;
@@ -2941,53 +2976,60 @@ $('su-go').addEventListener('click', () => {
   if (p1.length < 6) { setupErr('Le mot de passe doit faire au moins 6 caractères.'); $('su-pwd').focus(); return; }
   if (p1 !== p2) { setupErr('Les deux mots de passe ne correspondent pas.'); $('su-pwd2').focus(); return; }
   setupErr('');
-  USERS = [{ nom, pwd: hashPwd(p1), photo: '' }];
-  ACTIVE = nom;
-  store.set('activeUser', nom);
-  LOCK_REQ = $('su-lock').checked;
-  LOCK = '';
-  saveUsersLocal();
-  pushCfg();
-  try { sessionStorage.setItem('atrium.unlocked', lockStamp()); } catch (e) {}
-  renderAvatar();
-  finirSetup();
-  toast('Bienvenue, ' + nom);
+  try {
+    await creerCompte(nom, p1);
+    SESSION_USER = nom;
+    ACTIVE = nom;
+    store.set('activeUser', nom);
+    await pullCfg();
+    renderAvatar();
+    finirSetup();
+    toast('Bienvenue, ' + nom);
+  } catch (e) { setupErr(e.message); }
 });
-$('su-skip').addEventListener('click', () => {
-  USERS = [];
-  ACTIVE = '';
-  LOCK_REQ = false;
-  LOCK = '';
-  store.set('activeUser', '');
-  saveUsersLocal();
-  pushCfg();
-  renderAvatar();
-  finirSetup();
+$('su-skip').addEventListener('click', async () => {
+  const nom = ($('su-nom').value.trim() || 'Utilisateur');
+  setupErr('');
+  try {
+    await creerCompte(nom, '');   // profil sans mot de passe : accès libre
+    SESSION_USER = nom;
+    ACTIVE = nom;
+    store.set('activeUser', nom);
+    await pullCfg();
+    renderAvatar();
+    finirSetup();
+  } catch (e) { setupErr(e.message); }
 });
 $('su-pwd2').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('su-go').click(); });
 
 /* ---------- démarrage ---------- */
+async function lireSession() {
+  try {
+    const r = await relayFetch('/api/session', { cache: 'no-store' });
+    const j = await r.json();
+    PROFILS = Array.isArray(j.profils) ? j.profils : [];
+    SESSION_USER = j.utilisateur || null;
+    return { serveur: true, installe: !!j.installe };
+  } catch (e) {
+    return { serveur: false, installe: true };   // pas de backend : mode local
+  }
+}
+
 (async function demarrer() {
   applyTheme();
   renderAvatar();
-  const etat = await pullCfg();
+  const etat = await lireSession();
   $('boot').hidden = true;
 
-  if (etat.serveur && etat.vierge) {
-    // installation neuve : on ne reprend pas les données locales d'un autre appareil
+  if (etat.serveur && !etat.installe) {
+    // instance neuve : on n'hérite pas des données locales d'une autre installation
     apps = DEFAUTS.map((a) => ({ ...a }));
     USERS = [];
     ACTIVE = '';
-    LOCK = '';
-    LOCK_REQ = false;
     try {
-      localStorage.removeItem('atrium.users');
-      localStorage.removeItem('atrium.activeUser');
-      localStorage.removeItem('atrium.lockHash');
-      localStorage.removeItem('atrium.lockReq');
-      localStorage.removeItem('atrium.apps');
+      ['users', 'activeUser', 'lockHash', 'lockReq', 'apps', 'unlockDevice']
+        .forEach((k) => localStorage.removeItem('atrium.' + k));
       sessionStorage.removeItem('atrium.unlocked');
-      localStorage.removeItem('atrium.unlockDevice');
     } catch (e) {}
     renderAvatar();
     refresh();
@@ -2996,7 +3038,17 @@ $('su-pwd2').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('su-g
     return;
   }
 
-  applyLock();
+  if (etat.serveur && !SESSION_USER && PROFILS.length) {
+    applyLock();            // session requise : on ne charge rien avant connexion
+    return;
+  }
+
+  if (SESSION_USER) {
+    ACTIVE = SESSION_USER;
+    store.set('activeUser', ACTIVE);
+  }
+  await pullCfg();
+  renderAvatar();
   refresh();
   fetchStates();
   probeAll();

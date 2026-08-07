@@ -11,6 +11,7 @@ Variables d'environnement :
   ATRIUM_ALLOW_NET   prefixes reseau autorises pour le relais, separes par des
                      virgules (defaut : reseaux prives RFC1918 + loopback)
 """
+import http.cookies
 import http.server
 import json
 import os
@@ -21,6 +22,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import auth
+
 PORT = int(os.environ.get("ATRIUM_PORT", "8420"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
@@ -28,6 +31,10 @@ STATIC = os.path.join(HERE, "static")
 _default_cfg = "/config" if os.path.isdir("/config") else os.path.join(HERE, "..", "data")
 CONFIG_DIR = os.path.abspath(os.environ.get("ATRIUM_CONFIG_DIR", _default_cfg))
 CONFIG_FILE = os.path.join(CONFIG_DIR, "atrium.json")
+SESSION_FILE = os.path.join(CONFIG_DIR, "sessions.json")
+
+SESSIONS = auth.Sessions(SESSION_FILE)
+LIMITEUR = auth.Limiteur()
 
 _DEFAULT_ALLOW = "192.168.,10.,172.16.,172.17.,172.18.,172.19.,172.20.,172.21.,172.22.,172.23.,172.24.,172.25.,172.26.,172.27.,172.28.,172.29.,172.30.,172.31.,127.,localhost,host.docker.internal,homeassistant"
 ALLOW_HOSTS = tuple(h.strip() for h in os.environ.get("ATRIUM_ALLOW_NET", _DEFAULT_ALLOW).split(",") if h.strip())
@@ -57,34 +64,230 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
 
-    def reply(self, code, data, ctype="application/json"):
+    def reply(self, code, data, ctype="application/json", cookie=None):
         self.send_response(code)
         self.cors()
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
         self.end_headers()
         self.wfile.write(data)
+
+    def json_recu(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        if not length or length > 20 * 1024 * 1024:
+            return None
+        try:
+            return json.loads(self.rfile.read(length).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return None
+
+    # ---------- etat / session ----------
+    def lire_config(self):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}
+
+    def ecrire_config(self, cfg):
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        tmp = CONFIG_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False)
+        os.replace(tmp, CONFIG_FILE)
+        try:
+            os.chmod(CONFIG_FILE, 0o600)
+        except OSError:
+            pass
+
+    def session_user(self):
+        brut = self.headers.get("Cookie")
+        if not brut:
+            return None
+        try:
+            c = http.cookies.SimpleCookie(brut)
+        except http.cookies.CookieError:
+            return None
+        m = c.get(auth.COOKIE)
+        return SESSIONS.lire(m.value) if m else None
+
+    def cookie_session(self, jeton, longue):
+        parts = [
+            "%s=%s" % (auth.COOKIE, jeton),
+            "Path=/",
+            "HttpOnly",
+            "SameSite=Strict",
+        ]
+        if longue:
+            parts.append("Max-Age=%d" % auth.SESSION_TTL)
+        return "; ".join(parts)
+
+    def cookie_efface(self):
+        return "%s=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0" % auth.COOKIE
+
+    def protection_active(self):
+        """La protection ne s'applique qu'une fois un compte cree : une instance
+        neuve doit rester accessible pour l'installation."""
+        cfg = self.lire_config()
+        return bool(cfg.get("users"))
+
+    def exiger_session(self):
+        """True si la requete peut continuer, sinon repond 401 et retourne False."""
+        if not self.protection_active() or self.session_user():
+            return True
+        self.reply(401, json.dumps({"error": "authentification requise"}).encode())
+        return False
 
     # ---------- routage ----------
     def do_GET(self):
         route = self.path.split("?")[0]
         if self.path.startswith("/px?"):
-            self.proxy()
+            if self.exiger_session():
+                self.proxy()
         elif route in ("/cfg", "/api/config"):
-            self.cfg_get()
+            if self.exiger_session():
+                self.cfg_get()
         elif route == "/api/health":
             self.reply(200, json.dumps({"ok": True, "app": "atrium"}).encode())
+        elif route == "/api/session":
+            self.session_get()
         else:
             super().do_GET()
 
     def do_POST(self):
         route = self.path.split("?")[0]
         if self.path.startswith("/px?"):
-            self.proxy()
+            if self.exiger_session():
+                self.proxy()
         elif route in ("/cfg", "/api/config"):
-            self.cfg_post()
+            if self.exiger_session():
+                self.cfg_post()
+        elif route == "/api/login":
+            self.login()
+        elif route == "/api/logout":
+            self.logout()
+        elif route == "/api/password":
+            self.changer_mdp()
+        elif route == "/api/setup":
+            self.installer()
         else:
             self.send_error(404)
+
+    # ---------- authentification ----------
+    def session_get(self):
+        """Etat courant : l'interface sait quoi afficher avant tout le reste."""
+        cfg = self.lire_config()
+        users = cfg.get("users") or []
+        self.reply(200, json.dumps({
+            "installe": bool(users),
+            "utilisateur": self.session_user(),
+            "profils": [
+                {"nom": u.get("nom"), "photo": u.get("photo", ""), "protege": bool(u.get("pwd"))}
+                for u in users if u.get("nom")
+            ],
+        }, ensure_ascii=False).encode())
+
+    def login(self):
+        d = self.json_recu() or {}
+        nom = str(d.get("nom", "")).strip()
+        mdp = str(d.get("motdepasse", ""))
+        longue = bool(d.get("memoriser"))
+        cle = self.client_address[0]
+
+        if not LIMITEUR.autorise(cle):
+            self.reply(429, json.dumps({"error": "Trop de tentatives. Réessayez dans quelques minutes."}, ensure_ascii=False).encode())
+            return
+
+        cfg = self.lire_config()
+        u = next((x for x in (cfg.get("users") or []) if x.get("nom") == nom), None)
+
+        # meme reponse et meme cout, que le compte existe ou non
+        ok = auth.verifier(mdp, u.get("pwd")) if u and u.get("pwd") else False
+        if u and not u.get("pwd"):
+            ok = True  # profil sans mot de passe : acces libre, comme prevu
+        if not ok:
+            LIMITEUR.echec(cle)
+            self.reply(401, json.dumps({"error": "Nom d'utilisateur ou mot de passe incorrect."}, ensure_ascii=False).encode())
+            return
+
+        LIMITEUR.reussite(cle)
+        jeton = SESSIONS.creer(nom, longue)
+        self.reply(200, json.dumps({"ok": True, "utilisateur": nom}, ensure_ascii=False).encode(),
+                   cookie=self.cookie_session(jeton, longue))
+
+    def logout(self):
+        brut = self.headers.get("Cookie")
+        if brut:
+            try:
+                c = http.cookies.SimpleCookie(brut)
+                m = c.get(auth.COOKIE)
+                if m:
+                    SESSIONS.supprimer(m.value)
+            except http.cookies.CookieError:
+                pass
+        self.reply(200, b'{"ok":true}', cookie=self.cookie_efface())
+
+    def changer_mdp(self):
+        """Changement de mot de passe : l'ancien est exige."""
+        courant = self.session_user()
+        if not courant:
+            self.reply(401, json.dumps({"error": "authentification requise"}).encode())
+            return
+        d = self.json_recu() or {}
+        ancien = str(d.get("ancien", ""))
+        nouveau = str(d.get("nouveau", ""))
+        cible = str(d.get("cible", "")).strip() or courant
+
+        cfg = self.lire_config()
+        users = cfg.get("users") or []
+        moi = next((x for x in users if x.get("nom") == courant), None)
+        u = next((x for x in users if x.get("nom") == cible), None)
+        if not u:
+            self.reply(404, json.dumps({"error": "Profil introuvable."}, ensure_ascii=False).encode())
+            return
+
+        # l'ancien mot de passe est celui du demandeur ; il n'est pas exige
+        # lorsqu'aucun mot de passe n'est encore defini sur son compte
+        if moi and moi.get("pwd") and not auth.verifier(ancien, moi.get("pwd")):
+            self.reply(403, json.dumps({"error": "Ancien mot de passe incorrect."}, ensure_ascii=False).encode())
+            return
+        if nouveau and len(nouveau) < 6:
+            self.reply(400, json.dumps({"error": "Le mot de passe doit faire au moins 6 caractères."}, ensure_ascii=False).encode())
+            return
+
+        u["pwd"] = auth.hacher(nouveau) if nouveau else ""
+        self.ecrire_config(cfg)
+        SESSIONS.supprimer_utilisateur(cible)  # les autres sessions tombent
+        jeton = SESSIONS.creer(courant, False) if cible == courant else None
+        self.reply(200, json.dumps({"ok": True}).encode(),
+                   cookie=self.cookie_session(jeton, False) if jeton else None)
+
+    def installer(self):
+        """Creation du premier compte : refusee des qu'un compte existe.
+        (Ne pas nommer cette methode « setup » : BaseRequestHandler.setup est
+        appelee a chaque connexion.)"""
+        cfg = self.lire_config()
+        if cfg.get("users"):
+            self.reply(409, json.dumps({"error": "Atrium est déjà configuré."}, ensure_ascii=False).encode())
+            return
+        d = self.json_recu() or {}
+        nom = str(d.get("nom", "")).strip()
+        mdp = str(d.get("motdepasse", ""))
+        if not nom:
+            self.reply(400, json.dumps({"error": "Nom d'utilisateur requis."}, ensure_ascii=False).encode())
+            return
+        if mdp and len(mdp) < 6:
+            self.reply(400, json.dumps({"error": "Le mot de passe doit faire au moins 6 caractères."}, ensure_ascii=False).encode())
+            return
+        cfg["users"] = [{"nom": nom, "pwd": auth.hacher(mdp) if mdp else "", "photo": ""}]
+        cfg.setdefault("apps", d.get("apps") or [])
+        cfg["lockReq"] = bool(mdp)
+        self.ecrire_config(cfg)
+        jeton = SESSIONS.creer(nom, True)
+        self.reply(200, json.dumps({"ok": True, "utilisateur": nom}, ensure_ascii=False).encode(),
+                   cookie=self.cookie_session(jeton, True))
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -104,19 +307,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.reply(200, data)
 
     def cfg_post(self):
-        length = int(self.headers.get("Content-Length") or 0)
-        body = self.rfile.read(length) if length else b"{}"
-        try:
-            json.loads(body.decode("utf-8"))  # refuse d'ecrire un JSON invalide
-        except (ValueError, UnicodeDecodeError) as e:
-            self.reply(400, json.dumps({"error": "json invalide: %s" % e}).encode())
+        recu = self.json_recu()
+        if recu is None or not isinstance(recu, dict):
+            self.reply(400, json.dumps({"error": "json invalide"}).encode())
             return
+
+        # Les empreintes de mots de passe restent l'affaire du serveur : le
+        # navigateur ne peut ni les lire ni les remplacer via cette route.
+        actuel = self.lire_config()
+        anciens = {u.get("nom"): u.get("pwd", "") for u in (actuel.get("users") or [])}
+        for u in (recu.get("users") or []):
+            u["pwd"] = anciens.get(u.get("nom"), "")
+
         try:
-            os.makedirs(CONFIG_DIR, exist_ok=True)
-            tmp = CONFIG_FILE + ".tmp"
-            with open(tmp, "wb") as f:
-                f.write(body)
-            os.replace(tmp, CONFIG_FILE)  # ecriture atomique
+            self.ecrire_config(recu)
             self.reply(200, b'{"ok":true}')
         except OSError as e:
             self.reply(500, json.dumps({"error": str(e)}).encode())
