@@ -98,6 +98,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except (OSError, ValueError):
             return {}
 
+    def msg_ecriture(self, e):
+        return ("Impossible d'écrire la configuration dans %s (%s). "
+                "Vérifiez les droits du volume monté sur /config." % (CONFIG_DIR, e))
+
     def ecrire_config(self, cfg):
         os.makedirs(CONFIG_DIR, exist_ok=True)
         tmp = CONFIG_FILE + ".tmp"
@@ -265,7 +269,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         u["pwd"] = auth.hacher(nouveau) if nouveau else ""
-        self.ecrire_config(cfg)
+        try:
+            self.ecrire_config(cfg)
+        except OSError as e:
+            self.reply(500, json.dumps({"error": self.msg_ecriture(e)}, ensure_ascii=False).encode())
+            return
         SESSIONS.supprimer_utilisateur(cible)  # les autres sessions tombent
         jeton = SESSIONS.creer(courant, False) if cible == courant else None
         self.reply(200, json.dumps({"ok": True}).encode(),
@@ -291,7 +299,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         cfg["users"] = [{"nom": nom, "pwd": auth.hacher(mdp) if mdp else "", "photo": ""}]
         cfg.setdefault("apps", d.get("apps") or [])
         cfg["lockReq"] = bool(mdp)
-        self.ecrire_config(cfg)
+        try:
+            self.ecrire_config(cfg)
+        except OSError as e:
+            self.reply(500, json.dumps({"error": self.msg_ecriture(e)}, ensure_ascii=False).encode())
+            return
         jeton = SESSIONS.creer(nom, True)
         self.reply(200, json.dumps({"ok": True, "utilisateur": nom}, ensure_ascii=False).encode(),
                    cookie=self.cookie_session(jeton, True))
@@ -385,8 +397,25 @@ class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 
 
+def verifier_config_inscriptible():
+    """Un volume non inscriptible est la panne la plus frequente : on la signale
+    au demarrage plutot que de la decouvrir a la premiere sauvegarde."""
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        sonde = os.path.join(CONFIG_DIR, ".ecriture")
+        with open(sonde, "w") as f:
+            f.write("ok")
+        os.remove(sonde)
+        return True
+    except OSError as e:
+        print("ATTENTION : %s n'est pas inscriptible (%s)." % (CONFIG_DIR, e), flush=True)
+        print("            Corrigez les droits du volume monte sur /config,", flush=True)
+        print("            sinon aucune configuration ne pourra etre enregistree.", flush=True)
+        return False
+
+
 if __name__ == "__main__":
-    os.makedirs(CONFIG_DIR, exist_ok=True)
     print("Atrium — http://0.0.0.0:%d" % PORT, flush=True)
     print("Configuration : %s" % CONFIG_FILE, flush=True)
+    verifier_config_inscriptible()
     Server(("0.0.0.0", PORT), Handler).serve_forever()

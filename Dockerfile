@@ -18,8 +18,11 @@ ENV ATRIUM_PORT=8420 \
 WORKDIR /app
 COPY app/ /app/
 
-RUN adduser -D -u 1000 atrium && mkdir -p /config && chown -R atrium:atrium /app /config
-USER atrium
+RUN mkdir -p /config
+
+# Le conteneur reste en root : les volumes des NAS (Unraid, Synology…) sont
+# montes avec des proprietaires varies (99:100, 1000:1000, root…) et un
+# utilisateur fixe rendrait /config non inscriptible selon l hote.
 
 VOLUME ["/config"]
 EXPOSE 8420
