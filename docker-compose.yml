@@ -1,8 +1,8 @@
 services:
   atrium:
-    build: .
-    # ou, une fois l'image publiée :
-    # image: ghcr.io/<ton-compte>/atrium:latest
+    image: ghcr.io/alardware/atrium:latest
+    # pour construire localement à la place :
+    # build: .
     container_name: atrium
     restart: unless-stopped
     ports:

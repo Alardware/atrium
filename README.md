@@ -16,7 +16,7 @@ L'image est publiée sur GitHub Container Registry pour `amd64`, `arm64` et `arm
 ```yaml
 services:
   atrium:
-    image: ghcr.io/VOTRE-COMPTE/atrium:latest
+    image: ghcr.io/Alardware/atrium:latest
     container_name: atrium
     restart: unless-stopped
     ports:
@@ -36,7 +36,7 @@ Puis ouvrez `http://<ip-du-serveur>:8420`.
 ### Docker (ligne de commande)
 
 ```bash
-docker run -d --name atrium -p 8420:8420 -v atrium_config:/config --restart unless-stopped ghcr.io/VOTRE-COMPTE/atrium:latest
+docker run -d --name atrium -p 8420:8420 -v atrium_config:/config --restart unless-stopped ghcr.io/Alardware/atrium:latest
 ```
 
 ### Unraid
@@ -48,7 +48,7 @@ Le fichier `unraid-template.xml` est un template prêt à l'emploi. Copiez-le da
 Sinon, en une commande depuis le terminal Unraid :
 
 ```bash
-docker run -d --name atrium -p 8420:8420 -v /mnt/user/appdata/atrium:/config --restart unless-stopped ghcr.io/VOTRE-COMPTE/atrium:latest
+docker run -d --name atrium -p 8420:8420 -v /mnt/user/appdata/atrium:/config --restart unless-stopped ghcr.io/Alardware/atrium:latest
 ```
 
 ### Construire l'image soi-même

@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Atrium</Name>
-  <Repository>ghcr.io/VOTRE-COMPTE/atrium:latest</Repository>
-  <Registry>https://ghcr.io/VOTRE-COMPTE/atrium</Registry>
+  <Repository>ghcr.io/Alardware/atrium:latest</Repository>
+  <Registry>https://ghcr.io/Alardware/atrium</Registry>
   <Network>bridge</Network>
   <Privileged>false</Privileged>
-  <Support>https://github.com/VOTRE-COMPTE/atrium/issues</Support>
-  <Project>https://github.com/VOTRE-COMPTE/atrium</Project>
+  <Support>https://github.com/Alardware/atrium/issues</Support>
+  <Project>https://github.com/Alardware/atrium</Project>
   <Overview>
     Tableau de bord auto-hébergé : vos applications, l'état de vos serveurs et les lectures en cours sur une seule page.
     Intégrations optionnelles : Plex (sessions), Unraid (CPU/RAM/grappe), UniFi (routeur), Home Assistant (domotique),
@@ -14,7 +14,7 @@
   </Overview>
   <Category>Tools: Productivity:</Category>
   <WebUI>http://[IP]:[PORT:8420]/</WebUI>
-  <Icon>https://raw.githubusercontent.com/VOTRE-COMPTE/atrium/main/app/static/atrium.svg</Icon>
+  <Icon>https://raw.githubusercontent.com/Alardware/atrium/main/app/static/atrium.svg</Icon>
   <ExtraParams>--restart=unless-stopped</ExtraParams>
 
   <Config Name="Interface web" Target="8420" Default="8420" Mode="tcp"
