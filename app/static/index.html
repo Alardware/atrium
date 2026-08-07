@@ -1290,7 +1290,7 @@ async function fetchStates() {
   const base = haBase();
   if (!token || !base) { CONN = 'no-token'; STATES = []; HA_MEDIAS = []; combineMedias(); renderLive(); return; }
   try {
-    const r = await fetch(base + '/api/states', {
+    const r = await pxFetch(base + '/api/states', {
       headers: { Authorization: 'Bearer ' + token },
       cache: 'no-store',
     });
@@ -1326,7 +1326,9 @@ function derive() {
         dur: a2.media_duration || 0,
         pos: a2.media_position || 0,
         posAt: a2.media_position_updated_at ? Date.parse(a2.media_position_updated_at) : Date.now(),
-        poster: a2.entity_picture ? (a2.entity_picture.startsWith('http') ? a2.entity_picture : haBase() + a2.entity_picture) : '',
+          poster: a2.entity_picture
+          ? (a2.entity_picture.startsWith('http') ? a2.entity_picture : haBase() + a2.entity_picture)
+          : '',
         appLabel: a2.app_name || a2.friendly_name || 'Lecture',
         entId: s.entity_id.toLowerCase(),
         type: (a2.media_content_type === 'music' || a2.media_artist) ? 'musique' : 'video',
@@ -1794,7 +1796,24 @@ function relayFetch(path, opts) {
   const o = Object.assign({ credentials: 'same-origin' }, opts || {});
   return fetch(path, o);
 }
-const pxFetch = (target, opts) => relayFetch('/px?u=' + encodeURIComponent(target), opts);
+/* Appel d'une API de service : on tente le navigateur → service en direct.
+   La plupart des services locaux (Plex, Unraid) l'autorisent explicitement.
+   Repli par le serveur d'Atrium uniquement si le direct est refusé (CORS
+   absent, certificat auto-signé) — c'est le cas d'UniFi notamment. */
+const DIRECT_KO = new Set();
+async function pxFetch(target, opts) {
+  const cle = new URL(target, location.href).origin;
+  if (!DIRECT_KO.has(cle)) {
+    try {
+      const r = await fetch(target, Object.assign({ mode: 'cors' }, opts || {}));
+      return r;                       // le direct a fonctionné
+    } catch (e) {
+      DIRECT_KO.add(cle);             // bloqué : on n'insiste plus pour cet hôte
+    }
+  }
+  return relayFetch('/px?u=' + encodeURIComponent(target), opts);
+}
+const viaRelais = (cible) => DIRECT_KO.has(new URL(cible, location.href).origin);
 
 /* ---------- config partagée via le relais (hub-config.json) ---------- */
 async function pushCfg() {
@@ -1870,8 +1889,10 @@ async function pollDirect() {
   DIRECT.plexOk = false;
   if (pUrl && pKey) {
     try {
-      const r = await pxFetch(pUrl + '/status/sessions?X-Plex-Token=' + encodeURIComponent(pKey), {
-        headers: { Accept: 'application/json' },
+      /* token en en-tête : c'est ce qui déclenche le pré-vol CORS que Plex
+         accepte, alors qu'un simple paramètre d'URL est refusé */
+      const r = await pxFetch(pUrl + '/status/sessions', {
+        headers: { Accept: 'application/json', 'X-Plex-Token': pKey },
       });
       if (r.status === 401 || r.status === 403) throw new Error('token Plex refusé (HTTP ' + r.status + ')');
       const j = await r.json();
@@ -1891,7 +1912,12 @@ async function pollDirect() {
           dur: (m.duration || 0) / 1000,
           pos: (m.viewOffset || 0) / 1000,
           posAt: Date.now(),
-          poster: thumb ? '/px?u=' + encodeURIComponent(pUrl + thumb + '?X-Plex-Token=' + pKey) : '',
+          /* une image n'est pas soumise au CORS : on peut la charger en direct */
+          poster: thumb
+            ? (viaRelais(pUrl)
+                ? '/px?u=' + encodeURIComponent(pUrl + thumb + '?X-Plex-Token=' + pKey)
+                : pUrl + thumb + '?X-Plex-Token=' + encodeURIComponent(pKey))
+            : '',
           appLabel: 'Plex',
           entId: '',
           type: m.type === 'track' ? 'musique' : 'video',
