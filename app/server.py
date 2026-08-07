@@ -37,7 +37,11 @@ SESSIONS = auth.Sessions(SESSION_FILE)
 LIMITEUR = auth.Limiteur()
 
 _DEFAULT_ALLOW = "192.168.,10.,172.16.,172.17.,172.18.,172.19.,172.20.,172.21.,172.22.,172.23.,172.24.,172.25.,172.26.,172.27.,172.28.,172.29.,172.30.,172.31.,127.,localhost,host.docker.internal,homeassistant"
-ALLOW_HOSTS = tuple(h.strip() for h in os.environ.get("ATRIUM_ALLOW_NET", _DEFAULT_ALLOW).split(",") if h.strip())
+# Une variable definie mais vide (frequent avec les modeles de conteneurs, qui
+# exportent les champs laisses blancs) doit valoir « non renseignee », sinon la
+# liste d autorisation devient vide et le relais refuse toute destination.
+_allow = (os.environ.get("ATRIUM_ALLOW_NET") or "").strip() or _DEFAULT_ALLOW
+ALLOW_HOSTS = tuple(h.strip() for h in _allow.split(",") if h.strip())
 
 FORWARD_HEADERS = ("x-api-key", "authorization", "content-type", "accept", "x-plex-token")
 

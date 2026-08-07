@@ -28,6 +28,6 @@
           Description="Fuseau horaire du conteneur" Type="Variable" Display="advanced" Required="false">Europe/Paris</Config>
 
   <Config Name="Réseaux autorisés" Target="ATRIUM_ALLOW_NET" Default=""
-          Description="Préfixes que le relais peut joindre, séparés par des virgules. Vide = réseaux privés uniquement (recommandé)."
-          Type="Variable" Display="advanced" Required="false"></Config>
+          Description="Avancé — préfixes supplémentaires que le relais peut joindre, séparés par des virgules. Laisser vide : les réseaux privés (192.168.x, 10.x, 172.16-31.x) sont déjà autorisés."
+          Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 </Container>
