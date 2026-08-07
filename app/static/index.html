@@ -339,6 +339,24 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .sfoot{display:flex;justify-content:flex-end;gap:9px}
 .about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 
+/* premier lancement */
+.setup{position:fixed;inset:0;background:var(--bg);z-index:110;display:grid;place-items:center;padding:20px;overflow-y:auto}
+.setup-box{width:400px;max-width:100%;animation:pop .3s cubic-bezier(.2,.7,.3,1) both}
+.setup-logo{width:60px;height:60px;border-radius:17px;background:#0d1526;border:1px solid var(--border);display:grid;place-items:center;margin:0 auto 18px}
+.setup-logo svg{width:42px;height:42px}
+.setup-h{text-align:center;font:700 21px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
+.setup-p{margin:8px 0 24px;text-align:center;font:500 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.setup-card{padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);display:flex;flex-direction:column;gap:16px;box-shadow:var(--sh-1)}
+.setup-err{font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--bad-text);background:var(--bad-soft);border:1px solid var(--bad);border-radius:8px;padding:9px 11px}
+.setup-err[hidden]{display:none}
+.setup-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--accent);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.setup-skip{width:100%;text-align:center;font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted);padding:4px}
+.setup-skip:hover{color:var(--text-2)}
+.boot{position:fixed;inset:0;background:var(--bg);z-index:130;display:grid;place-items:center}
+.boot[hidden]{display:none}
+.boot .b{width:34px;height:34px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 /* écran de verrouillage */
 .lock{position:fixed;inset:0;background:var(--bg);z-index:100;display:grid;place-items:center}
 .lock-profiles{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-bottom:4px}
@@ -816,6 +834,54 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
         </div>
       </section>
 
+    </div>
+  </div>
+</div>
+
+<!-- chargement initial : évite d'afficher l'app avant de connaître l'état du serveur -->
+<div class="boot" id="boot"><div class="b"></div></div>
+
+<!-- premier lancement -->
+<div class="setup" id="setup" hidden>
+  <div class="setup-box">
+    <div class="setup-logo">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="atrium-gs" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5b8cff"/>
+            <stop offset="1" stop-color="#2dd4bf"/>
+          </linearGradient>
+        </defs>
+        <path d="M20 84V46a30 30 0 0 1 60 0v38" fill="none" stroke="url(#atrium-gs)" stroke-width="9" stroke-linecap="round"/>
+        <path d="M38 84V50a12 12 0 0 1 24 0v34" fill="none" stroke="url(#atrium-gs)" stroke-width="7" stroke-linecap="round" opacity=".45"/>
+      </svg>
+    </div>
+    <div class="setup-h">Bienvenue dans Atrium</div>
+    <div class="setup-p">Créez votre profil administrateur pour commencer.</div>
+    <div class="setup-card">
+      <div class="setup-err" id="su-err" hidden></div>
+      <div class="field">
+        <label for="su-nom">Nom d'utilisateur</label>
+        <input id="su-nom" type="text" placeholder="ex. Guillaume" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="su-pwd">Mot de passe</label>
+        <span class="pwd-wrap">
+          <input id="su-pwd" type="password" placeholder="au moins 6 caractères" autocomplete="new-password">
+          <button class="pwd-eye" id="su-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
+        </span>
+        <div class="pwd-meter" id="su-meter" hidden>
+          <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+          <div class="pwd-lab" id="su-meter-lab"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="su-pwd2">Confirmer le mot de passe</label>
+        <input id="su-pwd2" type="password" autocomplete="new-password">
+      </div>
+      <label class="check"><input id="su-lock" type="checkbox" checked>Demander le mot de passe à l'ouverture</label>
+      <button class="setup-btn" id="su-go">Créer le profil</button>
+      <button class="setup-skip" id="su-skip">Continuer sans profil</button>
     </div>
   </div>
 </div>
@@ -1741,47 +1807,53 @@ function saveUsersLocal() {
   store.set('lockHash', LOCK);
   store.set('lockReq', LOCK_REQ ? '1' : '0');
 }
+/* Le serveur fait foi. Le navigateur ne pousse sa propre config que lorsqu'un
+   utilisateur agit — jamais au chargement, sinon une nouvelle installation
+   hériterait des données d'un autre appareil. */
+const normApp = (a) => ({
+  nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
+  url: a.url || '', logoUrl: a.logoUrl || '',
+  token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
+});
+const normUser = (u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' });
+
 async function pullCfg() {
+  let j = null;
   try {
     const r = await relayFetch('/cfg', { cache: 'no-store' });
-    const j = await r.json();
-    let secChanged = false;
-    if (j && Array.isArray(j.users)) {
-      const inUsers = JSON.stringify(j.users);
-      if (inUsers !== JSON.stringify(USERS)) {
-        USERS = j.users.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' }));
-        secChanged = true;
-        renderAvatar();
-        renderUsers();
-      }
-    }
-    if (typeof j.lockHash === 'string' && j.lockHash !== LOCK) { LOCK = j.lockHash; secChanged = true; }
-    if (typeof j.lockReq === 'boolean' && j.lockReq !== LOCK_REQ) { LOCK_REQ = j.lockReq; secChanged = true; }
-    if (secChanged) {
-      saveUsersLocal();
-      applyLock();
-    }
-    const hasSecrets = (list) => list.some((a) => a.token || a.apiKey);
-    if (j && Array.isArray(j.apps) && j.apps.length) {
-      // ne jamais écraser une config à clés par une config sans clés
-      if (!hasSecrets(j.apps) && hasSecrets(apps)) { pushCfg(); return; }
-      const incoming = JSON.stringify(j.apps);
-      if (incoming !== JSON.stringify(apps)) {
-        apps = j.apps.map((a) => ({
-          nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
-          url: a.url || '', logoUrl: a.logoUrl || '',
-          token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
-        }));
-        store.set('apps', JSON.stringify(apps));
-        refresh();
-        fetchStates();
-        probeAll();
-        pollDirect();
-      }
-    } else {
-      pushCfg(); // relais vide → on l'amorce avec la config locale
-    }
-  } catch (e) { /* relais absent */ }
+    j = await r.json();
+  } catch (e) {
+    return { serveur: false, vierge: false };   // pas de backend : on garde le local
+  }
+  const users = Array.isArray(j.users) ? j.users.filter((u) => u && u.nom) : [];
+  const appsSrv = Array.isArray(j.apps) ? j.apps : [];
+  const vierge = !users.length && !appsSrv.length;
+
+  if (JSON.stringify(users) !== JSON.stringify(USERS)) {
+    USERS = users.map(normUser);
+    store.set('users', JSON.stringify(USERS));
+    renderAvatar();
+    renderUsers();
+  }
+  let secChanged = false;
+  const lh = typeof j.lockHash === 'string' ? j.lockHash : '';
+  const lr = typeof j.lockReq === 'boolean' ? j.lockReq : false;
+  if (lh !== LOCK) { LOCK = lh; secChanged = true; }
+  if (lr !== LOCK_REQ) { LOCK_REQ = lr; secChanged = true; }
+  if (secChanged) {
+    store.set('lockHash', LOCK);
+    store.set('lockReq', LOCK_REQ ? '1' : '0');
+    applyLock();
+  }
+  if (appsSrv.length && JSON.stringify(appsSrv) !== JSON.stringify(apps)) {
+    apps = appsSrv.map(normApp);
+    store.set('apps', JSON.stringify(apps));
+    refresh();
+    fetchStates();
+    probeAll();
+    pollDirect();
+  }
+  return { serveur: true, vierge };
 }
 
 async function pollDirect() {
@@ -2846,18 +2918,95 @@ document.querySelectorAll('#seg-view button').forEach((b) =>
 });
 
 /* ---------- init + boucles ---------- */
-applyTheme();
-renderAvatar();
-applyLock();
-refresh();
-pullCfg();          // récupère la config partagée du relais (si présent)
-fetchStates();
-probeAll();
-pollDirect();
+const syncSetupPwd = bindPwd('su-pwd', 'su-pwd-eye', 'su-meter', 'su-meter-lab');
+
+function setupErr(msg) {
+  const e = $('su-err');
+  e.textContent = msg;
+  e.hidden = !msg;
+}
+function finirSetup() {
+  $('setup').hidden = true;
+  applyLock();
+  refresh();
+  fetchStates();
+  probeAll();
+  pollDirect();
+}
+$('su-go').addEventListener('click', () => {
+  const nom = $('su-nom').value.trim();
+  const p1 = $('su-pwd').value;
+  const p2 = $('su-pwd2').value;
+  if (!nom) { setupErr('Choisissez un nom d\'utilisateur.'); $('su-nom').focus(); return; }
+  if (p1.length < 6) { setupErr('Le mot de passe doit faire au moins 6 caractères.'); $('su-pwd').focus(); return; }
+  if (p1 !== p2) { setupErr('Les deux mots de passe ne correspondent pas.'); $('su-pwd2').focus(); return; }
+  setupErr('');
+  USERS = [{ nom, pwd: hashPwd(p1), photo: '' }];
+  ACTIVE = nom;
+  store.set('activeUser', nom);
+  LOCK_REQ = $('su-lock').checked;
+  LOCK = '';
+  saveUsersLocal();
+  pushCfg();
+  try { sessionStorage.setItem('atrium.unlocked', lockStamp()); } catch (e) {}
+  renderAvatar();
+  finirSetup();
+  toast('Bienvenue, ' + nom);
+});
+$('su-skip').addEventListener('click', () => {
+  USERS = [];
+  ACTIVE = '';
+  LOCK_REQ = false;
+  LOCK = '';
+  store.set('activeUser', '');
+  saveUsersLocal();
+  pushCfg();
+  renderAvatar();
+  finirSetup();
+});
+$('su-pwd2').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('su-go').click(); });
+
+/* ---------- démarrage ---------- */
+(async function demarrer() {
+  applyTheme();
+  renderAvatar();
+  const etat = await pullCfg();
+  $('boot').hidden = true;
+
+  if (etat.serveur && etat.vierge) {
+    // installation neuve : on ne reprend pas les données locales d'un autre appareil
+    apps = DEFAUTS.map((a) => ({ ...a }));
+    USERS = [];
+    ACTIVE = '';
+    LOCK = '';
+    LOCK_REQ = false;
+    try {
+      localStorage.removeItem('atrium.users');
+      localStorage.removeItem('atrium.activeUser');
+      localStorage.removeItem('atrium.lockHash');
+      localStorage.removeItem('atrium.lockReq');
+      localStorage.removeItem('atrium.apps');
+      sessionStorage.removeItem('atrium.unlocked');
+      localStorage.removeItem('atrium.unlockDevice');
+    } catch (e) {}
+    renderAvatar();
+    refresh();
+    $('setup').hidden = false;
+    $('su-nom').focus();
+    return;
+  }
+
+  applyLock();
+  refresh();
+  fetchStates();
+  probeAll();
+  pollDirect();
+})();
+
 setInterval(fetchStates, 15000);
 setInterval(probeAll, 60000);
 setInterval(pollDirect, 30000);
-setInterval(pullCfg, 60000);
+setInterval(() => { if ($('setup').hidden) pullCfg(); }, 60000);
 </script>
 </body>
 </html>
