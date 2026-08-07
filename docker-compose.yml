@@ -1,0 +1,16 @@
+services:
+  atrium:
+    build: .
+    # ou, une fois l'image publiée :
+    # image: ghcr.io/<ton-compte>/atrium:latest
+    container_name: atrium
+    restart: unless-stopped
+    ports:
+      - "8420:8420"
+    volumes:
+      - ./data:/config
+    environment:
+      TZ: Europe/Paris
+      # Réseaux que le relais a le droit de joindre (préfixes, séparés par des virgules).
+      # Par défaut : RFC1918 + loopback. À élargir seulement si nécessaire.
+      # ATRIUM_ALLOW_NET: "192.168.,10.,172.16."

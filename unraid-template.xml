@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Atrium</Name>
+  <Repository>ghcr.io/VOTRE-COMPTE/atrium:latest</Repository>
+  <Registry>https://ghcr.io/VOTRE-COMPTE/atrium</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/VOTRE-COMPTE/atrium/issues</Support>
+  <Project>https://github.com/VOTRE-COMPTE/atrium</Project>
+  <Overview>
+    Tableau de bord auto-hébergé : vos applications, l'état de vos serveurs et les lectures en cours sur une seule page.
+    Intégrations optionnelles : Plex (sessions), Unraid (CPU/RAM/grappe), UniFi (routeur), Home Assistant (domotique),
+    et sonde HTTP pour l'état en ligne de n'importe quelle application.
+  </Overview>
+  <Category>Tools: Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:8420]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/VOTRE-COMPTE/atrium/main/app/static/atrium.svg</Icon>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+
+  <Config Name="Interface web" Target="8420" Default="8420" Mode="tcp"
+          Description="Port d'accès à Atrium" Type="Port" Display="always" Required="true">8420</Config>
+
+  <Config Name="Configuration" Target="/config" Default="/mnt/user/appdata/atrium" Mode="rw"
+          Description="Stockage de la configuration (applications, profils, clés API)"
+          Type="Path" Display="always" Required="true">/mnt/user/appdata/atrium</Config>
+
+  <Config Name="Fuseau horaire" Target="TZ" Default="Europe/Paris"
+          Description="Fuseau horaire du conteneur" Type="Variable" Display="advanced" Required="false">Europe/Paris</Config>
+
+  <Config Name="Réseaux autorisés" Target="ATRIUM_ALLOW_NET" Default=""
+          Description="Préfixes que le relais peut joindre, séparés par des virgules. Vide = réseaux privés uniquement (recommandé)."
+          Type="Variable" Display="advanced" Required="false"></Config>
+</Container>

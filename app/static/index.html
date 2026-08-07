@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atrium</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235b8cff'/%3E%3Cstop offset='1' stop-color='%232dd4bf'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230d1526'/%3E%3Cpath d='M22 82V46a28 28 0 0 1 56 0v36' fill='none' stroke='url(%23g)' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfcfd;
+  --border:#e6e8ec; --border-2:#e0e3e9; --border-3:#c3cbd8;
+  --divider:#f0f2f5; --subtle:#f2f4f7; --track:#eceef2;
+  --text:#101828; --text-2:#475467; --text-3:#667085;
+  --muted:#8a919e; --muted-2:#98a2b3; --muted-3:#9aa1ad;
+  --accent:#2f6fed; --accent-strong:#1d55c9; --accent-soft:#eef3ff;
+  --accent-border:#c8d6f7; --avatar-bg:#e8edf7; --on-accent:#fff;
+  --ok:#16a34a; --ok-soft:#eaf7f0; --ok-text:#15803d;
+  --warn:#f59e0b; --warn-soft:#fff5e8; --warn-border:#f6dcbb; --warn-text:#b45309;
+  --bad:#e04f3d; --bad-soft:#fdeeec; --bad-text:#b42318;
+  --dash:#cfd5e0; --ph-1:#dfe4ec; --ph-2:#c8cfda;
+  --header-bg:rgba(255,255,255,.86);
+  --overlay:rgba(16,24,40,.45);
+  --sh-1:0 1px 2px rgba(16,24,40,.05);
+  --sh-btn:0 1px 2px rgba(16,24,40,.12);
+  --sh-hover:0 12px 28px -16px rgba(16,24,40,.22);
+  --sh-modal:0 24px 60px -18px rgba(16,24,40,.35);
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --surface:#151a21; --surface-2:#121821;
+  --border:#242b36; --border-2:#2c3440; --border-3:#3a4351;
+  --divider:#1f2530; --subtle:#1c222b; --track:#252d38;
+  --text:#e9eef5; --text-2:#b6bfcb; --text-3:#9ba5b3;
+  --muted:#7e8896; --muted-2:#6c7684; --muted-3:#626c79;
+  --accent:#5b8cff; --accent-strong:#88abff; --accent-soft:#182643;
+  --accent-border:#31497f; --avatar-bg:#1d2a45; --on-accent:#0b1220;
+  --ok:#22c55e; --ok-soft:#12291d; --ok-text:#6ee7a8;
+  --warn:#f59e0b; --warn-soft:#2a1e0f; --warn-border:#4a3517; --warn-text:#f0b45c;
+  --bad:#f0685a; --bad-soft:#2c1614; --bad-text:#f79c92;
+  --dash:#343d4a; --ph-1:#242c37; --ph-2:#19202a;
+  --header-bg:rgba(21,26,33,.86);
+  --overlay:rgba(0,0,0,.6);
+  --sh-1:0 1px 2px rgba(0,0,0,.45);
+  --sh-btn:0 1px 2px rgba(0,0,0,.55);
+  --sh-hover:0 14px 30px -18px rgba(0,0,0,.8);
+  --sh-modal:0 24px 60px -14px rgba(0,0,0,.85);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--accent-strong)}
+button{font:inherit;border:0;background:none;padding:0;color:inherit;cursor:pointer}
+template{display:none}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+
+.layout{display:grid;grid-template-columns:252px 1fr;height:100vh;overflow:hidden}
+
+/* ---- sidebar (fixe, scroll interne si besoin) ---- */
+.sidebar{display:flex;flex-direction:column;gap:26px;padding:22px 18px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto}
+.brand{display:flex;align-items:center;gap:11px;padding:0 6px}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:#0d1526;border:1px solid var(--border);display:grid;place-items:center}
+.brand-mark svg{width:24px;height:24px;display:block}
+.brand-name{font:700 14.5px/1.2 'Plus Jakarta Sans',sans-serif}
+.brand-sub{font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.brand-sub2{font:500 8.5px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3)}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav-title{padding:0 8px 8px;font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
+.nav-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:var(--text-2);font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;transition:background .15s,color .15s;text-align:left;width:100%}
+.nav-link:hover{background:var(--subtle);color:var(--text)}
+.nav-link .ico{width:18px;text-align:center;color:var(--muted-2)}
+.nav-link .count{margin-left:auto;font:500 11.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.nav-link.active{background:var(--accent-soft);color:var(--accent-strong)}
+.nav-link.active .ico{color:var(--accent-strong)}
+.nav-link.active .count{color:var(--accent)}
+.health{margin-top:auto;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);flex:none}
+.health-head{display:flex;align-items:center;gap:7px;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text);margin-bottom:12px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.health-rows{display:flex;flex-direction:column;gap:10px}
+.health-row{display:flex;flex-direction:column;gap:6px}
+.health-lab{display:flex;justify-content:space-between;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--text-3)}
+.health-lab b{font-weight:500;color:var(--text)}
+.bar{height:5px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar > i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .6s cubic-bezier(.2,.7,.3,1)}
+.health-foot{margin-top:12px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.srv-box{padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:9px}
+.srv-head{display:flex;align-items:center;gap:7px}
+.srv-name{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.srv-src{margin-left:auto;font:500 9px/1 'IBM Plex Mono',monospace;color:var(--muted-2);padding:2.5px 6px;border:1px solid var(--border);border-radius:99px}
+.logo-chip.s18{width:18px;height:18px;border-radius:5px;font-size:8px}
+.logo-chip.s18 img{width:12px;height:12px}
+
+/* ---- zone centrale (seule à défiler) ---- */
+.main{display:flex;flex-direction:column;min-width:0;height:100vh;overflow-y:auto}
+.topbar{display:flex;align-items:center;gap:18px;padding:14px 28px;background:var(--header-bg);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+.search{display:flex;align-items:center;gap:9px;flex:1;max-width:420px;padding:0 13px;border-radius:10px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted-2);font:500 13px/1 'Plus Jakarta Sans',sans-serif;transition:border-color .15s}
+.search:hover{border-color:var(--border-3)}
+.search:focus-within{border-color:var(--accent)}
+.search input{flex:1;min-width:0;border:0;outline:0;background:none;padding:10px 0;font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.search input::placeholder{color:var(--muted-2)}
+.kbd{padding:3px 6px;border-radius:5px;border:1px solid var(--border);font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.pill-warn{position:relative;display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:99px;background:var(--warn-soft);border:1px solid var(--warn-border);font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text);cursor:pointer;user-select:none}
+.pill-warn .dot{background:var(--warn);width:6px;height:6px}
+.maj-pop{position:absolute;top:calc(100% + 10px);right:0;width:320px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-modal);z-index:40;cursor:default;text-align:left}
+.maj-pop h4{margin:0 0 6px;font:700 12.5px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.mu-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid var(--divider)}
+.mu-row:first-of-type{border-top:0}
+.mu-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.mu-app{font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent);padding:3px 7px;border-radius:99px;background:var(--accent-soft);white-space:nowrap}
+.mu-ver{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+.theme-btn{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:99px;border:1px solid var(--border-2);background:var(--surface);font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);user-select:none;transition:color .15s,border-color .15s}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+.theme-btn .ti{font-size:13px;line-height:1}
+.clock{text-align:right}
+.clock-time{font:600 14px/1.1 'IBM Plex Mono',monospace}
+.clock-sub{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--avatar-bg);display:grid;place-items:center;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent);transition:box-shadow .15s}
+.avatar:hover{box-shadow:0 0 0 3px var(--accent-soft)}
+.av-wrap{position:relative}
+
+/* menu du compte */
+.av-menu{position:absolute;top:calc(100% + 10px);right:0;width:250px;padding:6px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-modal);z-index:45;animation:pop .16s cubic-bezier(.2,.7,.3,1) both;text-align:left}
+.av-head{display:flex;align-items:center;gap:10px;padding:10px 10px 12px}
+.av-head .u-avatar{width:38px;height:38px;font:700 13px/1 'Plus Jakarta Sans',sans-serif}
+.av-head .txt{min-width:0;flex:1}
+.av-head .n{font:700 13px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av-head .s{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.av-sep{height:1px;background:var(--divider);margin:2px 6px}
+.av-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 10px;border-radius:8px;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);text-align:left;transition:background .12s,color .12s}
+.av-item:hover{background:var(--subtle);color:var(--text)}
+.av-item .ic{width:16px;text-align:center;font-size:13px;color:var(--muted-2)}
+.av-item:hover .ic{color:var(--accent)}
+.av-item.av-danger:hover{color:var(--bad-text);background:var(--bad-soft)}
+.av-item.av-danger:hover .ic{color:var(--bad)}
+.av-users{padding:2px 0 4px}
+.av-u{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:8px;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);text-align:left}
+.av-u:hover{background:var(--subtle);color:var(--text)}
+.av-u .u-avatar{width:24px;height:24px;font:700 9.5px/1 'Plus Jakarta Sans',sans-serif}
+.av-u .chk{margin-left:auto;color:var(--accent);font-size:12px}
+.av-lab{padding:8px 10px 4px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
+
+/* ---- content ---- */
+.content{padding:26px 28px 40px;display:flex;flex-direction:column;gap:26px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.section-head h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
+.rise-1{animation:rise .45s cubic-bezier(.2,.7,.3,1) both}
+.rise-2{animation:rise .5s .06s cubic-bezier(.2,.7,.3,1) both}
+
+.featured{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+.featured.solo{grid-template-columns:1fr}
+.card{border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-1);color:inherit;transition:box-shadow .2s,transform .2s,border-color .2s}
+a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transform:translateY(-2px);color:inherit}
+.now-playing{display:flex;gap:18px;padding:18px}
+.poster{position:relative;width:96px;height:142px;flex:none;border-radius:9px;background:linear-gradient(160deg,var(--ph-1),var(--ph-2));display:grid;place-items:center;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted);overflow:hidden}
+.poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.np-body{display:flex;flex-direction:column;flex:1;min-width:0}
+.chip-row{display:flex;align-items:center;gap:8px}
+.logo-chip{position:relative;flex:none;border-radius:7px;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.logo-chip.s26{width:26px;height:26px}
+.logo-chip.s40{width:40px;height:40px;border-radius:10px;font-size:15px}
+.logo-chip img{position:absolute;inset:0;margin:auto;object-fit:contain}
+.logo-chip.s26 img{width:16px;height:16px}
+.logo-chip.s40 img{width:24px;height:24px}
+.chip-name{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.badge-live{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
+.badge-live .dot{width:6px;height:6px;animation:pulse 2.4s ease-in-out infinite}
+.np-title{margin-top:12px;font:700 20px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.np-sub{margin-top:5px;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.np-more{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.np-more:empty{display:none}
+.np-more::before{content:'Aussi en cours';font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3);margin-bottom:2px}
+.np-mrow{display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);cursor:pointer;transition:border-color .15s}
+.np-mrow:hover{border-color:var(--accent-border)}
+.pchip{position:relative;width:26px;height:26px;border-radius:6px;overflow:hidden;flex:none;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.pchip img.cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pchip img.logo{position:absolute;inset:0;margin:auto;width:15px;height:15px;object-fit:contain}
+.mr-t{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46%}
+.mr-d{flex:1;min-width:0;font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr-s{font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text);background:var(--ok-soft);padding:3px 8px;border-radius:99px;white-space:nowrap}
+.mr-s.pause{color:var(--muted);background:var(--subtle)}
+.np-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+.np-times{display:flex;justify-content:space-between;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted)}
+.np-btns{display:flex;gap:9px;margin-top:6px}
+.btn-primary{padding:9px 15px;border-radius:9px;background:var(--accent);color:var(--on-accent);font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.btn-ghost{padding:9px 15px;border-radius:9px;border:1px solid var(--border-2);background:var(--surface);font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.btn-danger{padding:9px 15px;border-radius:9px;background:var(--bad);color:#fff;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.ha-card{display:flex;flex-direction:column;gap:14px;padding:18px}
+.ha-temp{display:flex;align-items:baseline;gap:10px}
+.ha-deg{font:700 38px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em}
+.ha-loc{font:500 11.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.ha-rows{display:flex;flex-direction:column}
+.ha-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--divider);font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.ha-row b{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.ha-open{margin-top:auto;padding:9px 0;border-radius:9px;border:1px solid var(--border-2);text-align:center;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+
+/* ---- apps ---- */
+.apps-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.apps-title{display:flex;align-items:baseline;gap:9px}
+.apps-title h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
+.apps-title .n{font:500 12px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.seg{display:flex;gap:6px;padding:3px;border-radius:9px;background:var(--track)}
+.seg button{padding:6px 12px;border-radius:7px;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.seg button.on{background:var(--surface);box-shadow:var(--sh-1);color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(226px,1fr));gap:14px}
+.app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
+.app-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.badge-maj{padding:4px 8px;border-radius:6px;background:var(--warn-soft);border:1px solid var(--warn-border);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text)}
+.badge-maj[hidden]{display:none}
+.app-name{font:700 14.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
+.app-role{margin-top:3px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.app-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--divider)}
+.badge-on{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
+.badge-off{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--bad-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
+.badge-off .dot{background:var(--bad)}
+.badge-na{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--subtle);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.badge-na .dot{background:var(--muted-2)}
+.badge-on[hidden],.badge-off[hidden],.badge-na[hidden]{display:none}
+.add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
+.add-card:hover{border-color:var(--accent);color:var(--accent)}
+.add-ring{width:34px;height:34px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font:600 17px/1 'Plus Jakarta Sans',sans-serif}
+.add-lab{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif}
+
+/* actions modifier / supprimer */
+.app-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;opacity:0;transition:opacity .15s;z-index:2}
+.app-card:hover .app-actions,.app-actions:focus-within{opacity:1}
+.act-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:var(--sh-1)}
+.act-btn:hover{color:var(--accent);border-color:var(--accent)}
+.act-btn.danger:hover{color:var(--bad);border-color:var(--bad)}
+
+/* list view */
+.grid.list{grid-template-columns:1fr;gap:8px}
+.grid.list .app-card{flex-direction:row;align-items:center;gap:14px;padding:12px 16px}
+.grid.list .app-mid{flex:1;min-width:0}
+.grid.list .app-role{margin-top:2px}
+.grid.list .app-foot{border-top:0;padding-top:0;gap:14px}
+.grid.list .app-actions{position:static;order:99;margin-left:2px}
+.grid.list .add-card{min-height:0;flex-direction:row;padding:12px 16px}
+.grid.list .add-ring{width:26px;height:26px;font-size:14px}
+
+.empty{grid-column:1/-1;padding:34px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);text-align:center;font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+
+/* ---- modales ---- */
+.overlay{position:fixed;inset:0;background:var(--overlay);display:grid;place-items:center;z-index:50;animation:fade .18s ease both;padding:16px}
+.overlay[hidden]{display:none}
+.modal{width:460px;max-width:100%;max-height:calc(100vh - 48px);overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh-modal);padding:22px;animation:pop .22s cubic-bezier(.2,.7,.3,1) both}
+.modal h3{margin:0 0 18px;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
+.modal-sub{margin:-12px 0 18px;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.mform{display:flex;flex-direction:column;gap:14px}
+.mrow{display:flex;gap:10px}
+.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.field label{font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3)}
+.field input,.field select{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--border-2);background:var(--surface-2);color:var(--text);font:500 13px/1.3 'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input.err{border-color:var(--bad)}
+.field .hint{font:500 11px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted);letter-spacing:0;text-transform:none}
+.name-row{display:flex;gap:10px;align-items:flex-end}
+.name-row .field{flex:1}
+.modal-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+/* utilisateurs */
+.users-list{display:flex;flex-direction:column;gap:8px}
+.user-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;transition:border-color .15s}
+.user-row:hover{border-color:var(--border-3)}
+.user-row.actif{border-color:var(--accent);background:var(--accent-soft)}
+.u-avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#fff;flex:none}
+.u-nom{flex:1;min-width:0;font:600 13.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.u-tag{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--subtle);color:var(--muted);white-space:nowrap}
+.u-actif{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+
+/* champ mot de passe : œil + jauge */
+.pwd-wrap{position:relative;flex:1;min-width:0;display:flex}
+.pwd-wrap input{flex:1;min-width:0;padding-right:38px !important}
+.pwd-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--muted);font-size:14px;line-height:1}
+.pwd-eye:hover{color:var(--accent);background:var(--subtle)}
+.pwd-meter{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.pwd-bars{display:flex;gap:5px}
+.pwd-bars i{flex:1;height:4px;border-radius:99px;background:var(--track);transition:background .2s}
+.pwd-lab{font:600 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.pwd-lab b{font-weight:700}
+.u-del{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:var(--muted);font-size:11px}
+.u-del:hover{color:var(--bad)}
+.u-addrow{display:flex;gap:8px}
+.u-addrow input{flex:1;min-width:0;padding:9px 11px;border-radius:9px;border:1px solid var(--border-2);background:var(--surface-2);color:var(--text);font:500 13px/1.3 'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .15s}
+.u-addrow input:focus{border-color:var(--accent)}
+.check{display:flex;align-items:center;gap:8px;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);cursor:pointer;user-select:none}
+.check input{accent-color:var(--accent);width:15px;height:15px;margin:0;cursor:pointer}
+
+/* page réglages plein écran */
+.spage{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;animation:fade .18s ease both}
+.spage-head{display:flex;align-items:center;gap:16px;padding:12px 28px;border-bottom:1px solid var(--border);background:var(--surface);flex:none}
+.spage-head h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
+.spage-body{flex:1;display:grid;grid-template-columns:220px 1fr;overflow:hidden}
+.spage-nav{display:flex;flex-direction:column;gap:3px;padding:18px 14px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto}
+.spage-nav button{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:var(--text-2);font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .15s,color .15s}
+.spage-nav button:hover{background:var(--subtle);color:var(--text)}
+.spage-nav button.on{background:var(--accent-soft);color:var(--accent-strong)}
+.spage-content{overflow-y:auto;padding:26px 32px 48px}
+.spanel{max-width:620px;display:flex;flex-direction:column;gap:22px}
+.spanel h4{margin:10px 0 0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
+.spanel h4:first-child{margin-top:0}
+.scard{padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;gap:16px}
+.scard > h4{margin:0}
+.danger{border:1px solid var(--bad);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.danger .dz-txt{flex:1;min-width:0}
+.danger .dz-title{font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
+.danger .dz-sub{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.conn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.conn-row .cr-nom{flex:1;min-width:0;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.conn-row .cr-st{font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
+.sfoot{display:flex;justify-content:flex-end;gap:9px}
+.about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+
+/* écran de verrouillage */
+.lock{position:fixed;inset:0;background:var(--bg);z-index:100;display:grid;place-items:center}
+.lock-profiles{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-bottom:4px}
+.lock-p{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:8px;border-radius:12px;transition:background .15s}
+.lock-p:hover{background:var(--subtle)}
+.lock-p .u-avatar{width:54px;height:54px;font:700 18px/1 'Plus Jakarta Sans',sans-serif}
+.lock-p .n{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.lock-box{display:flex;flex-direction:column;align-items:center;gap:16px;width:300px;max-width:calc(100vw - 40px);animation:pop .3s cubic-bezier(.2,.7,.3,1) both}
+.lock-logo{width:64px;height:64px;border-radius:18px;background:#0d1526;border:1px solid var(--border);display:grid;place-items:center}
+.lock-logo svg{width:44px;height:44px}
+.lock-title{font:700 19px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
+.lock-box input[type=password]{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);font:500 14px/1.3 'Plus Jakarta Sans',sans-serif;outline:none;text-align:center;transition:border-color .15s}
+.lock-box input[type=password]:focus{border-color:var(--accent)}
+.lock-box input.err{border-color:var(--bad);animation:shake .3s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.lock-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--accent);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.lock-remember{display:flex;align-items:center;gap:7px;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3);cursor:pointer;user-select:none}
+.lock-remember input{accent-color:var(--accent);margin:0}
+
+.conn-status{display:flex;align-items:center;gap:7px;font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;padding:9px 11px;border-radius:9px;background:var(--subtle);color:var(--text-2)}
+.conn-status .dot{width:7px;height:7px}
+.conn-status.ok .dot{background:var(--ok)}
+.conn-status.bad .dot{background:var(--bad)}
+.conn-status.na .dot{background:var(--muted-2)}
+
+@media (max-width:960px){
+  .layout{grid-template-columns:1fr;height:auto;overflow:visible}
+  .main{height:auto;overflow:visible}
+  .sidebar{flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--border);overflow:visible}
+  .health{display:none !important}
+  .featured{grid-template-columns:1fr}
+  .clock{display:none}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="atrium-g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#5b8cff"/>
+              <stop offset="1" stop-color="#2dd4bf"/>
+            </linearGradient>
+          </defs>
+          <path d="M20 84V46a30 30 0 0 1 60 0v38" fill="none" stroke="url(#atrium-g)" stroke-width="9" stroke-linecap="round"/>
+          <path d="M38 84V50a12 12 0 0 1 24 0v34" fill="none" stroke="url(#atrium-g)" stroke-width="7" stroke-linecap="round" opacity=".45"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Atrium</div>
+        <div class="brand-sub">Central Dashboard</div>
+        <div class="brand-sub2">Services | Serveurs</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav-cats">
+      <div class="nav-title">Catégories</div>
+      <button class="nav-link active" data-cat="">
+        <span class="ico">▦</span>Toutes les apps
+        <span class="count" id="count-all"></span>
+      </button>
+    </nav>
+
+    <div class="nav">
+      <div class="nav-title">Gérer</div>
+      <button class="nav-link" id="side-add"><span class="ico">+</span>Ajouter une app</button>
+      <button class="nav-link" id="side-settings"><span class="ico">⚙</span>Réglages</button>
+    </div>
+
+    <div class="health" id="health" style="display:none">
+      <div class="health-head"><span class="dot"></span>Serveurs</div>
+      <div class="health-rows" id="health-rows"></div>
+      <div class="health-foot" id="health-foot" style="display:none"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <label class="search">
+        <span>⌕</span>
+        <input id="search" type="text" placeholder="Rechercher une application…" autocomplete="off">
+        <span class="kbd">⌘K</span>
+      </label>
+      <div class="top-right">
+        <div class="pill-warn" id="pill-maj" style="display:none" title="Voir les mises à jour">
+          <span class="dot"></span><span id="maj-label"></span>
+          <div class="maj-pop" id="maj-pop" hidden></div>
+        </div>
+        <button class="theme-btn" id="theme-btn" title="Basculer le thème"><span class="ti" id="theme-ico"></span><span id="theme-lab"></span></button>
+        <div class="clock">
+          <div class="clock-time" id="clock-time">–:–</div>
+          <div class="clock-sub" id="clock-sub"></div>
+        </div>
+        <div class="av-wrap" id="av-wrap">
+          <button class="avatar" id="avatar" title="Compte">A</button>
+          <div class="av-menu" id="av-menu" hidden>
+            <div class="av-head">
+              <span class="u-avatar" id="avm-av">A</span>
+              <span class="txt">
+                <span class="n" id="avm-nom">Aucun profil</span>
+                <span class="s" id="avm-sub">Atrium</span>
+              </span>
+            </div>
+            <div class="av-sep"></div>
+            <button class="av-item" id="avm-profil"><span class="ic">👤</span>Mon profil</button>
+            <button class="av-item" id="avm-params"><span class="ic">⚙</span>Paramètres</button>
+            <div class="av-sep"></div>
+            <div class="av-lab">Changer de compte</div>
+            <div class="av-users" id="avm-users"></div>
+            <div class="av-sep"></div>
+            <button class="av-item av-danger" id="avm-logout"><span class="ic">⎋</span>Se déconnecter</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <section class="rise-1" id="sec-featured">
+        <div class="section-head">
+          <h2>En ce moment</h2>
+        </div>
+        <div class="featured" id="featured">
+
+          <a href="#" class="card now-playing" id="np-card">
+            <div class="poster" id="np-poster"><span id="np-poster-lab">affiche</span></div>
+            <div class="np-body">
+              <div class="chip-row">
+                <span class="logo-chip s26" id="np-chip"><span class="cl">▶</span></span>
+                <span class="chip-name" id="np-name">Lecture</span>
+                <span class="badge-live" id="np-live" hidden><span class="dot"></span><span class="lbl">lecture en cours</span></span>
+              </div>
+              <div class="np-title" id="np-title">—</div>
+              <div class="np-sub" id="np-sub"></div>
+              <div class="np-foot" id="np-foot" hidden>
+                <div class="np-times"><span id="np-t1"></span><span id="np-t2"></span></div>
+                <div class="bar"><i id="np-bar" style="width:0%"></i></div>
+                <div class="np-btns">
+                  <span class="btn-primary" id="np-open">Ouvrir ↗</span>
+                </div>
+              </div>
+              <div class="np-foot" id="np-setup" hidden>
+                <div class="np-btns">
+                  <span class="btn-primary" id="np-config">Connecter une source</span>
+                </div>
+              </div>
+              <div class="np-more" id="np-more"></div>
+            </div>
+          </a>
+
+          <a href="#" class="card ha-card" id="haw-card">
+            <div class="chip-row">
+              <span class="logo-chip s26" id="haw-chip"><span class="cl">H</span></span>
+              <span class="chip-name" id="haw-name">Home Assistant</span>
+            </div>
+            <div class="ha-temp" id="ha-temp" hidden>
+              <div class="ha-deg" id="ha-deg">–°</div>
+              <div class="ha-loc" id="ha-loc"></div>
+            </div>
+            <div class="ha-rows" id="ha-rows"></div>
+            <div class="ha-open">Ouvrir ↗</div>
+          </a>
+        </div>
+      </section>
+
+      <section class="rise-2">
+        <div class="apps-head">
+          <div class="apps-title">
+            <h2>Toutes les applications</h2>
+            <span class="n" id="apps-count"></span>
+          </div>
+          <div class="seg" id="seg-view">
+            <button data-view="grid" class="on">Grille</button>
+            <button data-view="list">Liste</button>
+          </div>
+        </div>
+        <div class="grid" id="apps-grid"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- modale ajouter / modifier -->
+<div class="overlay" id="ov-app" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="m-title">Ajouter une application</h3>
+    <div class="mform">
+      <div class="name-row">
+        <span class="logo-chip s40" id="m-chip"><span class="cl" id="m-cl">?</span></span>
+        <div class="field">
+          <label for="m-nom">Nom</label>
+          <input id="m-nom" type="text" placeholder="ex. Plex" autocomplete="off">
+        </div>
+      </div>
+      <div class="mrow">
+        <div class="field">
+          <label for="m-role">Rôle</label>
+          <input id="m-role" type="text" placeholder="ex. Films & séries" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="m-cat">Catégorie</label>
+          <select id="m-cat">
+            <option value="Média">Média</option>
+            <option value="Maison">Maison</option>
+            <option value="Fichiers & photos">Fichiers &amp; photos</option>
+            <option value="Serveur">Serveur</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="m-url">URL d'ouverture</label>
+        <input id="m-url" type="text" placeholder="http://192.168.0.251:32400" autocomplete="off">
+        <span class="hint">Sert aussi à détecter automatiquement si l'app est en ligne.</span>
+      </div>
+      <div class="field">
+        <label for="m-logo">Logo (URL, vide = automatique)</label>
+        <input id="m-logo" type="text" placeholder="auto depuis le nom" autocomplete="off">
+      </div>
+      <div class="field" id="f-key" hidden>
+        <label for="m-key" id="m-key-label">Clé API</label>
+        <input id="m-key" type="password" autocomplete="off">
+        <span class="hint" id="m-key-hint"></span>
+      </div>
+      <div class="field" id="f-temp" hidden>
+        <label for="m-temp">Entité température intérieure (optionnel)</label>
+        <input id="m-temp" type="text" placeholder="auto — ex. sensor.temperature_salon" autocomplete="off">
+      </div>
+      <div class="field" id="f-sysmon" hidden>
+        <label>Capteurs système (CPU / RAM / Disque)</label>
+        <button class="btn-ghost" id="m-sysmon" type="button">Activer automatiquement dans Home Assistant</button>
+        <span class="hint">Crée l'intégration System Monitor et active les capteurs nécessaires. Jauges sous ~30 s.</span>
+      </div>
+      <div class="conn-status na" id="m-status" hidden><span class="dot"></span><span class="lbl"></span></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="m-cancel">Annuler</button>
+      <button class="btn-primary" id="m-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- modale confirmation suppression -->
+<div class="overlay" id="ov-del" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="d-title">Supprimer ?</h3>
+    <div class="modal-sub">L'application sera retirée du hub. Cette action est immédiate.</div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="d-cancel">Annuler</button>
+      <button class="btn-danger" id="d-confirm">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- page réglages -->
+<div class="spage" id="spage" hidden>
+  <div class="spage-head">
+    <button class="btn-ghost" id="sp-back">← Retour</button>
+    <h2>Réglages</h2>
+  </div>
+  <div class="spage-body">
+    <nav class="spage-nav" id="sp-nav">
+      <button data-p="users" class="on">👤 Utilisateurs</button>
+      <button data-p="security">🛡 Sécurité</button>
+      <button data-p="conn">⇄ Connexions</button>
+      <button data-p="about">ℹ À propos</button>
+    </nav>
+    <div class="spage-content">
+
+      <section class="spanel" id="sp-users">
+        <h4>Utilisateurs</h4>
+        <div class="users-list" id="spu-list"></div>
+        <div class="u-addrow">
+          <input id="spu-new" type="text" placeholder="Nom du nouvel utilisateur" autocomplete="off">
+          <button class="btn-ghost" id="spu-add" type="button">Ajouter</button>
+        </div>
+        <div id="spu-fiche" hidden style="display:flex;flex-direction:column;gap:22px">
+          <div class="scard">
+            <h4 id="spu-fiche-titre">Utilisateur</h4>
+            <div class="field">
+              <label for="spu-nom">Nom</label>
+              <input id="spu-nom" type="text" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="spu-pwd">Mot de passe</label>
+              <div class="u-addrow">
+                <span class="pwd-wrap">
+                  <input id="spu-pwd" type="password" placeholder="aucun — taper pour définir" autocomplete="new-password">
+                  <button class="pwd-eye" id="spu-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
+                </span>
+                <button class="btn-ghost" id="spu-pwd-clear" type="button">Retirer</button>
+              </div>
+              <div class="pwd-meter" id="spu-meter" hidden>
+                <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+                <div class="pwd-lab" id="spu-meter-lab"></div>
+              </div>
+              <span class="hint">Demandé sur l'écran de profils à l'ouverture (si le verrouillage est activé dans Sécurité).</span>
+            </div>
+            <div class="sfoot">
+              <button class="btn-ghost" id="spu-activate">Activer sur cet appareil</button>
+              <button class="btn-primary" id="spu-save">Enregistrer</button>
+            </div>
+          </div>
+          <div class="danger">
+            <div class="dz-txt">
+              <div class="dz-title">Supprimer définitivement l'utilisateur</div>
+              <div class="dz-sub">Supprime cet utilisateur et son mot de passe. Il ne sera pas averti.</div>
+            </div>
+            <button class="btn-danger" id="spu-del">Supprimer</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="spanel" id="sp-security" hidden>
+        <div class="scard">
+          <h4>Verrouillage</h4>
+          <label class="check"><input id="sp-lockreq" type="checkbox">Exiger un profil à l'ouverture du hub</label>
+          <span class="hint">Affiche l'écran de profils au chargement : chacun choisit son utilisateur et entre son mot de passe s'il en a un. Partagé entre toutes les copies.</span>
+          <div class="field">
+            <label for="sp-master">Mot de passe maître (secours)</label>
+            <div class="u-addrow">
+              <span class="pwd-wrap">
+                <input id="sp-master" type="password" placeholder="optionnel" autocomplete="new-password">
+                <button class="pwd-eye" id="sp-master-eye" type="button" title="Afficher le mot de passe">👁</button>
+              </span>
+              <button class="btn-ghost" id="sp-master-clear" type="button">Retirer</button>
+            </div>
+            <div class="pwd-meter" id="sp-master-meter" hidden>
+              <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+              <div class="pwd-lab" id="sp-master-meter-lab"></div>
+            </div>
+            <span class="hint">Accepté pour n'importe quel profil. Verrou d'écran familial, pas un coffre-fort : les données restent côté navigateur.</span>
+          </div>
+          <div class="sfoot"><button class="btn-primary" id="sp-sec-save">Enregistrer</button></div>
+        </div>
+      </section>
+
+      <section class="spanel" id="sp-conn" hidden>
+        <h4>Sources connectées</h4>
+        <span class="hint">Les identifiants se saisissent dans la fiche de chaque application (✎ sur sa tuile).</span>
+        <div id="conn-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </section>
+
+      <section class="spanel" id="sp-about" hidden>
+        <h4>À propos</h4>
+        <div class="about-txt">
+          <b>Atrium</b> <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.<br>
+          Application autonome : un conteneur sert l'interface, stocke la configuration et relaie les appels vers les API de vos services.<br><br>
+          <b>Intégrations</b> — chacune est optionnelle et se configure sur la fiche de son application :<br>
+          Plex (sessions en cours) · Unraid (GraphQL) · UniFi (Network API) · Home Assistant (domotique, lecteurs, mises à jour) · sonde HTTP pour l'état en ligne de n'importe quelle app.<br><br>
+          Configuration : <code>/config/atrium.json</code> dans le conteneur.
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- écran de verrouillage -->
+<div class="lock" id="lock" hidden>
+  <div class="lock-box">
+    <div class="lock-logo">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="atrium-gl" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5b8cff"/>
+            <stop offset="1" stop-color="#2dd4bf"/>
+          </linearGradient>
+        </defs>
+        <path d="M20 84V46a30 30 0 0 1 60 0v38" fill="none" stroke="url(#atrium-gl)" stroke-width="9" stroke-linecap="round"/>
+        <path d="M38 84V50a12 12 0 0 1 24 0v34" fill="none" stroke="url(#atrium-gl)" stroke-width="7" stroke-linecap="round" opacity=".45"/>
+      </svg>
+    </div>
+    <div class="lock-title" id="lock-title">Atrium</div>
+    <div class="lock-profiles" id="lock-profiles"></div>
+    <div id="lock-form" style="display:flex;flex-direction:column;gap:14px;width:100%;align-items:center" hidden>
+      <input id="lock-input" type="password" placeholder="Mot de passe" autocomplete="off">
+      <label class="lock-remember"><input id="lock-remember" type="checkbox">Ne plus demander sur cet appareil</label>
+      <button class="lock-btn" id="lock-go">Déverrouiller</button>
+    </div>
+  </div>
+</div>
+
+<!-- gabarits clonés par le script : aucune donnée injectée en HTML -->
+<template id="tpl-health-row">
+  <div class="health-row">
+    <div class="health-lab"><span class="hl-label"></span><b class="hl-val"></b></div>
+    <div class="bar"><i></i></div>
+  </div>
+</template>
+<template id="tpl-ha-row">
+  <div class="ha-row"><span class="hr-label"></span><b class="hr-val"></b></div>
+</template>
+<template id="tpl-nav-cat">
+  <button class="nav-link"><span class="ico"></span><span class="lab"></span><span class="count"></span></button>
+</template>
+<template id="tpl-app-card">
+  <a href="#" class="card app-card">
+    <div class="app-actions">
+      <button class="act-btn" data-act="edit" title="Modifier">✎</button>
+      <button class="act-btn danger" data-act="del" title="Supprimer">✕</button>
+    </div>
+    <div class="app-top">
+      <span class="logo-chip s40"><span class="cl"></span></span>
+      <span class="badge-maj" hidden>MAJ</span>
+    </div>
+    <div class="app-mid">
+      <div class="app-name"></div>
+      <div class="app-role"></div>
+    </div>
+    <div class="app-foot">
+      <span class="badge-on" hidden><span class="dot"></span>en ligne</span>
+      <span class="badge-off" hidden><span class="dot"></span>hors ligne</span>
+      <span class="badge-na" hidden><span class="dot"></span><span class="lbl">vérification…</span></span>
+    </div>
+  </a>
+</template>
+<template id="tpl-add-card">
+  <button class="add-card">
+    <div class="add-ring">+</div>
+    <div class="add-lab">Ajouter une application</div>
+  </button>
+</template>
+<template id="tpl-empty">
+  <div class="empty"></div>
+</template>
+
+<script>
+'use strict';
+
+/* ---------- apps (nom, rôle, catégorie, url, logo — le reste est détecté) ---------- */
+const SLUGS = { 'Paperless': 'paperless-ngx' };
+const icone = (nom) => 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/' +
+  (SLUGS[nom] || nom.toLowerCase().replace(/\s+/g, '-')) + '.svg';
+
+const A = (nom, role, cat) => ({ nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' });
+
+const DEFAUTS = [
+  A('Plex', 'Films & séries', 'Média'),
+  A('Home Assistant', 'Domotique', 'Maison'),
+  A('Nextcloud', 'Fichiers & photos', 'Fichiers & photos'),
+  A('Immich', 'Photos de famille', 'Fichiers & photos'),
+  A('Jellyfin', 'Média de secours', 'Média'),
+  A('Sonarr', 'Séries à venir', 'Média'),
+  A('Radarr', 'Films à venir', 'Média'),
+  A('Portainer', 'Conteneurs', 'Serveur'),
+  A('Pi-hole', 'Filtrage des pubs', 'Maison'),
+  A('Vaultwarden', 'Mots de passe', 'Serveur'),
+  A('Paperless', 'Documents', 'Fichiers & photos'),
+  A('Grafana', 'Graphiques', 'Serveur'),
+  A('Uptime Kuma', 'Surveillance', 'Serveur'),
+];
+
+const CATEGORIES = [
+  { nom: 'Média', icone: '▶' },
+  { nom: 'Maison', icone: '⌂' },
+  { nom: 'Fichiers & photos', icone: '❐' },
+  { nom: 'Serveur', icone: '⛁' },
+];
+
+const clone = (id) => document.getElementById(id).content.firstElementChild.cloneNode(true);
+const $ = (id) => document.getElementById(id);
+
+/* ---------- état ---------- */
+const store = {
+  get(k, d) { try { return localStorage.getItem('atrium.' + k) || d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('atrium.' + k, v); } catch (e) {} },
+};
+/* reprise des réglages du prototype « hubMaison » (une seule fois) */
+(function migrerPrefixe() {
+  try {
+    if (localStorage.getItem('atrium.migre')) return;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('hubMaison.')) {
+        const n = 'atrium.' + k.slice(10);
+        if (localStorage.getItem(n) === null) localStorage.setItem(n, localStorage.getItem(k));
+      }
+    }
+    localStorage.setItem('atrium.migre', '1');
+  } catch (e) {}
+})();
+function loadApps() {
+  try {
+    const raw = localStorage.getItem('atrium.apps');
+    if (!raw) return DEFAUTS.map((a) => ({ ...a }));
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw 0;
+    return parsed.map((a) => ({
+      nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
+      url: a.url || '', logoUrl: a.logoUrl || '',
+      token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
+    }));
+  } catch (e) { return DEFAUTS.map((a) => ({ ...a })); }
+}
+function saveApps() {
+  store.set('apps', JSON.stringify(apps));
+  pushCfg(); // réplique vers le relais → partagé entre toutes les copies du hub
+}
+
+let apps = loadApps();
+
+const normTxt = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/* type d'intégration d'une app, déduit de son nom */
+const kindOf = (nom) => {
+  const n = String(nom).toLowerCase();
+  if (n.includes('home assistant')) return 'ha';
+  if (n.includes('unraid')) return 'unraid';
+  if (n.includes('unifi')) return 'unifi';
+  if (n.includes('plex')) return 'plex';
+  return '';
+};
+const appByKind = (k) => apps.find((a) => kindOf(a.nom) === k);
+
+/* migration : anciennes valeurs des Réglages → fiches d'apps */
+(function migrate() {
+  let changed = false;
+  const take = (key) => { const v = store.get(key, '').trim(); try { localStorage.removeItem('atrium.' + key); } catch (e) {} return v; };
+  const ensure = (kind, nom, role) => {
+    let app = appByKind(kind);
+    if (!app) { app = { ...DEFAUTS[0], nom, role, cat: 'Serveur', url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' }; apps.push(app); changed = true; }
+    return app;
+  };
+  const haUrl = take('haUrl'), haTok = take('token'), haTemp = take('tempEntity');
+  const ha = appByKind('ha');
+  if (ha) {
+    if (haUrl && !ha.url) { ha.url = haUrl; changed = true; }
+    if (haTok && !ha.token) { ha.token = haTok; changed = true; }
+    if (haTemp && !ha.tempEntity) { ha.tempEntity = haTemp; changed = true; }
+  }
+  const urU = take('unraidUrl'), urK = take('unraidKey');
+  if (urU || urK) {
+    const app = ensure('unraid', 'Unraid', 'Stockage');
+    if (urU && !app.url) { app.url = urU; changed = true; }
+    if (urK && !app.apiKey) { app.apiKey = urK; changed = true; }
+  }
+  const unU = take('unifiUrl'), unK = take('unifiKey');
+  if (unU || unK) {
+    const app = ensure('unifi', 'UniFi', 'Réseau');
+    if (unU && !app.url) { app.url = unU; changed = true; }
+    if (unK && !app.apiKey) { app.apiKey = unK; changed = true; }
+  }
+  if (changed) saveApps();
+})();
+
+/* utilisateurs + verrouillage (partagés via le relais, sauf l'utilisateur actif = par appareil) */
+function loadUsers() {
+  try {
+    const p = JSON.parse(localStorage.getItem('atrium.users') || '[]');
+    return Array.isArray(p) ? p.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '' })) : [];
+  } catch (e) { return []; }
+}
+let USERS = loadUsers();
+let LOCK = store.get('lockHash', '');
+let LOCK_REQ = store.get('lockReq', '') === '1' || (!!LOCK && store.get('lockReq', '') === '');
+let ACTIVE = store.get('activeUser', '');
+
+function hashPwd(p) {
+  const s = p + '::atrium';
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  let h2 = 5381;
+  for (let i = s.length - 1; i >= 0; i--) { h2 = (Math.imul(h2, 33) ^ s.charCodeAt(i)) >>> 0; }
+  return h.toString(16) + '-' + h2.toString(16);
+}
+const AV_COLORS = ['#2f6fed', '#16a34a', '#f59e0b', '#e04f3d', '#8b5cf6', '#0ea5e9', '#db2777'];
+const avColor = (nom) => {
+  let h = 0;
+  for (let i = 0; i < nom.length; i++) h = (h * 31 + nom.charCodeAt(i)) >>> 0;
+  return AV_COLORS[h % AV_COLORS.length];
+};
+const initiales = (nom) => nom.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+let theme = store.get('theme', 'light');
+let view = store.get('view', 'grid');
+let activeCat = '';
+let query = '';
+let editIndex = null;
+let delIndex = null;
+
+/* état temps réel */
+let CONN = 'no-token';          // no-token | ok | error
+let CONN_ERR = '';
+let STATES = [];
+let MEDIA = null;               // lecture principale affichée en grand (objet normalisé)
+let MEDIAS = [];                // toutes les lectures actives, toutes sources confondues
+let SELECTED_KEY = '';          // lecture épinglée en grand par clic (session)
+let HA_MEDIAS = [];             // lectures vues par Home Assistant
+let PLEX_MEDIAS = [];           // sessions Plex en direct (relais)
+let N_MAJ = 0, N_LUM = 0, N_PORTES = 0;
+let VACUUM = null, TEMP_IN = null, WEATHER = null;
+let SRV = [], NET = [], BOOT = null;
+let majByName = {};
+let UPDATES = [];               // mises à jour détaillées (entités update.* de HA)
+let statusByName = {};          // true / false / undefined = en cours
+let DIRECT = { unraid: null, unifi: null, clients: null };   // connexions directes via relais
+
+/* ---------- logos (lettre en secours) ---------- */
+function mountLogo(chip, logoUrl) {
+  const old = chip.querySelector('img');
+  if (old) old.remove();
+  const cl = chip.querySelector('.cl');
+  if (cl) cl.style.opacity = '1';
+  if (!logoUrl) return;
+  const img = new Image();
+  img.alt = '';
+  img.onload = () => { if (cl) cl.style.opacity = '0'; };
+  img.onerror = () => img.remove();
+  img.src = logoUrl;
+  chip.appendChild(img);
+}
+const logoDe = (app) => app.logoUrl || icone(app.nom);
+const findApp = (nom) => apps.find((a) => a.nom.toLowerCase() === nom.toLowerCase());
+
+/* ---------- thème ---------- */
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', theme);
+  $('theme-ico').textContent = theme === 'dark' ? '☀' : '☾';
+  $('theme-lab').textContent = theme === 'dark' ? 'Clair' : 'Sombre';
+}
+$('theme-btn').addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  store.set('theme', theme);
+  applyTheme();
+});
+
+/* ---------- horloge + météo ---------- */
+const WX_FR = {
+  'clear-night': 'nuit claire', sunny: 'ensoleillé', cloudy: 'nuageux',
+  partlycloudy: 'éclaircies', rainy: 'pluie', pouring: 'forte pluie',
+  snowy: 'neige', 'snowy-rainy': 'neige fondue', fog: 'brouillard',
+  hail: 'grêle', lightning: 'orage', 'lightning-rainy': 'orage',
+  windy: 'venteux', 'windy-variant': 'venteux', exceptional: 'alerte',
+};
+function tickClock() {
+  const now = new Date();
+  $('clock-time').textContent = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  let sub = now.toLocaleDateString('fr-FR', { weekday: 'long' });
+  if (WEATHER) {
+    const t = (WEATHER.attributes || {}).temperature;
+    const lbl = WX_FR[WEATHER.state] || WEATHER.state;
+    if (t != null) sub += ' · ' + Math.round(t) + '° ' + lbl;
+  }
+  $('clock-sub').textContent = sub;
+}
+tickClock();
+setInterval(tickClock, 15000);
+
+/* ---------- sidebar ---------- */
+function renderSidebar() {
+  const nav = $('nav-cats');
+  nav.querySelectorAll('[data-cat]:not([data-cat=""])').forEach((el) => el.remove());
+  $('count-all').textContent = apps.length;
+  CATEGORIES.forEach((cat) => {
+    const b = clone('tpl-nav-cat');
+    b.dataset.cat = cat.nom;
+    if (activeCat === cat.nom) b.classList.add('active');
+    b.querySelector('.ico').textContent = cat.icone;
+    b.querySelector('.lab').textContent = cat.nom;
+    b.querySelector('.count').textContent = apps.filter((a) => a.cat === cat.nom).length;
+    nav.appendChild(b);
+  });
+  nav.querySelector('[data-cat=""]').classList.toggle('active', activeCat === '');
+}
+$('nav-cats').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-cat]');
+  if (!btn) return;
+  activeCat = btn.dataset.cat;
+  renderSidebar();
+  renderApps();
+});
+
+/* ---------- Home Assistant : lecture des états ---------- */
+/* Home Assistant est une intégration parmi d'autres : aucune URL par défaut,
+   tout vient de la fiche de l'app. */
+function haBase() {
+  const ha = appByKind('ha');
+  return ha ? ha.url.trim().replace(/\/+$/, '') : '';
+}
+const haToken = () => { const ha = appByKind('ha'); return ha ? ha.token.trim() : ''; };
+async function fetchStates() {
+  const token = haToken();
+  const base = haBase();
+  if (!token || !base) { CONN = 'no-token'; STATES = []; HA_MEDIAS = []; combineMedias(); renderLive(); return; }
+  try {
+    const r = await fetch(base + '/api/states', {
+      headers: { Authorization: 'Bearer ' + token },
+      cache: 'no-store',
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status + (r.status === 401 ? ' — token invalide' : ''));
+    STATES = await r.json();
+    CONN = 'ok';
+    CONN_ERR = '';
+    derive();
+  } catch (e) {
+    CONN = 'error';
+    CONN_ERR = String(e.message || e);
+  }
+  renderLive();
+}
+
+function derive() {
+  const S = STATES;
+  const attr = (s) => s.attributes || {};
+
+  const players = S.filter((s) => s.entity_id.startsWith('media_player.'));
+  HA_MEDIAS = players
+    .filter((s) => s.state === 'playing' || s.state === 'paused')
+    .map((s) => {
+      const a2 = attr(s);
+      const l2 = [];
+      if (a2.media_series_title) l2.push(a2.media_series_title);
+      else if (a2.media_artist) l2.push(a2.media_artist);
+      if (a2.friendly_name) l2.push(a2.friendly_name);
+      return {
+        titre: a2.media_title || '—',
+        ligne2: l2,
+        etat: s.state,
+        dur: a2.media_duration || 0,
+        pos: a2.media_position || 0,
+        posAt: a2.media_position_updated_at ? Date.parse(a2.media_position_updated_at) : Date.now(),
+        poster: a2.entity_picture ? (a2.entity_picture.startsWith('http') ? a2.entity_picture : haBase() + a2.entity_picture) : '',
+        appLabel: a2.app_name || a2.friendly_name || 'Lecture',
+        entId: s.entity_id.toLowerCase(),
+        type: (a2.media_content_type === 'music' || a2.media_artist) ? 'musique' : 'video',
+        key: normTxt((a2.media_title || '') + '|' + (a2.app_name || '') + '|' + (a2.media_artist || '')),
+        src: 'ha',
+      };
+    });
+  combineMedias();
+
+  const ups = S.filter((s) => s.entity_id.startsWith('update.') && s.state === 'on');
+  N_MAJ = ups.length;
+  majByName = {};
+  UPDATES = ups.map((u) => {
+    const a2 = attr(u);
+    const hayU = normTxt(u.entity_id + ' ' + (a2.friendly_name || '') + ' ' + (a2.title || ''));
+    const app = apps.find((ap) => {
+      const k = normTxt(ap.nom);
+      return hayU.includes(k) || hayU.includes(k.replace(/\s+/g, '_')) || hayU.includes(k.replace(/\s+/g, ''));
+    });
+    if (app) majByName[app.nom] = true;
+    return {
+      nom: a2.title || a2.friendly_name || u.entity_id,
+      de: a2.installed_version || '',
+      vers: a2.latest_version || '',
+      app: app ? app.nom : '',
+    };
+  });
+
+  N_LUM = S.filter((s) => s.entity_id.startsWith('light.') && s.state === 'on').length;
+  N_PORTES = S.filter((s) => s.entity_id.startsWith('binary_sensor.') &&
+    ['door', 'opening', 'garage_door'].includes(attr(s).device_class) && s.state === 'on').length;
+  VACUUM = S.find((s) => s.entity_id.startsWith('vacuum.')) || null;
+
+  const haApp = appByKind('ha');
+  const tset = haApp ? haApp.tempEntity.trim() : '';
+  let t = tset ? S.find((s) => s.entity_id === tset) : null;
+  if (!t) {
+    const temps = S.filter((s) => s.entity_id.startsWith('sensor.') &&
+      attr(s).device_class === 'temperature' && !isNaN(parseFloat(s.state)));
+    t = temps.find((s) => (s.entity_id + (attr(s).friendly_name || '')).toLowerCase().includes('salon')) || temps[0] || null;
+  }
+  TEMP_IN = t && !isNaN(parseFloat(t.state)) ? { v: Math.round(parseFloat(t.state)), nom: attr(t).friendly_name || 'intérieur' } : null;
+  WEATHER = S.find((s) => s.entity_id.startsWith('weather.') && s.state !== 'unavailable') || null;
+
+  /* santé multi-serveurs : Home Assistant + Unraid (auto-détection d'entités) */
+  const num = (s) => { const v = parseFloat(s.state); return isNaN(v) ? null : Math.round(v); };
+  SRV = [];
+  const sysRows = [];
+  const unitOf = (s) => String(attr(s).unit_of_measurement || '');
+  const norm = normTxt;
+  const hay = (s) => norm(s.entity_id + ' ' + (attr(s).friendly_name || ''));
+  // évite de voler Unraid/UniFi et les faux positifs (batteries, humidité, swap…)
+  const SYS_EXCL = /unraid|unifi|utilization|swap|batter|humidit/;
+  const pickSys = (subs, label) => {
+    const cand = S.filter((s) => s.entity_id.startsWith('sensor.') && !SYS_EXCL.test(hay(s)) &&
+      attr(s).device_class !== 'battery' && subs.some((k) => hay(s).includes(k)));
+    // capteur % direct uniquement (jamais un capteur en Mo/Go affiché brut)
+    const direct = cand.filter((s) => num(s) !== null && unitOf(s).includes('%'));
+    const e = direct.find((s) => s.entity_id.includes('percent')) || direct[0];
+    if (e) { sysRows.push({ label, v: num(e) }); return; }
+    // sinon, paire use/free (Mo, Go…) → % calculé
+    const use = cand.find((s) => num(s) !== null);
+    const free = use && S.find((s) => s.entity_id === use.entity_id.replace('_use', '_free') && num(s) !== null);
+    if (use && free) {
+      const u = parseFloat(use.state), f = parseFloat(free.state);
+      if (u + f > 0) sysRows.push({ label, v: Math.round((u / (u + f)) * 100) });
+    }
+  };
+  pickSys(['processor_use', 'cpu_usage', 'cpu_percent', 'processeur'], 'CPU');
+  pickSys(['memory_use', 'memory_usage', 'ram_use', 'memoire'], 'RAM');
+  pickSys(['disk_use', 'disk_usage', 'storage_use', 'disque', 'stockage'], 'Disque');
+  if (sysRows.length) SRV.push({ titre: 'Home Assistant', rows: sysRows, kind: 'ha', src: 'système' });
+
+  const un = S.filter((s) => s.entity_id.includes('unraid') && s.state !== 'unavailable');
+  if (un.length) {
+    const rows = [];
+    const isPct = (s) => String(attr(s).unit_of_measurement || '').includes('%');
+    const pickUn = (re, label) => {
+      const e = un.find((s) => re.test(s.entity_id) && num(s) !== null && isPct(s));
+      if (e) rows.push({ label, v: num(e) });
+    };
+    pickUn(/cpu/, 'CPU');
+    pickUn(/ram|memory/, 'RAM');
+    pickUn(/array|disk|storage/, 'Disque');
+    if (rows.length) SRV.push({ titre: 'Unraid', rows, kind: 'unraid', src: 'via HA' });
+  }
+
+  /* UniFi — perfs du routeur (intégration UniFi Network : *_cpu_utilization / *_memory_utilization) */
+  const cpuU = S.filter((s) => /_cpu_utilization$/.test(s.entity_id) &&
+    !s.entity_id.includes('unraid') && num(s) !== null &&
+    !['unavailable', 'unknown'].includes(s.state));
+  if (cpuU.length) {
+    const pref = /udm|dream|gateway|uxg|usg|router|routeur|passerelle/;
+    const cpu = cpuU.find((s) => pref.test((s.entity_id + (attr(s).friendly_name || '')).toLowerCase())) || cpuU[0];
+    const base = cpu.entity_id.replace(/_cpu_utilization$/, '');
+    const rows = [{ label: 'CPU', v: num(cpu) }];
+    const mem = S.find((s) => s.entity_id === base + '_memory_utilization' && num(s) !== null);
+    if (mem) rows.push({ label: 'RAM', v: num(mem) });
+    const tmp = S.find((s) => s.entity_id === base + '_temperature' && num(s) !== null);
+    if (tmp) rows.push({ label: 'Température', txt: num(tmp) + '°' });
+    SRV.push({ titre: 'UniFi', rows, kind: 'unifi', src: 'via HA' });
+  }
+
+  /* réseau (UniFi) : lignes texte, sans jauge */
+  NET = [];
+  const wan = S.find((s) => s.entity_id.startsWith('binary_sensor.') &&
+    /wan|internet/.test(s.entity_id) && !['unavailable', 'unknown'].includes(s.state));
+  if (wan) NET.push({ label: 'Internet', valeur: wan.state === 'on' ? 'en ligne' : 'coupé' });
+  const cli = S.find((s) => s.entity_id.startsWith('sensor.') &&
+    /unifi|network/.test(s.entity_id) && /client/.test(s.entity_id) && num(s) !== null);
+  if (cli) NET.push({ label: 'Appareils connectés', valeur: String(num(cli)) });
+
+  BOOT = S.find((s) => s.entity_id.includes('last_boot') && !isNaN(Date.parse(s.state))) || null;
+}
+
+/* ---------- rendu temps réel ---------- */
+const fmtDur = (sec) => {
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return h ? h + ' h ' + String(m).padStart(2, '0') : m + ' min';
+};
+/* fusion multi-sources : Plex direct + lecteurs HA, la plus « riche » en premier, dédoublonnée */
+function combineMedias() {
+  const score = (m) => (m.etat === 'playing' ? 10 : 0) + (m.dur ? 5 : 0) + (m.poster ? 1 : 0) + (m.src === 'direct' ? 2 : 0);
+  const all = [...PLEX_MEDIAS, ...HA_MEDIAS].sort((a, b) => score(b) - score(a));
+  const seen = new Set();
+  MEDIAS = all.filter((m) => {
+    if (!m.key || m.key === '||') return true;
+    if (seen.has(m.key)) return false;
+    seen.add(m.key);
+    return true;
+  });
+  /* lecture épinglée par clic : passe devant tant qu'elle existe */
+  if (SELECTED_KEY) {
+    const i = MEDIAS.findIndex((m) => m.key === SELECTED_KEY);
+    if (i > 0) MEDIAS.unshift(MEDIAS.splice(i, 1)[0]);
+    else if (i === -1) SELECTED_KEY = '';
+  }
+  MEDIA = MEDIAS[0] || null;
+}
+const matchApp = (m) => apps.find((a) => {
+  const k = normTxt(a.nom).split(' ')[0];
+  return k && (normTxt(m.appLabel).includes(k) || (m.entId || '').includes(k));
+});
+function tickProgress() {
+  if (!MEDIA || $('np-foot').hidden || !MEDIA.dur) return;
+  let p = MEDIA.pos + (MEDIA.etat === 'playing' ? (Date.now() - MEDIA.posAt) / 1000 : 0);
+  p = Math.min(p, MEDIA.dur);
+  $('np-bar').style.width = (p / MEDIA.dur * 100).toFixed(1) + '%';
+  $('np-t1').textContent = fmtDur(p);
+  $('np-t2').textContent = '– ' + fmtDur(MEDIA.dur - p);
+}
+setInterval(tickProgress, 1000);
+
+function renderMajPop() {
+  const pop = $('maj-pop');
+  if (!pop || pop.hidden) return;
+  pop.textContent = '';
+  const h = document.createElement('h4');
+  h.textContent = 'Mises à jour disponibles';
+  pop.appendChild(h);
+  UPDATES.forEach((u) => {
+    const row = document.createElement('div');
+    row.className = 'mu-row';
+    const name = document.createElement('span');
+    name.className = 'mu-name';
+    name.textContent = u.nom;
+    name.title = u.nom;
+    row.appendChild(name);
+    if (u.app) {
+      const t = document.createElement('span');
+      t.className = 'mu-app';
+      t.textContent = u.app;
+      row.appendChild(t);
+    }
+    if (u.vers) {
+      const v = document.createElement('span');
+      v.className = 'mu-ver';
+      v.textContent = (u.de ? u.de + ' → ' : '') + u.vers;
+      row.appendChild(v);
+    }
+    pop.appendChild(row);
+  });
+  if (!UPDATES.length) {
+    const e = document.createElement('div');
+    e.className = 'mu-row';
+    e.textContent = 'Tout est à jour.';
+    pop.appendChild(e);
+  }
+}
+$('pill-maj').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (e.target.closest('.maj-pop')) return;   // clic dans le panneau = ne pas refermer
+  const p = $('maj-pop');
+  p.hidden = !p.hidden;
+  renderMajPop();
+});
+document.addEventListener('click', () => { $('maj-pop').hidden = true; });
+
+function setCardLink(card, url) {
+  if (url) { card.href = url; card.target = '_blank'; card.rel = 'noopener'; }
+  else { card.href = '#'; card.removeAttribute('target'); card.removeAttribute('rel'); }
+}
+
+function renderLive() {
+  /* pastille mises à jour */
+  $('pill-maj').style.display = (CONN === 'ok' && N_MAJ) ? '' : 'none';
+  if (N_MAJ) $('maj-label').textContent = N_MAJ + ' mise' + (N_MAJ > 1 ? 's' : '') + ' à jour';
+  $('featured').classList.toggle('solo', !(CONN === 'ok'));
+
+  /* carte lecture */
+  const npCard = $('np-card');
+  const chipCl = $('np-chip').querySelector('.cl');
+  $('np-live').hidden = true;
+  $('np-foot').hidden = true;
+  $('np-setup').hidden = true;
+  $('np-more').textContent = '';
+  $('np-poster').querySelectorAll('img').forEach((i) => i.remove());
+
+  if (MEDIA) {
+    const matched = matchApp(MEDIA);
+    $('np-name').textContent = MEDIA.appLabel;
+    chipCl.textContent = (MEDIA.appLabel[0] || '▶').toUpperCase();
+    mountLogo($('np-chip'), matched ? logoDe(matched) : '');
+    const live = $('np-live');
+    live.hidden = false;
+    live.className = MEDIA.etat === 'playing' ? 'badge-live' : 'badge-na';
+    live.querySelector('.lbl').textContent = MEDIA.etat === 'playing' ? 'lecture en cours' : 'en pause';
+    $('np-title').textContent = MEDIA.titre;
+    $('np-sub').textContent = MEDIA.ligne2.join(' · ');
+    if (MEDIA.poster) {
+      const img = new Image();
+      img.alt = '';
+      img.onerror = () => img.remove();
+      img.src = MEDIA.poster;
+      $('np-poster').appendChild(img);
+    }
+    if (MEDIA.dur) { $('np-foot').hidden = false; tickProgress(); }
+    $('np-open').textContent = matched ? 'Ouvrir ' + matched.nom + ' ↗' : '';
+    $('np-open').parentElement.style.display = (matched && matched.url) ? '' : 'none';
+    setCardLink(npCard, matched ? matched.url : '');
+    /* autres lectures simultanées en lignes compactes */
+    MEDIAS.slice(1, 5).forEach((m) => {
+      const row = document.createElement('div');
+      row.className = 'np-mrow';
+      row.title = 'Afficher en grand';
+      /* miniature : pochette du flux > logo de l'app > glyphe par type */
+      const chip = document.createElement('span');
+      chip.className = 'pchip';
+      const cl2 = document.createElement('span');
+      cl2.className = 'cl';
+      cl2.textContent = m.type === 'musique' ? '♪' : '▶';
+      chip.appendChild(cl2);
+      const m2 = matchApp(m);
+      if (m.poster) {
+        const im = new Image();
+        im.className = 'cover';
+        im.alt = '';
+        im.onerror = () => im.remove();
+        im.src = m.poster;
+        chip.appendChild(im);
+      } else if (m2) {
+        const im = new Image();
+        im.className = 'logo';
+        im.alt = '';
+        im.onerror = () => im.remove();
+        im.src = logoDe(m2);
+        chip.appendChild(im);
+      }
+      const t = document.createElement('span');
+      t.className = 'mr-t';
+      t.textContent = m.titre;
+      t.title = m.titre;
+      const d = document.createElement('span');
+      d.className = 'mr-d';
+      d.textContent = m.ligne2.join(' · ');
+      const st2 = document.createElement('span');
+      st2.className = 'mr-s' + (m.etat === 'paused' ? ' pause' : '');
+      st2.textContent = m.etat === 'paused' ? 'en pause' : 'lecture';
+      row.appendChild(chip);
+      row.appendChild(t);
+      row.appendChild(d);
+      row.appendChild(st2);
+      row.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        SELECTED_KEY = m.key;
+        combineMedias();
+        renderLive();
+      });
+      $('np-more').appendChild(row);
+    });
+  } else {
+    /* aucune lecture : état neutre, indépendant de toute intégration précise */
+    const sourcesMedia = ['plex', 'jellyfin', 'ha'].filter((k) => {
+      const a = appByKind(k);
+      return a && (a.apiKey || a.token);
+    });
+    $('np-name').textContent = 'Lecture';
+    chipCl.textContent = '▶';
+    mountLogo($('np-chip'), '');
+    if (sourcesMedia.length) {
+      $('np-title').textContent = 'Rien en cours';
+      $('np-sub').textContent = 'Aucune de vos sources média ne joue quelque chose.';
+      setCardLink(npCard, '');
+    } else {
+      $('np-title').textContent = 'Aucune source média';
+      $('np-sub').textContent = 'Connectez Plex, Jellyfin ou Home Assistant pour suivre les lectures en cours.';
+      $('np-setup').hidden = false;
+      setCardLink(npCard, '');
+    }
+  }
+
+  /* carte maison : widget domotique, masqué si aucune source domotique connectée */
+  const home = (CONN === 'ok') ? (findApp('Home Assistant') || apps.find((a) => a.cat === 'Maison')) : null;
+  const haCard = $('haw-card');
+  if (home) {
+    haCard.style.display = '';
+    $('haw-name').textContent = home.nom;
+    $('haw-chip').querySelector('.cl').textContent = (home.nom[0] || 'H').toUpperCase();
+    mountLogo($('haw-chip'), logoDe(home));
+    setCardLink(haCard, home.url);
+  } else haCard.style.display = 'none';
+
+  $('ha-temp').hidden = !(CONN === 'ok' && TEMP_IN);
+  if (CONN === 'ok' && TEMP_IN) {
+    $('ha-deg').textContent = TEMP_IN.v + '°';
+    const wt = WEATHER && (WEATHER.attributes || {}).temperature;
+    $('ha-loc').textContent = '';
+    const l1 = document.createElement('div');
+    l1.textContent = TEMP_IN.nom.toLowerCase();
+    $('ha-loc').appendChild(l1);
+    if (wt != null) {
+      const l2 = document.createElement('div');
+      l2.textContent = 'dehors ' + Math.round(wt) + '°';
+      $('ha-loc').appendChild(l2);
+    }
+  }
+  const rows = $('ha-rows');
+  rows.textContent = '';
+  if (CONN === 'ok') {
+    const addRow = (label, val) => {
+      const row = clone('tpl-ha-row');
+      row.querySelector('.hr-label').textContent = label;
+      row.querySelector('.hr-val').textContent = val;
+      rows.appendChild(row);
+    };
+    addRow('Lumières allumées', String(N_LUM));
+    addRow('Portes ouvertes', String(N_PORTES));
+    if (VACUUM && !['unavailable', 'unknown'].includes(VACUUM.state)) {
+      const VAC_FR = { docked: 'sur la base', charging: 'en charge', cleaning: 'nettoyage', returning: 'retour base', idle: 'inactif', paused: 'pause', error: 'erreur' };
+      addRow('Aspirateur', VAC_FR[VACUUM.state] || VACUUM.state);
+    }
+  }
+  $('featured').classList.toggle('solo', !home);
+
+  /* santé serveurs + réseau — HA + connexions directes (le direct prime) */
+  const baseSrv = CONN === 'ok' ? SRV : [];
+  const baseNet = CONN === 'ok' ? NET : [];
+  const dSrv = baseSrv.filter((g) => !((g.titre === 'Unraid' && DIRECT.unraid) || (g.titre === 'UniFi' && DIRECT.unifi)));
+  if (DIRECT.unraid) dSrv.push({ titre: 'Unraid', rows: DIRECT.unraid, kind: 'unraid', src: 'direct' });
+  if (DIRECT.unifi) dSrv.push({ titre: 'UniFi', rows: DIRECT.unifi, kind: 'unifi', src: 'direct' });
+  let dNet = baseNet.slice();
+  if (DIRECT.clients != null) {
+    dNet = dNet.filter((r) => r.label !== 'Appareils connectés');
+    dNet.push({ label: 'Appareils connectés', valeur: String(DIRECT.clients) });
+  }
+  const health = $('health');
+  if (dSrv.length || dNet.length) {
+    health.style.display = '';
+    const hr = $('health-rows');
+    hr.textContent = '';
+    const srvBox = (titre, kind, src) => {
+      const box = document.createElement('div');
+      box.className = 'srv-box';
+      const head = document.createElement('div');
+      head.className = 'srv-head';
+      const chip = document.createElement('span');
+      chip.className = 'logo-chip s18';
+      const cl = document.createElement('span');
+      cl.className = 'cl';
+      cl.textContent = (titre[0] || '?').toUpperCase();
+      chip.appendChild(cl);
+      const app = kind ? appByKind(kind) : null;
+      if (app) mountLogo(chip, logoDe(app));
+      const name = document.createElement('span');
+      name.className = 'srv-name';
+      name.textContent = titre;
+      head.appendChild(chip);
+      head.appendChild(name);
+      if (src) {
+        const tag = document.createElement('span');
+        tag.className = 'srv-src';
+        tag.textContent = src;
+        head.appendChild(tag);
+      }
+      box.appendChild(head);
+      hr.appendChild(box);
+      return box;
+    };
+    dSrv.forEach((g) => {
+      const box = srvBox(g.titre, g.kind, g.src);
+      g.rows.forEach((r) => {
+        const row = clone('tpl-health-row');
+        row.querySelector('.hl-label').textContent = r.label;
+        if (r.v != null) {
+          row.querySelector('.hl-val').textContent = r.v + ' %';
+          row.querySelector('.bar > i').style.width = Math.min(100, r.v) + '%';
+        } else {
+          row.querySelector('.hl-val').textContent = r.txt;
+          row.querySelector('.bar').remove();
+        }
+        box.appendChild(row);
+      });
+    });
+    if (dNet.length) {
+      const box = srvBox('Réseau', 'unifi', DIRECT.clients != null ? 'direct' : 'via HA');
+      dNet.forEach((r) => {
+        const row = clone('tpl-health-row');
+        row.querySelector('.hl-label').textContent = r.label;
+        row.querySelector('.hl-val').textContent = r.valeur;
+        row.querySelector('.bar').remove();
+        box.appendChild(row);
+      });
+    }
+    if (BOOT && CONN === 'ok') {
+      const days = Math.floor((Date.now() - Date.parse(BOOT.state)) / 86400000);
+      $('health-foot').style.display = '';
+      $('health-foot').textContent = 'Allumé depuis ' + (days < 1 ? "moins d'un jour" : days + ' jour' + (days > 1 ? 's' : ''));
+    } else $('health-foot').style.display = 'none';
+  } else health.style.display = 'none';
+
+  tickClock();
+  renderSetStatus();
+  renderModalStatus();
+  renderMajPop();
+}
+
+/* ---------- sonde en ligne / hors ligne ---------- */
+async function probe(url) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 4000);
+  try {
+    await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: ctl.signal });
+    return true;
+  } catch (e) {
+    return false;
+  } finally { clearTimeout(t); }
+}
+async function probeAll() {
+  await Promise.all(apps.map(async (a) => {
+    if (!a.url) { statusByName[a.nom] = null; return; }
+    statusByName[a.nom] = await probe(a.url);
+  }));
+  renderApps();
+}
+
+/* ---------- connexions directes Unraid / UniFi (via relais /px du lanceur PC) ---------- */
+/* Le relais peut être : la même origine (page servie par lancer.bat) ou localhost:8420
+   (page servie par HA mais navigateur sur le PC où tourne lancer.bat). */
+/* Le backend d'Atrium sert cette page : il est sur la même origine.
+   Les autres bases ne servent qu'au cas où la page est ouverte depuis ailleurs
+   (fichier local, autre serveur) alors que le conteneur tourne à côté. */
+let RELAY_BASE = null;
+async function relayFetch(path, opts) {
+  const bases = RELAY_BASE !== null ? [RELAY_BASE] : ['', 'http://localhost:8420', 'http://127.0.0.1:8420'];
+  for (const b of bases) {
+    try {
+      const r = await fetch(b + path, opts);
+      if (r.status === 404 || r.status === 405 || r.status === 501) continue;
+      RELAY_BASE = b;
+      return r;
+    } catch (e) { /* base suivante */ }
+  }
+  RELAY_BASE = null;
+  throw new Error('serveur Atrium injoignable');
+}
+const pxFetch = (target, opts) => relayFetch('/px?u=' + encodeURIComponent(target), opts);
+
+/* ---------- config partagée via le relais (hub-config.json) ---------- */
+async function pushCfg() {
+  try {
+    await relayFetch('/cfg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apps, users: USERS, lockHash: LOCK, lockReq: LOCK_REQ }),
+    });
+  } catch (e) { /* relais absent : la config reste locale */ }
+}
+function saveUsersLocal() {
+  store.set('users', JSON.stringify(USERS));
+  store.set('lockHash', LOCK);
+  store.set('lockReq', LOCK_REQ ? '1' : '0');
+}
+async function pullCfg() {
+  try {
+    const r = await relayFetch('/cfg', { cache: 'no-store' });
+    const j = await r.json();
+    let secChanged = false;
+    if (j && Array.isArray(j.users)) {
+      const inUsers = JSON.stringify(j.users);
+      if (inUsers !== JSON.stringify(USERS)) {
+        USERS = j.users.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '' }));
+        secChanged = true;
+        renderAvatar();
+        renderUsers();
+      }
+    }
+    if (typeof j.lockHash === 'string' && j.lockHash !== LOCK) { LOCK = j.lockHash; secChanged = true; }
+    if (typeof j.lockReq === 'boolean' && j.lockReq !== LOCK_REQ) { LOCK_REQ = j.lockReq; secChanged = true; }
+    if (secChanged) {
+      saveUsersLocal();
+      applyLock();
+    }
+    const hasSecrets = (list) => list.some((a) => a.token || a.apiKey);
+    if (j && Array.isArray(j.apps) && j.apps.length) {
+      // ne jamais écraser une config à clés par une config sans clés
+      if (!hasSecrets(j.apps) && hasSecrets(apps)) { pushCfg(); return; }
+      const incoming = JSON.stringify(j.apps);
+      if (incoming !== JSON.stringify(apps)) {
+        apps = j.apps.map((a) => ({
+          nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
+          url: a.url || '', logoUrl: a.logoUrl || '',
+          token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
+        }));
+        store.set('apps', JSON.stringify(apps));
+        refresh();
+        fetchStates();
+        probeAll();
+        pollDirect();
+      }
+    } else {
+      pushCfg(); // relais vide → on l'amorce avec la config locale
+    }
+  } catch (e) { /* relais absent */ }
+}
+
+async function pollDirect() {
+  DIRECT.err = DIRECT.err || {};
+
+  /* Plex — sessions en cours en direct (fiche de l'app Plex, token X-Plex) */
+  const pxApp = appByKind('plex');
+  const pUrl = pxApp ? pxApp.url.trim().replace(/\/+$/, '') : '';
+  const pKey = pxApp ? pxApp.apiKey.trim() : '';
+  DIRECT.plexOk = false;
+  if (pUrl && pKey) {
+    try {
+      const r = await pxFetch(pUrl + '/status/sessions?X-Plex-Token=' + encodeURIComponent(pKey), {
+        headers: { Accept: 'application/json' },
+      });
+      if (r.status === 401 || r.status === 403) throw new Error('token Plex refusé (HTTP ' + r.status + ')');
+      const j = await r.json();
+      const md = (j.MediaContainer && j.MediaContainer.Metadata) || [];
+      PLEX_MEDIAS = md.map((m) => {
+        const pl = m.Player || {};
+        const ep = m.type === 'episode' && m.parentIndex != null ? 'S' + m.parentIndex + '·E' + m.index : '';
+        const l2 = [];
+        if (m.grandparentTitle) l2.push(m.grandparentTitle + (ep ? ' ' + ep : ''));
+        if (pl.title) l2.push(pl.title);
+        if (m.User && m.User.title) l2.push(m.User.title);
+        const thumb = m.type === 'episode' ? (m.grandparentThumb || m.thumb) : (m.thumb || m.grandparentThumb);
+        return {
+          titre: m.title || '—',
+          ligne2: l2,
+          etat: pl.state === 'paused' ? 'paused' : 'playing',
+          dur: (m.duration || 0) / 1000,
+          pos: (m.viewOffset || 0) / 1000,
+          posAt: Date.now(),
+          poster: thumb ? (RELAY_BASE || '') + '/px?u=' + encodeURIComponent(pUrl + thumb + '?X-Plex-Token=' + pKey) : '',
+          appLabel: 'Plex',
+          entId: '',
+          type: m.type === 'track' ? 'musique' : 'video',
+          key: normTxt((m.title || '') + '|plex|'),
+          src: 'direct',
+        };
+      });
+      DIRECT.plexOk = true;
+      DIRECT.err.plex = '';
+    } catch (e) {
+      PLEX_MEDIAS = [];
+      DIRECT.err.plex = String(e.message || e);
+      console.warn('Plex direct:', e);
+    }
+  } else { PLEX_MEDIAS = []; DIRECT.err.plex = (pxApp ? 'URL ou token manquant' : ''); }
+  combineMedias();
+
+  /* Unraid — GraphQL avec clé API (fiche de l'app Unraid) */
+  const urApp = appByKind('unraid');
+  const uUrl = urApp ? urApp.url.trim().replace(/\/+$/, '') : '';
+  const uKey = urApp ? urApp.apiKey.trim() : '';
+  if (uUrl && uKey) {
+    try {
+      const r = await pxFetch(uUrl + '/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': uKey },
+        body: JSON.stringify({ query: '{ metrics { cpu { percentTotal } memory { percentTotal } } array { capacity { kilobytes { used total } } } }' }),
+      });
+      if (r.status === 401 || r.status === 403) throw new Error('clé API refusée (HTTP ' + r.status + ')');
+      const j = await r.json();
+      const d = j.data || {};
+      const rows = [];
+      const cpu = d.metrics && d.metrics.cpu && d.metrics.cpu.percentTotal;
+      if (cpu != null) rows.push({ label: 'CPU', v: Math.round(cpu) });
+      const mem = d.metrics && d.metrics.memory && d.metrics.memory.percentTotal;
+      if (mem != null) rows.push({ label: 'RAM', v: Math.round(mem) });
+      const cap = d.array && d.array.capacity && d.array.capacity.kilobytes;
+      if (cap && Number(cap.total) > 0) rows.push({ label: 'Disque', v: Math.round(Number(cap.used) / Number(cap.total) * 100) });
+      DIRECT.unraid = rows.length ? rows : null;
+      DIRECT.err.unraid = rows.length ? '' :
+        (j.errors ? 'API : ' + JSON.stringify(j.errors).slice(0, 160) : 'réponse vide');
+      if (j.errors) console.warn('Unraid API:', JSON.stringify(j.errors));
+    } catch (e) {
+      DIRECT.unraid = null;
+      DIRECT.err.unraid = String(e.message || e);
+      console.warn('Unraid direct:', e);
+    }
+  } else { DIRECT.unraid = null; DIRECT.err.unraid = (urApp ? 'URL ou clé API manquante' : ''); }
+
+  /* UniFi — Network Integration API avec clé API (fiche de l'app UniFi) */
+  const unApp = appByKind('unifi');
+  const nUrl = unApp ? unApp.url.trim().replace(/\/+$/, '') : '';
+  const nKey = unApp ? unApp.apiKey.trim() : '';
+  if (nUrl && nKey) {
+    try {
+      const H = { 'X-API-KEY': nKey, Accept: 'application/json' };
+      // UniFi OS (UDM/UXG…) = /proxy/network/integration/v1 ; Network auto-hébergé = /integration/v1
+      let api = null, sites = null, lastCode = 0;
+      for (const root of [nUrl + '/proxy/network/integration/v1', nUrl + '/integration/v1']) {
+        const rs = await pxFetch(root + '/sites', { headers: H });
+        lastCode = rs.status;
+        if (rs.status === 200) {
+          api = root;
+          sites = await rs.json();
+          break;
+        }
+      }
+      if (!api) {
+        if (lastCode === 401 || lastCode === 403) {
+          throw new Error('clé API refusée (HTTP ' + lastCode + ') — crée la clé sur le contrôleur LOCAL : Admins & Users → ton admin → Create API Key (pas une clé unifi.ui.com)');
+        }
+        throw new Error('API injoignable (HTTP ' + lastCode + ') — vérifie l\'URL (ex. https://192.168.0.1) et que Network est en 9.0+');
+      }
+      const site = (sites.data || [])[0];
+      if (!site) throw new Error('aucun site renvoyé (contrôleur Network 9.0+ requis)');
+      const devs = await (await pxFetch(api + '/sites/' + site.id + '/devices?limit=200', { headers: H })).json();
+      const list = devs.data || [];
+      const gw = list.find((d) => /udm|uxg|ucg|usg|gateway|dream/i.test((d.model || '') + ' ' + (d.name || ''))) || list[0];
+      const rows = [];
+      if (gw) {
+        const st = await (await pxFetch(api + '/sites/' + site.id + '/devices/' + gw.id + '/statistics/latest', { headers: H })).json();
+        if (st.cpuUtilizationPct != null) rows.push({ label: 'CPU', v: Math.round(st.cpuUtilizationPct) });
+        if (st.memoryUtilizationPct != null) rows.push({ label: 'RAM', v: Math.round(st.memoryUtilizationPct) });
+      }
+      DIRECT.unifi = rows.length ? rows : null;
+      DIRECT.err.unifi = rows.length ? '' : 'aucun équipement avec stats';
+      const cli = await (await pxFetch(api + '/sites/' + site.id + '/clients?limit=1', { headers: H })).json();
+      DIRECT.clients = cli.totalCount != null ? cli.totalCount : null;
+    } catch (e) {
+      DIRECT.unifi = null;
+      DIRECT.clients = null;
+      DIRECT.err.unifi = String(e.message || e);
+      console.warn('UniFi direct:', e);
+    }
+  } else { DIRECT.unifi = null; DIRECT.clients = null; DIRECT.err.unifi = (unApp ? 'URL ou clé API manquante' : ''); }
+
+  renderLive();
+  renderModalStatus();
+}
+
+/* ---------- grille d'apps ---------- */
+function appCard(app, index) {
+  const a = clone('tpl-app-card');
+  a.querySelector('.cl').textContent = (app.nom || '?')[0].toUpperCase();
+  a.querySelector('.app-name').textContent = app.nom;
+  a.querySelector('.app-role').textContent = app.role;
+  if (majByName[app.nom]) a.querySelector('.badge-maj').hidden = false;
+  const st = statusByName[app.nom];
+  if (st === true) a.querySelector('.badge-on').hidden = false;
+  else if (st === false) a.querySelector('.badge-off').hidden = false;
+  else {
+    const na = a.querySelector('.badge-na');
+    na.hidden = false;
+    na.querySelector('.lbl').textContent = app.url ? 'vérification…' : "pas d'URL";
+  }
+  mountLogo(a.querySelector('.logo-chip'), logoDe(app));
+  if (app.url) { a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; }
+  a.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (act.dataset.act === 'edit') openAppModal(index);
+      else openDelModal(index);
+      return;
+    }
+    if (!app.url) e.preventDefault();
+  });
+  return a;
+}
+
+function renderApps() {
+  const grid = $('apps-grid');
+  grid.className = 'grid' + (view === 'list' ? ' list' : '');
+  grid.textContent = '';
+  const q = query.trim().toLowerCase();
+  const shown = [];
+  apps.forEach((a, i) => {
+    if ((!activeCat || a.cat === activeCat) &&
+        (!q || a.nom.toLowerCase().includes(q) || a.role.toLowerCase().includes(q))) {
+      shown.push([a, i]);
+    }
+  });
+  $('apps-count').textContent = shown.length === apps.length
+    ? apps.length : shown.length + ' / ' + apps.length;
+  shown.forEach(([app, i]) => grid.appendChild(appCard(app, i)));
+  if (!shown.length) {
+    const d = clone('tpl-empty');
+    d.textContent = q
+      ? 'Aucune application ne correspond à « ' + query.trim() + ' »'
+      : 'Aucune application dans cette catégorie.';
+    grid.appendChild(d);
+  }
+  const add = clone('tpl-add-card');
+  add.addEventListener('click', () => openAppModal(null));
+  grid.appendChild(add);
+}
+
+function refresh() {
+  renderSidebar();
+  renderLive();
+  renderApps();
+}
+
+/* ---------- modale ajouter / modifier ---------- */
+function syncChip() {
+  const nom = $('m-nom').value.trim();
+  $('m-cl').textContent = nom ? nom[0].toUpperCase() : '?';
+  mountLogo($('m-chip'), $('m-logo').value.trim() || (nom ? icone(nom) : ''));
+}
+/* champs de connexion selon le type d'app (déduit du nom) */
+const KIND_UI = {
+  ha: {
+    key: 'Token Home Assistant (longue durée)',
+    hint: 'À créer dans HA : Profil → Sécurité → Jetons d\'accès longue durée. Stocké uniquement dans ce navigateur.',
+  },
+  unraid: {
+    key: 'Clé API Unraid',
+    hint: 'Unraid : Réglages → Management Access → API. L\'appel passe par le serveur Atrium.',
+  },
+  unifi: {
+    key: 'Clé API UniFi',
+    hint: 'Contrôleur → Admins & Users → votre admin → Create API Key. L\'appel passe par le serveur Atrium.',
+  },
+  plex: {
+    key: 'Token Plex (X-Plex-Token)',
+    hint: 'Plex Web → lire un média → ⋮ → Obtenir des informations → Afficher XML → copier la valeur X-Plex-Token dans l\'URL. Affiche les lectures en cours en direct, sans Home Assistant.',
+  },
+};
+function syncKind() {
+  const kind = kindOf($('m-nom').value.trim());
+  const ui = KIND_UI[kind];
+  $('f-key').hidden = !ui;
+  if (ui) {
+    $('m-key-label').textContent = ui.key;
+    $('m-key-hint').textContent = ui.hint;
+  }
+  $('f-temp').hidden = kind !== 'ha';
+  $('f-sysmon').hidden = kind !== 'ha';
+  $('m-status').hidden = !ui;
+  renderModalStatus();
+}
+function openAppModal(index) {
+  editIndex = index;
+  const app = index === null
+    ? { nom: '', role: '', cat: activeCat || 'Média', url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' }
+    : apps[index];
+  $('m-title').textContent = index === null ? 'Ajouter une application' : 'Modifier « ' + app.nom + ' »';
+  $('m-nom').value = app.nom;
+  $('m-role').value = app.role;
+  $('m-cat').value = app.cat;
+  $('m-url').value = app.url;
+  $('m-logo').value = app.logoUrl;
+  $('m-key').value = kindOf(app.nom) === 'ha' ? (app.token || '') : (app.apiKey || '');
+  $('m-temp').value = app.tempEntity || '';
+  $('m-nom').classList.remove('err');
+  syncChip();
+  syncKind();
+  $('ov-app').hidden = false;
+  $('m-nom').focus();
+}
+function closeAppModal() { $('ov-app').hidden = true; editIndex = null; }
+$('m-nom').addEventListener('input', () => { $('m-nom').classList.remove('err'); syncChip(); syncKind(); });
+$('m-logo').addEventListener('input', syncChip);
+$('m-cancel').addEventListener('click', closeAppModal);
+$('m-save').addEventListener('click', () => {
+  const nom = $('m-nom').value.trim();
+  if (!nom) { $('m-nom').classList.add('err'); $('m-nom').focus(); return; }
+  const prev = editIndex !== null ? apps[editIndex] : {};
+  const app = {
+    nom,
+    role: $('m-role').value.trim(),
+    cat: $('m-cat').value,
+    url: $('m-url').value.trim(),
+    logoUrl: $('m-logo').value.trim(),
+    token: prev.token || '',
+    apiKey: prev.apiKey || '',
+    tempEntity: prev.tempEntity || '',
+  };
+  const kind = kindOf(nom);
+  const key = $('m-key').value.trim();
+  if (kind === 'ha') {
+    app.token = key;
+    app.tempEntity = $('m-temp').value.trim();
+  } else if (kind) {
+    app.apiKey = key;
+  }
+  if (editIndex === null) apps.push(app);
+  else apps[editIndex] = app;
+  saveApps();
+  closeAppModal();
+  refresh();
+  probeAll();
+  fetchStates();
+  pollDirect();
+});
+$('side-add').addEventListener('click', () => openAppModal(null));
+
+/* ---------- modale suppression ---------- */
+function openDelModal(index) {
+  delIndex = index;
+  $('d-title').textContent = 'Supprimer « ' + apps[index].nom + ' » ?';
+  $('ov-del').hidden = false;
+  $('d-confirm').focus();
+}
+function closeDelModal() { $('ov-del').hidden = true; delIndex = null; }
+$('d-cancel').addEventListener('click', closeDelModal);
+$('d-confirm').addEventListener('click', () => {
+  if (delIndex !== null) {
+    apps.splice(delIndex, 1);
+    saveApps();
+  }
+  closeDelModal();
+  refresh();
+});
+
+/* ---------- modale réglages ---------- */
+function haStatusInto(el) {
+  if (CONN === 'ok') {
+    el.className = 'conn-status ok';
+    el.querySelector('.lbl').textContent = 'Home Assistant connecté — ' + STATES.length + ' entités';
+  } else if (CONN === 'error') {
+    el.className = 'conn-status bad';
+    el.querySelector('.lbl').textContent = 'Erreur HA : ' + CONN_ERR;
+  } else {
+    el.className = 'conn-status na';
+    el.querySelector('.lbl').textContent = 'HA non connecté — token manquant';
+  }
+}
+function renderSetStatus() { renderConnPanel(); }
+function renderModalStatus() {
+  const el = $('m-status');
+  if (!el || el.hidden || $('ov-app').hidden) return;
+  const kind = kindOf($('m-nom').value.trim());
+  if (kind === 'ha') { haStatusInto(el); return; }
+  if (kind !== 'unraid' && kind !== 'unifi' && kind !== 'plex') return;
+  const nomK = kind === 'unraid' ? 'Unraid' : (kind === 'unifi' ? 'UniFi' : 'Plex');
+  const data = kind === 'unraid' ? DIRECT.unraid : (kind === 'unifi' ? DIRECT.unifi : (DIRECT.plexOk ? PLEX_MEDIAS : null));
+  const err = (DIRECT.err || {})[kind] || '';
+  if (data) {
+    el.className = 'conn-status ok';
+    el.querySelector('.lbl').textContent = nomK + ' connecté';
+  } else if (err) {
+    el.className = 'conn-status bad';
+    el.querySelector('.lbl').textContent = 'Erreur : ' + err;
+  } else {
+    el.className = 'conn-status na';
+    el.querySelector('.lbl').textContent = 'Non connecté — enregistre puis patiente quelques secondes';
+  }
+}
+/* ---------- page réglages ---------- */
+function openSettings(section) {
+  $('spage').hidden = false;
+  spNav(typeof section === 'string' ? section : 'users');
+}
+function closeSettings() { $('spage').hidden = true; }
+function spNav(p) {
+  document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
+  ['users', 'security', 'conn', 'about'].forEach((k) => { $('sp-' + k).hidden = k !== p; });
+  if (p === 'users') {
+    renderUsersPage();
+  } else if (p === 'security') {
+    $('sp-lockreq').checked = LOCK_REQ;
+    $('sp-master').value = '';
+    $('sp-master').type = 'password';
+    $('sp-master-eye').textContent = '👁';
+    $('sp-master').placeholder = LOCK ? 'défini — taper pour le changer' : 'optionnel';
+    syncMasterPwd();
+  } else if (p === 'conn') {
+    renderConnPanel();
+  }
+}
+$('sp-nav').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-p]');
+  if (b) spNav(b.dataset.p);
+});
+$('sp-back').addEventListener('click', closeSettings);
+$('side-settings').addEventListener('click', () => openSettings('users'));
+
+/* carte média sans source → page des connexions */
+$('np-config').addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  openSettings('conn');
+});
+
+/* connexions : état des sources */
+function renderConnPanel() {
+  const list = $('conn-list');
+  if (!list || $('spage').hidden || $('sp-conn').hidden) return;
+  list.textContent = '';
+  const rows = [
+    { nom: 'Home Assistant', kind: 'ha', ok: CONN === 'ok', st: CONN === 'ok' ? STATES.length + ' entités' : (CONN === 'error' ? CONN_ERR : 'token manquant') },
+    { nom: 'Plex', kind: 'plex', ok: !!DIRECT.plexOk, st: DIRECT.plexOk ? PLEX_MEDIAS.length + ' session(s) en cours' : ((DIRECT.err || {}).plex || 'non configuré') },
+    { nom: 'Unraid', kind: 'unraid', ok: !!DIRECT.unraid, st: DIRECT.unraid ? 'connecté (direct)' : ((DIRECT.err || {}).unraid || 'non configuré') },
+    { nom: 'UniFi', kind: 'unifi', ok: !!DIRECT.unifi, st: DIRECT.unifi ? 'connecté (direct)' : ((DIRECT.err || {}).unifi || 'non configuré') },
+  ];
+  rows.forEach((r) => {
+    const row = document.createElement('div');
+    row.className = 'conn-row';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = r.ok ? 'var(--ok)' : 'var(--muted-2)';
+    const chip = document.createElement('span');
+    chip.className = 'logo-chip s18';
+    const cl = document.createElement('span');
+    cl.className = 'cl';
+    cl.textContent = r.nom[0];
+    chip.appendChild(cl);
+    const app = appByKind(r.kind);
+    if (app) mountLogo(chip, logoDe(app));
+    const nom = document.createElement('span');
+    nom.className = 'cr-nom';
+    nom.textContent = r.nom;
+    const st = document.createElement('span');
+    st.className = 'cr-st';
+    st.textContent = r.st;
+    st.title = r.st;
+    const btn = document.createElement('button');
+    btn.className = 'btn-ghost';
+    btn.textContent = app ? 'Configurer' : 'Ajouter la fiche';
+    btn.addEventListener('click', () => {
+      let i = apps.findIndex((a) => kindOf(a.nom) === r.kind);
+      if (i === -1) {
+        apps.push({ nom: r.nom, role: '', cat: 'Serveur', url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' });
+        saveApps();
+        refresh();
+        i = apps.findIndex((a) => kindOf(a.nom) === r.kind);
+      }
+      closeSettings();
+      openAppModal(i);
+    });
+    row.appendChild(dot);
+    row.appendChild(chip);
+    row.appendChild(nom);
+    row.appendChild(st);
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+/* ---------- utilisateurs (page) ---------- */
+function renderAvatar() {
+  const av = $('avatar');
+  const u = USERS.find((x) => x.nom === ACTIVE) || USERS[0] || null;
+  if (u) {
+    av.textContent = initiales(u.nom);
+    av.style.background = avColor(u.nom);
+    av.style.color = '#fff';
+  } else {
+    av.textContent = 'A';
+    av.style.background = '';
+    av.style.color = '';
+  }
+  if (!$('av-menu').hidden) renderAvMenu();
+}
+/* ---------- menu du compte (survol + clic) ---------- */
+function renderAvMenu() {
+  const u = USERS.find((x) => x.nom === ACTIVE) || USERS[0] || null;
+  const av = $('avm-av');
+  if (u) {
+    av.textContent = initiales(u.nom);
+    av.style.background = avColor(u.nom);
+    $('avm-nom').textContent = u.nom;
+    $('avm-sub').textContent = u.pwd ? 'Profil protégé' : 'Profil sans mot de passe';
+  } else {
+    av.textContent = 'A';
+    av.style.background = 'var(--muted-2)';
+    $('avm-nom').textContent = 'Aucun profil';
+    $('avm-sub').textContent = 'Créer un profil dans les réglages';
+  }
+  const list = $('avm-users');
+  list.textContent = '';
+  const autres = USERS.filter((x) => !u || x.nom !== u.nom);
+  if (!autres.length) {
+    const e = document.createElement('div');
+    e.className = 'av-lab';
+    e.style.textTransform = 'none';
+    e.style.letterSpacing = '0';
+    e.style.fontWeight = '500';
+    e.textContent = USERS.length ? 'Aucun autre profil' : 'Aucun profil créé';
+    list.appendChild(e);
+    return;
+  }
+  autres.forEach((x) => {
+    const b = document.createElement('button');
+    b.className = 'av-u';
+    const a = document.createElement('span');
+    a.className = 'u-avatar';
+    a.textContent = initiales(x.nom);
+    a.style.background = avColor(x.nom);
+    const n = document.createElement('span');
+    n.textContent = x.nom;
+    b.appendChild(a);
+    b.appendChild(n);
+    if (x.pwd) {
+      const l = document.createElement('span');
+      l.className = 'chk';
+      l.textContent = '🔒';
+      b.appendChild(l);
+    }
+    b.addEventListener('click', () => {
+      closeAvMenu();
+      if (x.pwd && LOCK_REQ) {
+        // profil protégé : repasser par l'écran de profils
+        try {
+          sessionStorage.removeItem('atrium.unlocked');
+          localStorage.removeItem('atrium.unlockDevice');
+        } catch (e2) {}
+        applyLock();
+        const i = USERS.indexOf(x);
+        if (i >= 0) {
+          PENDING_USER = i;
+          $('lock-form').hidden = false;
+          $('lock-input').value = '';
+          $('lock-input').placeholder = 'Mot de passe de ' + x.nom;
+          $('lock-input').focus();
+        }
+        return;
+      }
+      ACTIVE = x.nom;
+      store.set('activeUser', ACTIVE);
+      renderAvatar();
+    });
+    list.appendChild(b);
+  });
+}
+let avTimer = null;
+function openAvMenu() {
+  clearTimeout(avTimer);
+  renderAvMenu();
+  $('av-menu').hidden = false;
+}
+function closeAvMenu() { clearTimeout(avTimer); $('av-menu').hidden = true; }
+$('av-wrap').addEventListener('mouseenter', openAvMenu);
+$('av-wrap').addEventListener('mouseleave', () => {
+  avTimer = setTimeout(closeAvMenu, 260);
+});
+$('avatar').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if ($('av-menu').hidden) openAvMenu();
+  else closeAvMenu();
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#av-wrap')) closeAvMenu();
+});
+$('avm-profil').addEventListener('click', () => {
+  closeAvMenu();
+  const i = USERS.findIndex((x) => x.nom === ACTIVE);
+  SEL_USER = i >= 0 ? i : (USERS.length ? 0 : -1);
+  openSettings('users');
+});
+$('avm-params').addEventListener('click', () => { closeAvMenu(); openSettings('users'); });
+$('avm-logout').addEventListener('click', () => {
+  closeAvMenu();
+  try {
+    sessionStorage.removeItem('atrium.unlocked');
+    localStorage.removeItem('atrium.unlockDevice');
+  } catch (e) {}
+  if (!LOCK_REQ) {
+    ACTIVE = '';
+    store.set('activeUser', '');
+    renderAvatar();
+    return;
+  }
+  applyLock();
+});
+
+/* force d'un mot de passe : longueur + variété de caractères */
+function pwdScore(p) {
+  if (!p) return { n: 0, txt: '', conseil: '' };
+  let n = 0;
+  if (p.length >= 8) n++;
+  if (p.length >= 12) n++;
+  const classes = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^a-zA-Z0-9]/].filter((r) => r.test(p)).length;
+  if (classes >= 2) n++;
+  if (classes >= 3 && p.length >= 10) n++;
+  if (p.length < 6) n = 0;
+  const LAB = ['Très faible', 'Faible', 'Correct', 'Bon', 'Excellent'];
+  const conseils = [];
+  if (p.length < 12) conseils.push('allonger (12+ caractères)');
+  if (classes < 3) conseils.push('mélanger majuscules, chiffres et symboles');
+  return { n, txt: LAB[n], conseil: conseils.join(', ') };
+}
+function bindPwd(inputId, eyeId, meterId, labId) {
+  const inp = $(inputId);
+  const eye = $(eyeId);
+  const meter = $(meterId);
+  const lab = $(labId);
+  const COL = ['var(--bad)', 'var(--warn)', 'var(--warn)', 'var(--ok)', 'var(--ok)'];
+  const sync = () => {
+    const v = inp.value;
+    meter.hidden = !v;
+    if (!v) return;
+    const s = pwdScore(v);
+    meter.querySelectorAll('.pwd-bars i').forEach((b, i) => {
+      b.style.background = i < s.n ? COL[s.n] : 'var(--track)';
+    });
+    lab.textContent = '';
+    const b = document.createElement('b');
+    b.textContent = s.txt;
+    b.style.color = COL[s.n];
+    lab.appendChild(b);
+    if (s.conseil) lab.appendChild(document.createTextNode(' — ' + s.conseil));
+  };
+  inp.addEventListener('input', sync);
+  eye.addEventListener('click', () => {
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    eye.textContent = show ? '🙈' : '👁';
+    eye.title = show ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
+    inp.focus();
+  });
+  return sync;
+}
+
+let SEL_USER = -1;
+function renderUsers() {
+  if (!$('spage').hidden && !$('sp-users').hidden) renderUsersPage();
+}
+const syncUserPwd = bindPwd('spu-pwd', 'spu-pwd-eye', 'spu-meter', 'spu-meter-lab');
+const syncMasterPwd = bindPwd('sp-master', 'sp-master-eye', 'sp-master-meter', 'sp-master-meter-lab');
+
+function fillFiche() {
+  const u = USERS[SEL_USER];
+  $('spu-fiche').hidden = !u;
+  if (!u) return;
+  $('spu-fiche-titre').textContent = u.nom;
+  $('spu-nom').value = u.nom;
+  $('spu-pwd').value = '';
+  $('spu-pwd').type = 'password';
+  $('spu-pwd-eye').textContent = '👁';
+  $('spu-pwd').placeholder = u.pwd ? 'défini — taper pour le changer' : 'aucun — taper pour définir';
+  syncUserPwd();
+}
+function renderUsersPage() {
+  const list = $('spu-list');
+  list.textContent = '';
+  const act = (USERS.find((x) => x.nom === ACTIVE) || USERS[0] || {}).nom;
+  USERS.forEach((u, i) => {
+    const row = document.createElement('div');
+    row.className = 'user-row' + (i === SEL_USER ? ' actif' : '');
+    const av = document.createElement('span');
+    av.className = 'u-avatar';
+    av.textContent = initiales(u.nom);
+    av.style.background = avColor(u.nom);
+    const nom = document.createElement('span');
+    nom.className = 'u-nom';
+    nom.textContent = u.nom;
+    row.appendChild(av);
+    row.appendChild(nom);
+    const tag = document.createElement('span');
+    tag.className = 'u-tag';
+    tag.textContent = u.pwd ? '🔒 protégé' : 'sans mot de passe';
+    row.appendChild(tag);
+    if (u.nom === act) {
+      const b = document.createElement('span');
+      b.className = 'u-actif';
+      b.textContent = 'actif';
+      row.appendChild(b);
+    }
+    row.addEventListener('click', () => {
+      SEL_USER = i;
+      renderUsersPage();
+      fillFiche();
+    });
+    list.appendChild(row);
+  });
+  if (!USERS.length) {
+    const e = document.createElement('div');
+    e.className = 'hint';
+    e.textContent = 'Aucun utilisateur — ajoute le premier ci-dessous.';
+    list.appendChild(e);
+  }
+  fillFiche();
+}
+$('spu-add').addEventListener('click', () => {
+  const nom = $('spu-new').value.trim();
+  if (!nom || USERS.some((u) => u.nom.toLowerCase() === nom.toLowerCase())) return;
+  USERS.push({ nom, pwd: '' });
+  if (!ACTIVE) { ACTIVE = nom; store.set('activeUser', nom); }
+  $('spu-new').value = '';
+  SEL_USER = USERS.length - 1;
+  saveUsersLocal();
+  pushCfg();
+  renderUsersPage();
+  renderAvatar();
+});
+$('spu-new').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('spu-add').click(); });
+$('spu-save').addEventListener('click', () => {
+  const u = USERS[SEL_USER];
+  if (!u) return;
+  const nv = $('spu-nom').value.trim();
+  if (nv && nv !== u.nom) {
+    if (ACTIVE === u.nom) { ACTIVE = nv; store.set('activeUser', nv); }
+    u.nom = nv;
+  }
+  const p = $('spu-pwd').value;
+  if (p.trim()) u.pwd = hashPwd(p.trim());
+  saveUsersLocal();
+  pushCfg();
+  renderUsersPage();
+  renderAvatar();
+});
+$('spu-pwd-clear').addEventListener('click', () => {
+  const u = USERS[SEL_USER];
+  if (!u) return;
+  u.pwd = '';
+  saveUsersLocal();
+  pushCfg();
+  renderUsersPage();
+});
+$('spu-activate').addEventListener('click', () => {
+  const u = USERS[SEL_USER];
+  if (!u) return;
+  ACTIVE = u.nom;
+  store.set('activeUser', ACTIVE);
+  renderUsersPage();
+  renderAvatar();
+});
+$('spu-del').addEventListener('click', () => {
+  const u = USERS[SEL_USER];
+  if (!u) return;
+  USERS.splice(SEL_USER, 1);
+  if (ACTIVE === u.nom) { ACTIVE = ''; store.set('activeUser', ''); }
+  SEL_USER = -1;
+  saveUsersLocal();
+  pushCfg();
+  renderUsersPage();
+  renderAvatar();
+});
+
+/* ---------- sécurité ---------- */
+$('sp-sec-save').addEventListener('click', () => {
+  LOCK_REQ = $('sp-lockreq').checked;
+  const p = $('sp-master').value;
+  if (p.trim()) LOCK = hashPwd(p.trim());
+  $('sp-master').value = '';
+  saveUsersLocal();
+  pushCfg();
+  try { sessionStorage.setItem('atrium.unlocked', lockStamp()); } catch (e) {}
+  applyLock();
+  spNav('security');
+});
+$('sp-master-clear').addEventListener('click', () => {
+  LOCK = '';
+  saveUsersLocal();
+  pushCfg();
+  spNav('security');
+});
+
+/* ---------- verrouillage (écran de profils) ---------- */
+function lockStamp() {
+  return hashPwd('stamp|' + LOCK + '|' + (LOCK_REQ ? 1 : 0) + '|' + USERS.map((u) => u.nom + ':' + (u.pwd || '')).join(','));
+}
+function isUnlocked() {
+  if (!LOCK_REQ) return true;
+  if (!USERS.length && !LOCK) return true;
+  const st = lockStamp();
+  try {
+    if (sessionStorage.getItem('atrium.unlocked') === st) return true;
+    if (localStorage.getItem('atrium.unlockDevice') === st) return true;
+  } catch (e) {}
+  return false;
+}
+let PENDING_USER = -1;
+function renderLockUi() {
+  const profs = $('lock-profiles');
+  profs.textContent = '';
+  if (USERS.length) {
+    $('lock-form').hidden = true;
+    USERS.forEach((u, i) => {
+      const p = document.createElement('div');
+      p.className = 'lock-p';
+      const av = document.createElement('span');
+      av.className = 'u-avatar';
+      av.textContent = initiales(u.nom);
+      av.style.background = avColor(u.nom);
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = u.nom;
+      p.appendChild(av);
+      p.appendChild(n);
+      p.addEventListener('click', () => {
+        PENDING_USER = i;
+        if (!u.pwd) { grantUnlock(); return; }
+        $('lock-form').hidden = false;
+        $('lock-input').value = '';
+        $('lock-input').placeholder = 'Mot de passe de ' + u.nom;
+        $('lock-input').focus();
+      });
+      profs.appendChild(p);
+    });
+  } else {
+    $('lock-form').hidden = false;
+    $('lock-input').value = '';
+    $('lock-input').placeholder = 'Mot de passe';
+    $('lock-input').focus();
+  }
+}
+function grantUnlock() {
+  const st = lockStamp();
+  try {
+    sessionStorage.setItem('atrium.unlocked', st);
+    if ($('lock-remember').checked) localStorage.setItem('atrium.unlockDevice', st);
+  } catch (e) {}
+  if (PENDING_USER >= 0 && USERS[PENDING_USER]) {
+    ACTIVE = USERS[PENDING_USER].nom;
+    store.set('activeUser', ACTIVE);
+    renderAvatar();
+  }
+  $('lock').hidden = true;
+}
+function applyLock() {
+  const show = !isUnlocked();
+  $('lock').hidden = !show;
+  if (show) {
+    PENDING_USER = -1;
+    renderLockUi();
+  }
+}
+function tryUnlock() {
+  const inp = $('lock-input');
+  const h = hashPwd(inp.value);
+  const u = PENDING_USER >= 0 ? USERS[PENDING_USER] : null;
+  if ((u && u.pwd && h === u.pwd) || (LOCK && h === LOCK)) { grantUnlock(); return; }
+  inp.classList.remove('err');
+  void inp.offsetWidth;
+  inp.classList.add('err');
+  inp.select();
+}
+$('lock-go').addEventListener('click', tryUnlock);
+$('lock-input').addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') tryUnlock();
+});
+
+/* ---------- activation System Monitor (WebSocket admin HA) ---------- */
+function haWs() {
+  return new Promise((resolve, reject) => {
+    const base = haBase() || location.origin;
+    const ws = new WebSocket(base.replace(/^http/, 'ws') + '/api/websocket');
+    let id = 1;
+    const pend = {};
+    ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.type === 'auth_required') {
+        ws.send(JSON.stringify({ type: 'auth', access_token: haToken() }));
+      } else if (m.type === 'auth_ok') {
+        resolve({
+          call: (payload) => new Promise((res, rej) => {
+            const i = id++;
+            pend[i] = { res, rej };
+            ws.send(JSON.stringify({ id: i, ...payload }));
+          }),
+          close: () => ws.close(),
+        });
+      } else if (m.type === 'auth_invalid') {
+        reject(new Error('token invalide'));
+      } else if (m.type === 'result' && pend[m.id]) {
+        const p = pend[m.id];
+        delete pend[m.id];
+        if (m.success) p.res(m.result);
+        else p.rej(new Error((m.error || {}).message || 'erreur HA'));
+      }
+    };
+    ws.onerror = () => reject(new Error('WebSocket injoignable'));
+  });
+}
+
+$('m-sysmon').addEventListener('click', async () => {
+  const btn = $('m-sysmon');
+  btn.disabled = true;
+  btn.textContent = 'Activation…';
+  let ws = null;
+  try {
+    const token = haToken() || $('m-key').value.trim();
+    if (!token) throw new Error('renseigne d\'abord le token');
+    const base = haBase();
+    ws = await haWs();
+
+    // 1. l'intégration System Monitor existe ?
+    const entries = await ws.call({ type: 'config_entries/get' });
+    if (!entries.some((e) => e.domain === 'systemmonitor')) {
+      const h = { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' };
+      let r = await fetch(base + '/api/config/config_entries/flow', {
+        method: 'POST', headers: h,
+        body: JSON.stringify({ handler: 'systemmonitor', show_advanced_options: false }),
+      });
+      if (!r.ok) throw new Error('création refusée (HTTP ' + r.status + ')');
+      let f = await r.json();
+      if (f.type === 'form') {
+        r = await fetch(base + '/api/config/config_entries/flow/' + f.flow_id, {
+          method: 'POST', headers: h, body: JSON.stringify({}),
+        });
+        f = await r.json();
+      }
+      if (f.type !== 'create_entry' && f.type !== 'abort') throw new Error('création impossible (' + f.type + ')');
+    }
+
+    // 2. activer les capteurs CPU / RAM / Disque désactivés (noms FR ou EN)
+    const reg = await ws.call({ type: 'config/entity_registry/list' });
+    const normReg = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const wanted = reg.filter((e) => {
+      if (e.platform !== 'systemmonitor') return false;
+      const h = normReg(e.entity_id + ' ' + (e.original_name || '') + ' ' + (e.name || ''));
+      return /processor|processeur|cpu|memory|memoire|ram|disk|disque|stockage|storage/.test(h) &&
+        !/swap|network|reseau|load|charge|temp|packet|paquet|throughput|debit|ipv/.test(h);
+    });
+    for (const e of wanted) {
+      if (e.disabled_by) await ws.call({ type: 'config/entity_registry/update', entity_id: e.entity_id, disabled_by: null });
+    }
+    btn.textContent = 'Capteurs activés ✓ — jauges sous ~30 s';
+    setTimeout(fetchStates, 35000);
+    fetchStates();
+  } catch (e) {
+    btn.textContent = 'Échec : ' + (e.message || e);
+    btn.disabled = false;
+  } finally {
+    if (ws) ws.close();
+  }
+});
+
+/* fermeture par fond ou Échap */
+[['ov-app', closeAppModal], ['ov-del', closeDelModal]].forEach(([id, close]) => {
+  $(id).addEventListener('click', (e) => { if (e.target === $(id)) close(); });
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!$('ov-app').hidden) { closeAppModal(); return; }
+    if (!$('ov-del').hidden) { closeDelModal(); return; }
+    if (!$('spage').hidden) { closeSettings(); return; }
+  }
+});
+
+/* ---------- recherche ---------- */
+const searchInput = $('search');
+searchInput.addEventListener('input', () => { query = searchInput.value; renderApps(); });
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { searchInput.value = ''; query = ''; renderApps(); searchInput.blur(); }
+});
+window.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    if (!$('ov-app').hidden || !$('ov-del').hidden || !$('spage').hidden) return;
+    e.preventDefault();
+    searchInput.focus();
+  }
+});
+
+/* ---------- vue grille / liste ---------- */
+$('seg-view').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-view]');
+  if (!btn) return;
+  view = btn.dataset.view;
+  store.set('view', view);
+  document.querySelectorAll('#seg-view button').forEach((b) =>
+    b.classList.toggle('on', b.dataset.view === view));
+  renderApps();
+});
+document.querySelectorAll('#seg-view button').forEach((b) =>
+  b.classList.toggle('on', b.dataset.view === view));
+
+/* liens vedette sans URL */
+['np-card', 'haw-card'].forEach((id) => {
+  $(id).addEventListener('click', (e) => {
+    if ($(id).getAttribute('href') === '#') e.preventDefault();
+  });
+});
+
+/* ---------- init + boucles ---------- */
+applyTheme();
+renderAvatar();
+applyLock();
+refresh();
+pullCfg();          // récupère la config partagée du relais (si présent)
+fetchStates();
+probeAll();
+pollDirect();
+setInterval(fetchStates, 15000);
+setInterval(probeAll, 60000);
+setInterval(pollDirect, 30000);
+setInterval(pullCfg, 60000);
+</script>
+</body>
+</html>

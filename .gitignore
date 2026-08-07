@@ -1,0 +1,10 @@
+# Configuration locale : contient les tokens et clés API des services
+data/
+*.json.tmp
+atrium.json
+
+# Divers
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
