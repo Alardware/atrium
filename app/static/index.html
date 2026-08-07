@@ -294,23 +294,45 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 
 /* page réglages plein écran */
 .spage{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;animation:fade .18s ease both}
-.spage-head{display:flex;align-items:center;gap:16px;padding:12px 28px;border-bottom:1px solid var(--border);background:var(--surface);flex:none}
-.spage-head h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
-.spage-body{flex:1;display:grid;grid-template-columns:220px 1fr;overflow:hidden}
-.spage-nav{display:flex;flex-direction:column;gap:3px;padding:18px 14px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto}
-.spage-nav button{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:var(--text-2);font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .15s,color .15s}
+.spage-head{display:flex;align-items:center;gap:14px;padding:0 26px;height:58px;border-bottom:1px solid var(--border);background:var(--surface);flex:none}
+.spage-head h2{margin:0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
+.spage-body{flex:1;display:grid;grid-template-columns:236px 1fr;overflow:hidden}
+.spage-nav{display:flex;flex-direction:column;gap:2px;padding:16px 12px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto}
+.spage-nav .grp{padding:14px 10px 6px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.spage-nav .grp:first-child{padding-top:2px}
+.spage-nav button{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;color:var(--text-2);font:600 13px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .13s,color .13s}
 .spage-nav button:hover{background:var(--subtle);color:var(--text)}
 .spage-nav button.on{background:var(--accent-soft);color:var(--accent-strong)}
-.spage-content{overflow-y:auto;padding:26px 32px 48px}
+.spage-nav button .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
+.spage-content{overflow-y:auto;padding:0}
+.sp-inner{max-width:680px;padding:30px 34px 60px}
+.sp-title{font:700 21px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
+.sp-lead{margin-top:6px;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.sp-head{margin-bottom:24px}
 .spanel{max-width:620px;display:flex;flex-direction:column;gap:22px}
 .spanel h4{margin:10px 0 0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .spanel h4:first-child{margin-top:0}
-.scard{padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;gap:16px}
-.scard > h4{margin:0}
-.danger{border:1px solid var(--bad);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px}
-.danger .dz-txt{flex:1;min-width:0}
-.danger .dz-title{font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
-.danger .dz-sub{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.scard{padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
+.scard > h4{margin:0;padding:15px 18px;border-bottom:1px solid var(--divider);font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;background:var(--surface-2)}
+.scard-body{padding:18px;display:flex;flex-direction:column;gap:18px}
+.scard-foot{padding:13px 18px;border-top:1px solid var(--divider);background:var(--surface-2);display:flex;justify-content:flex-end;gap:9px;align-items:center}
+.scard-foot .fill{margin-right:auto;font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+
+/* avatar éditable */
+.av-edit{display:flex;align-items:center;gap:18px}
+.av-big{position:relative;width:76px;height:76px;border-radius:50%;flex:none;display:grid;place-items:center;font:700 26px/1 'Plus Jakarta Sans',sans-serif;color:#fff;overflow:hidden}
+.av-big img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.av-edit-actions{display:flex;flex-direction:column;gap:8px;min-width:0}
+.av-edit-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn-sm{padding:7px 13px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);transition:border-color .15s,color .15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm.danger:hover{border-color:var(--bad);color:var(--bad-text)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:11px 20px;border-radius:10px;background:var(--text);color:var(--bg);font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-modal);z-index:120;animation:pop .2s cubic-bezier(.2,.7,.3,1) both}
+.toast[hidden]{display:none}
+.dzone{border:1px solid var(--bad);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;background:var(--surface)}
+.dzone .dz-txt{flex:1;min-width:0}
+.dzone .dz-title{font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
+.dzone .dz-sub{margin-top:3px;font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .conn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .conn-row .cr-nom{flex:1;min-width:0;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .conn-row .cr-st{font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
@@ -584,95 +606,213 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
   </div>
   <div class="spage-body">
     <nav class="spage-nav" id="sp-nav">
-      <button data-p="users" class="on">👤 Utilisateurs</button>
-      <button data-p="security">🛡 Sécurité</button>
-      <button data-p="conn">⇄ Connexions</button>
-      <button data-p="about">ℹ À propos</button>
+      <div class="grp">Compte</div>
+      <button data-p="profil" class="on"><span class="ic">👤</span>Mon profil</button>
+      <button data-p="users"><span class="ic">👥</span>Utilisateurs</button>
+      <button data-p="security"><span class="ic">🛡</span>Sécurité</button>
+      <div class="grp">Application</div>
+      <button data-p="conn"><span class="ic">⇄</span>Connexions</button>
+      <button data-p="about"><span class="ic">ℹ</span>À propos</button>
     </nav>
     <div class="spage-content">
 
-      <section class="spanel" id="sp-users">
-        <h4>Utilisateurs</h4>
-        <div class="users-list" id="spu-list"></div>
-        <div class="u-addrow">
-          <input id="spu-new" type="text" placeholder="Nom du nouvel utilisateur" autocomplete="off">
-          <button class="btn-ghost" id="spu-add" type="button">Ajouter</button>
+      <!-- MON PROFIL -->
+      <section class="spanel sp-inner" id="sp-profil">
+        <div class="sp-head">
+          <div class="sp-title">Mon profil</div>
+          <div class="sp-lead">Votre identité dans Atrium, sur cet appareil et sur l'écran de profils.</div>
         </div>
-        <div id="spu-fiche" hidden style="display:flex;flex-direction:column;gap:22px">
+        <div id="p-vide" class="scard" hidden>
+          <div class="scard-body">
+            <span class="hint">Aucun profil actif. Créez-en un dans <b>Utilisateurs</b>.</span>
+          </div>
+        </div>
+        <div id="p-fiche">
+          <div class="scard">
+            <h4>Identité</h4>
+            <div class="scard-body">
+              <div class="av-edit">
+                <span class="av-big" id="p-av">?</span>
+                <div class="av-edit-actions">
+                  <div class="av-edit-btns">
+                    <button class="btn-sm" id="p-av-up" type="button">Choisir une photo</button>
+                    <button class="btn-sm danger" id="p-av-del" type="button">Retirer</button>
+                  </div>
+                  <span class="hint">JPG ou PNG, recadrée en carré. Stockée dans la configuration d'Atrium.</span>
+                </div>
+                <input type="file" id="p-av-file" accept="image/*" hidden>
+              </div>
+              <div class="field">
+                <label for="p-nom">Nom affiché</label>
+                <input id="p-nom" type="text" autocomplete="off">
+              </div>
+            </div>
+            <div class="scard-foot">
+              <button class="btn-primary" id="p-save">Enregistrer</button>
+            </div>
+          </div>
+
+          <div class="scard" style="margin-top:22px">
+            <h4>Mot de passe</h4>
+            <div class="scard-body">
+              <div class="field">
+                <label for="p-pwd">Nouveau mot de passe</label>
+                <div class="u-addrow">
+                  <span class="pwd-wrap">
+                    <input id="p-pwd" type="password" placeholder="laisser vide pour ne pas changer" autocomplete="new-password">
+                    <button class="pwd-eye" id="p-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
+                  </span>
+                </div>
+                <div class="pwd-meter" id="p-meter" hidden>
+                  <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+                  <div class="pwd-lab" id="p-meter-lab"></div>
+                </div>
+                <span class="hint">Demandé sur l'écran de profils, si le verrouillage est activé dans Sécurité.</span>
+              </div>
+            </div>
+            <div class="scard-foot">
+              <span class="fill" id="p-pwd-etat"></span>
+              <button class="btn-sm danger" id="p-pwd-clear" type="button">Retirer le mot de passe</button>
+              <button class="btn-primary" id="p-pwd-save">Définir</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- UTILISATEURS -->
+      <section class="spanel sp-inner" id="sp-users" hidden>
+        <div class="sp-head">
+          <div class="sp-title">Utilisateurs</div>
+          <div class="sp-lead">Les profils partagés par tous les appareils qui ouvrent Atrium.</div>
+        </div>
+        <div class="scard">
+          <h4>Profils</h4>
+          <div class="scard-body">
+            <div class="users-list" id="spu-list"></div>
+            <div class="u-addrow">
+              <input id="spu-new" type="text" placeholder="Nom du nouvel utilisateur" autocomplete="off">
+              <button class="btn-ghost" id="spu-add" type="button">Ajouter</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="spu-fiche" hidden style="margin-top:22px">
           <div class="scard">
             <h4 id="spu-fiche-titre">Utilisateur</h4>
-            <div class="field">
-              <label for="spu-nom">Nom</label>
-              <input id="spu-nom" type="text" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="spu-pwd">Mot de passe</label>
-              <div class="u-addrow">
-                <span class="pwd-wrap">
-                  <input id="spu-pwd" type="password" placeholder="aucun — taper pour définir" autocomplete="new-password">
-                  <button class="pwd-eye" id="spu-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
-                </span>
-                <button class="btn-ghost" id="spu-pwd-clear" type="button">Retirer</button>
+            <div class="scard-body">
+              <div class="av-edit">
+                <span class="av-big" id="spu-av">?</span>
+                <div class="av-edit-actions">
+                  <div class="av-edit-btns">
+                    <button class="btn-sm" id="spu-av-up" type="button">Choisir une photo</button>
+                    <button class="btn-sm danger" id="spu-av-del" type="button">Retirer</button>
+                  </div>
+                  <span class="hint">JPG ou PNG, recadrée en carré.</span>
+                </div>
+                <input type="file" id="spu-av-file" accept="image/*" hidden>
               </div>
-              <div class="pwd-meter" id="spu-meter" hidden>
-                <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
-                <div class="pwd-lab" id="spu-meter-lab"></div>
+              <div class="field">
+                <label for="spu-nom">Nom</label>
+                <input id="spu-nom" type="text" autocomplete="off">
               </div>
-              <span class="hint">Demandé sur l'écran de profils à l'ouverture (si le verrouillage est activé dans Sécurité).</span>
+              <div class="field">
+                <label for="spu-pwd">Mot de passe</label>
+                <div class="u-addrow">
+                  <span class="pwd-wrap">
+                    <input id="spu-pwd" type="password" placeholder="aucun — taper pour définir" autocomplete="new-password">
+                    <button class="pwd-eye" id="spu-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
+                  </span>
+                  <button class="btn-sm danger" id="spu-pwd-clear" type="button">Retirer</button>
+                </div>
+                <div class="pwd-meter" id="spu-meter" hidden>
+                  <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+                  <div class="pwd-lab" id="spu-meter-lab"></div>
+                </div>
+              </div>
             </div>
-            <div class="sfoot">
-              <button class="btn-ghost" id="spu-activate">Activer sur cet appareil</button>
+            <div class="scard-foot">
+              <button class="btn-sm" id="spu-activate" type="button">Activer sur cet appareil</button>
               <button class="btn-primary" id="spu-save">Enregistrer</button>
             </div>
           </div>
-          <div class="danger">
+          <div class="dzone" style="margin-top:22px">
             <div class="dz-txt">
               <div class="dz-title">Supprimer définitivement l'utilisateur</div>
-              <div class="dz-sub">Supprime cet utilisateur et son mot de passe. Il ne sera pas averti.</div>
+              <div class="dz-sub">Supprime ce profil, sa photo et son mot de passe. Il ne sera pas averti.</div>
             </div>
             <button class="btn-danger" id="spu-del">Supprimer</button>
           </div>
         </div>
       </section>
 
-      <section class="spanel" id="sp-security" hidden>
+      <!-- SÉCURITÉ -->
+      <section class="spanel sp-inner" id="sp-security" hidden>
+        <div class="sp-head">
+          <div class="sp-title">Sécurité</div>
+          <div class="sp-lead">Contrôle l'accès à Atrium au chargement de la page.</div>
+        </div>
         <div class="scard">
           <h4>Verrouillage</h4>
-          <label class="check"><input id="sp-lockreq" type="checkbox">Exiger un profil à l'ouverture du hub</label>
-          <span class="hint">Affiche l'écran de profils au chargement : chacun choisit son utilisateur et entre son mot de passe s'il en a un. Partagé entre toutes les copies.</span>
-          <div class="field">
-            <label for="sp-master">Mot de passe maître (secours)</label>
-            <div class="u-addrow">
-              <span class="pwd-wrap">
-                <input id="sp-master" type="password" placeholder="optionnel" autocomplete="new-password">
-                <button class="pwd-eye" id="sp-master-eye" type="button" title="Afficher le mot de passe">👁</button>
-              </span>
-              <button class="btn-ghost" id="sp-master-clear" type="button">Retirer</button>
+          <div class="scard-body">
+            <label class="check"><input id="sp-lockreq" type="checkbox">Exiger un profil à l'ouverture</label>
+            <span class="hint">Affiche l'écran de profils au chargement : chacun choisit son profil et saisit son mot de passe s'il en a un.</span>
+            <div class="field">
+              <label for="sp-master">Mot de passe maître (secours)</label>
+              <div class="u-addrow">
+                <span class="pwd-wrap">
+                  <input id="sp-master" type="password" placeholder="optionnel" autocomplete="new-password">
+                  <button class="pwd-eye" id="sp-master-eye" type="button" title="Afficher le mot de passe">👁</button>
+                </span>
+                <button class="btn-sm danger" id="sp-master-clear" type="button">Retirer</button>
+              </div>
+              <div class="pwd-meter" id="sp-master-meter" hidden>
+                <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+                <div class="pwd-lab" id="sp-master-meter-lab"></div>
+              </div>
+              <span class="hint">Accepté pour n'importe quel profil.</span>
             </div>
-            <div class="pwd-meter" id="sp-master-meter" hidden>
-              <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
-              <div class="pwd-lab" id="sp-master-meter-lab"></div>
-            </div>
-            <span class="hint">Accepté pour n'importe quel profil. Verrou d'écran familial, pas un coffre-fort : les données restent côté navigateur.</span>
           </div>
-          <div class="sfoot"><button class="btn-primary" id="sp-sec-save">Enregistrer</button></div>
+          <div class="scard-foot"><button class="btn-primary" id="sp-sec-save">Enregistrer</button></div>
+        </div>
+        <div class="scard" style="margin-top:22px">
+          <h4>Portée réelle</h4>
+          <div class="scard-body">
+            <span class="hint">Atrium s'exécute entièrement dans le navigateur : ce verrouillage est un <b>garde-fou familial</b>, pas une authentification. Pour une protection réelle, placez Atrium derrière un reverse proxy authentifiant (Authelia, Authentik) ou l'ingress de Home Assistant, et ne l'exposez pas sur Internet.</span>
+          </div>
         </div>
       </section>
 
-      <section class="spanel" id="sp-conn" hidden>
-        <h4>Sources connectées</h4>
-        <span class="hint">Les identifiants se saisissent dans la fiche de chaque application (✎ sur sa tuile).</span>
-        <div id="conn-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      <!-- CONNEXIONS -->
+      <section class="spanel sp-inner" id="sp-conn" hidden>
+        <div class="sp-head">
+          <div class="sp-title">Connexions</div>
+          <div class="sp-lead">Chaque intégration est optionnelle. Les identifiants se saisissent sur la fiche de l'application correspondante.</div>
+        </div>
+        <div class="scard">
+          <h4>Sources</h4>
+          <div class="scard-body">
+            <div id="conn-list" style="display:flex;flex-direction:column;gap:9px"></div>
+          </div>
+        </div>
       </section>
 
-      <section class="spanel" id="sp-about" hidden>
-        <h4>À propos</h4>
-        <div class="about-txt">
-          <b>Atrium</b> <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.<br>
-          Application autonome : un conteneur sert l'interface, stocke la configuration et relaie les appels vers les API de vos services.<br><br>
-          <b>Intégrations</b> — chacune est optionnelle et se configure sur la fiche de son application :<br>
-          Plex (sessions en cours) · Unraid (GraphQL) · UniFi (Network API) · Home Assistant (domotique, lecteurs, mises à jour) · sonde HTTP pour l'état en ligne de n'importe quelle app.<br><br>
-          Configuration : <code>/config/atrium.json</code> dans le conteneur.
+      <!-- À PROPOS -->
+      <section class="spanel sp-inner" id="sp-about" hidden>
+        <div class="sp-head">
+          <div class="sp-title">À propos</div>
+          <div class="sp-lead">Atrium <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.</div>
+        </div>
+        <div class="scard">
+          <h4>Fonctionnement</h4>
+          <div class="scard-body">
+            <div class="about-txt">
+              Application autonome : un conteneur sert l'interface, stocke la configuration et relaie les appels vers les API de vos services.<br><br>
+              <b>Intégrations disponibles</b><br>
+              Plex (sessions en cours) · Unraid (CPU, RAM, grappe) · UniFi (routeur, clients) · Home Assistant (domotique, lecteurs, mises à jour) · sonde HTTP pour l'état en ligne de n'importe quelle application.<br><br>
+              Configuration : <code>/config/atrium.json</code><br>
+              Dépôt : <a href="https://github.com/Alardware/atrium" target="_blank" rel="noopener">github.com/Alardware/atrium</a>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -872,7 +1012,7 @@ const appByKind = (k) => apps.find((a) => kindOf(a.nom) === k);
 function loadUsers() {
   try {
     const p = JSON.parse(localStorage.getItem('atrium.users') || '[]');
-    return Array.isArray(p) ? p.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '' })) : [];
+    return Array.isArray(p) ? p.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' })) : [];
   } catch (e) { return []; }
 }
 let USERS = loadUsers();
@@ -895,6 +1035,68 @@ const avColor = (nom) => {
   return AV_COLORS[h % AV_COLORS.length];
 };
 const initiales = (nom) => nom.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+/* peint un avatar : photo de l'utilisateur si elle existe, sinon ses initiales */
+function peindreAvatar(el, u) {
+  if (!el) return;
+  el.querySelectorAll('img').forEach((i) => i.remove());
+  if (u && u.photo) {
+    el.textContent = '';
+    el.style.background = 'var(--subtle)';
+    const img = new Image();
+    img.alt = '';
+    img.src = u.photo;
+    img.onerror = () => { img.remove(); el.textContent = initiales(u.nom); el.style.background = avColor(u.nom); };
+    el.appendChild(img);
+  } else if (u) {
+    el.textContent = initiales(u.nom);
+    el.style.background = avColor(u.nom);
+    el.style.color = '#fff';
+  } else {
+    el.textContent = '?';
+    el.style.background = 'var(--muted-2)';
+    el.style.color = '#fff';
+  }
+}
+
+/* recadre en carré et compresse : la photo est stockée dans la config */
+function lirePhoto(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) { reject(new Error('ce fichier n\'est pas une image')); return; }
+    if (file.size > 8 * 1024 * 1024) { reject(new Error('image trop lourde (8 Mo maximum)')); return; }
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('lecture impossible'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image illisible'));
+      img.onload = () => {
+        const T = 256;
+        const c = document.createElement('canvas');
+        c.width = T; c.height = T;
+        const cote = Math.min(img.width, img.height);
+        c.getContext('2d').drawImage(img, (img.width - cote) / 2, (img.height - cote) / 2, cote, cote, 0, 0, T, T);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+let toastTimer = null;
+function toast(msg) {
+  let t = $('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+}
 
 let theme = store.get('theme', 'light');
 let view = store.get('view', 'grid');
@@ -1547,7 +1749,7 @@ async function pullCfg() {
     if (j && Array.isArray(j.users)) {
       const inUsers = JSON.stringify(j.users);
       if (inUsers !== JSON.stringify(USERS)) {
-        USERS = j.users.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '' }));
+        USERS = j.users.filter((u) => u && u.nom).map((u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' }));
         secChanged = true;
         renderAvatar();
         renderUsers();
@@ -1927,13 +2129,17 @@ function renderModalStatus() {
 /* ---------- page réglages ---------- */
 function openSettings(section) {
   $('spage').hidden = false;
-  spNav(typeof section === 'string' ? section : 'users');
+  spNav(typeof section === 'string' ? section : 'profil');
 }
 function closeSettings() { $('spage').hidden = true; }
 function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
-  ['users', 'security', 'conn', 'about'].forEach((k) => { $('sp-' + k).hidden = k !== p; });
-  if (p === 'users') {
+  ['profil', 'users', 'security', 'conn', 'about'].forEach((k) => { $('sp-' + k).hidden = k !== p; });
+  $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
+  document.querySelector('.spage-content').scrollTop = 0;
+  if (p === 'profil') {
+    renderProfil();
+  } else if (p === 'users') {
     renderUsersPage();
   } else if (p === 'security') {
     $('sp-lockreq').checked = LOCK_REQ;
@@ -2016,14 +2222,15 @@ function renderConnPanel() {
 }
 
 /* ---------- utilisateurs (page) ---------- */
+const userActif = () => USERS.find((x) => x.nom === ACTIVE) || USERS[0] || null;
 function renderAvatar() {
   const av = $('avatar');
-  const u = USERS.find((x) => x.nom === ACTIVE) || USERS[0] || null;
+  const u = userActif();
   if (u) {
-    av.textContent = initiales(u.nom);
-    av.style.background = avColor(u.nom);
-    av.style.color = '#fff';
+    av.style.overflow = 'hidden';
+    peindreAvatar(av, u);
   } else {
+    av.querySelectorAll('img').forEach((i) => i.remove());
     av.textContent = 'A';
     av.style.background = '';
     av.style.color = '';
@@ -2032,16 +2239,14 @@ function renderAvatar() {
 }
 /* ---------- menu du compte (survol + clic) ---------- */
 function renderAvMenu() {
-  const u = USERS.find((x) => x.nom === ACTIVE) || USERS[0] || null;
+  const u = userActif();
   const av = $('avm-av');
+  av.style.overflow = 'hidden';
+  peindreAvatar(av, u);
   if (u) {
-    av.textContent = initiales(u.nom);
-    av.style.background = avColor(u.nom);
     $('avm-nom').textContent = u.nom;
     $('avm-sub').textContent = u.pwd ? 'Profil protégé' : 'Profil sans mot de passe';
   } else {
-    av.textContent = 'A';
-    av.style.background = 'var(--muted-2)';
     $('avm-nom').textContent = 'Aucun profil';
     $('avm-sub').textContent = 'Créer un profil dans les réglages';
   }
@@ -2063,8 +2268,8 @@ function renderAvMenu() {
     b.className = 'av-u';
     const a = document.createElement('span');
     a.className = 'u-avatar';
-    a.textContent = initiales(x.nom);
-    a.style.background = avColor(x.nom);
+    a.style.overflow = 'hidden';
+    peindreAvatar(a, x);
     const n = document.createElement('span');
     n.textContent = x.nom;
     b.appendChild(a);
@@ -2120,13 +2325,8 @@ $('avatar').addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#av-wrap')) closeAvMenu();
 });
-$('avm-profil').addEventListener('click', () => {
-  closeAvMenu();
-  const i = USERS.findIndex((x) => x.nom === ACTIVE);
-  SEL_USER = i >= 0 ? i : (USERS.length ? 0 : -1);
-  openSettings('users');
-});
-$('avm-params').addEventListener('click', () => { closeAvMenu(); openSettings('users'); });
+$('avm-profil').addEventListener('click', () => { closeAvMenu(); openSettings('profil'); });
+$('avm-params').addEventListener('click', () => { closeAvMenu(); openSettings('conn'); });
 $('avm-logout').addEventListener('click', () => {
   closeAvMenu();
   try {
@@ -2196,6 +2396,77 @@ function renderUsers() {
 }
 const syncUserPwd = bindPwd('spu-pwd', 'spu-pwd-eye', 'spu-meter', 'spu-meter-lab');
 const syncMasterPwd = bindPwd('sp-master', 'sp-master-eye', 'sp-master-meter', 'sp-master-meter-lab');
+const syncProfilPwd = bindPwd('p-pwd', 'p-pwd-eye', 'p-meter', 'p-meter-lab');
+
+/* ---------- page « Mon profil » ---------- */
+function renderProfil() {
+  const u = userActif();
+  $('p-vide').hidden = !!u;
+  $('p-fiche').hidden = !u;
+  if (!u) return;
+  $('p-av').style.overflow = 'hidden';
+  peindreAvatar($('p-av'), u);
+  $('p-av-del').disabled = !u.photo;
+  $('p-av-del').style.opacity = u.photo ? '1' : '.45';
+  $('p-nom').value = u.nom;
+  $('p-pwd').value = '';
+  $('p-pwd').type = 'password';
+  $('p-pwd-eye').textContent = '👁';
+  $('p-pwd-etat').textContent = u.pwd ? 'Un mot de passe est défini.' : 'Aucun mot de passe.';
+  $('p-pwd-clear').disabled = !u.pwd;
+  $('p-pwd-clear').style.opacity = u.pwd ? '1' : '.45';
+  syncProfilPwd();
+}
+function majProfil(modif) {
+  const u = userActif();
+  if (!u) return;
+  modif(u);
+  saveUsersLocal();
+  pushCfg();
+  renderAvatar();
+  renderProfil();
+}
+$('p-av-up').addEventListener('click', () => $('p-av-file').click());
+$('p-av-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const data = await lirePhoto(f);
+    majProfil((u) => { u.photo = data; });
+    toast('Photo de profil mise à jour');
+  } catch (err) { toast('Échec : ' + err.message); }
+});
+$('p-av-del').addEventListener('click', () => {
+  if ($('p-av-del').disabled) return;
+  majProfil((u) => { u.photo = ''; });
+  toast('Photo retirée');
+});
+$('p-save').addEventListener('click', () => {
+  const u = userActif();
+  if (!u) return;
+  const nv = $('p-nom').value.trim();
+  if (!nv) { toast('Le nom ne peut pas être vide'); return; }
+  if (nv !== u.nom && USERS.some((x) => x !== u && x.nom.toLowerCase() === nv.toLowerCase())) {
+    toast('Ce nom est déjà utilisé'); return;
+  }
+  majProfil((x) => {
+    if (ACTIVE === x.nom) { ACTIVE = nv; store.set('activeUser', nv); }
+    x.nom = nv;
+  });
+  toast('Profil enregistré');
+});
+$('p-pwd-save').addEventListener('click', () => {
+  const p = $('p-pwd').value.trim();
+  if (!p) { toast('Saisissez un mot de passe'); return; }
+  majProfil((u) => { u.pwd = hashPwd(p); });
+  toast('Mot de passe défini');
+});
+$('p-pwd-clear').addEventListener('click', () => {
+  if ($('p-pwd-clear').disabled) return;
+  majProfil((u) => { u.pwd = ''; });
+  toast('Mot de passe retiré');
+});
 
 function fillFiche() {
   const u = USERS[SEL_USER];
@@ -2203,12 +2474,43 @@ function fillFiche() {
   if (!u) return;
   $('spu-fiche-titre').textContent = u.nom;
   $('spu-nom').value = u.nom;
+  $('spu-av').style.overflow = 'hidden';
+  peindreAvatar($('spu-av'), u);
+  $('spu-av-del').disabled = !u.photo;
+  $('spu-av-del').style.opacity = u.photo ? '1' : '.45';
   $('spu-pwd').value = '';
   $('spu-pwd').type = 'password';
   $('spu-pwd-eye').textContent = '👁';
   $('spu-pwd').placeholder = u.pwd ? 'défini — taper pour le changer' : 'aucun — taper pour définir';
+  $('spu-pwd-clear').disabled = !u.pwd;
+  $('spu-pwd-clear').style.opacity = u.pwd ? '1' : '.45';
   syncUserPwd();
 }
+$('spu-av-up').addEventListener('click', () => $('spu-av-file').click());
+$('spu-av-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  const u = USERS[SEL_USER];
+  if (!f || !u) return;
+  try {
+    u.photo = await lirePhoto(f);
+    saveUsersLocal();
+    pushCfg();
+    renderUsersPage();
+    renderAvatar();
+    toast('Photo mise à jour');
+  } catch (err) { toast('Échec : ' + err.message); }
+});
+$('spu-av-del').addEventListener('click', () => {
+  const u = USERS[SEL_USER];
+  if (!u || $('spu-av-del').disabled) return;
+  u.photo = '';
+  saveUsersLocal();
+  pushCfg();
+  renderUsersPage();
+  renderAvatar();
+  toast('Photo retirée');
+});
 function renderUsersPage() {
   const list = $('spu-list');
   list.textContent = '';
@@ -2218,8 +2520,8 @@ function renderUsersPage() {
     row.className = 'user-row' + (i === SEL_USER ? ' actif' : '');
     const av = document.createElement('span');
     av.className = 'u-avatar';
-    av.textContent = initiales(u.nom);
-    av.style.background = avColor(u.nom);
+    av.style.overflow = 'hidden';
+    peindreAvatar(av, u);
     const nom = document.createElement('span');
     nom.className = 'u-nom';
     nom.textContent = u.nom;
@@ -2253,7 +2555,7 @@ function renderUsersPage() {
 $('spu-add').addEventListener('click', () => {
   const nom = $('spu-new').value.trim();
   if (!nom || USERS.some((u) => u.nom.toLowerCase() === nom.toLowerCase())) return;
-  USERS.push({ nom, pwd: '' });
+  USERS.push({ nom, pwd: '', photo: '' });
   if (!ACTIVE) { ACTIVE = nom; store.set('activeUser', nom); }
   $('spu-new').value = '';
   SEL_USER = USERS.length - 1;
@@ -2350,8 +2652,8 @@ function renderLockUi() {
       p.className = 'lock-p';
       const av = document.createElement('span');
       av.className = 'u-avatar';
-      av.textContent = initiales(u.nom);
-      av.style.background = avColor(u.nom);
+      av.style.overflow = 'hidden';
+      peindreAvatar(av, u);
       const n = document.createElement('span');
       n.className = 'n';
       n.textContent = u.nom;
