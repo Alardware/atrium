@@ -267,6 +267,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .field .hint{font:500 11px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted);letter-spacing:0;text-transform:none}
 .name-row{display:flex;gap:10px;align-items:flex-end}
 .name-row .field{flex:1}
+
+/* fiche application : blocs uniformes pour toutes les intégrations */
+.mblock{border:1px solid var(--border);border-radius:11px;background:var(--surface-2);overflow:hidden}
+.mblock-h{padding:11px 14px;border-bottom:1px solid var(--divider);background:var(--surface);font:700 11.5px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.mblock-h .opt{font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted);margin-left:3px}
+.mblock-b{padding:14px;display:flex;flex-direction:column;gap:14px}
+.icon-row{display:flex;align-items:flex-start;gap:12px}
+.icon-actions{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.icon-actions input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);font:500 12px/1.3 'Plus Jakarta Sans',sans-serif;outline:none}
+.icon-actions input:focus{border-color:var(--accent)}
+.test-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.test-row .conn-status{flex:1;min-width:170px;padding:8px 11px;font:600 11.5px/1.4 'Plus Jakarta Sans',sans-serif}
+.conn-status.wait .dot{background:var(--warn);animation:pulse 1s ease-in-out infinite}
 .modal-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
 /* utilisateurs */
 .users-list{display:flex;flex-direction:column;gap:8px}
@@ -573,62 +586,89 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   <div class="modal" role="dialog" aria-modal="true">
     <h3 id="m-title">Ajouter une application</h3>
     <div class="mform">
-      <div class="name-row">
-        <span class="logo-chip s40" id="m-chip"><span class="cl" id="m-cl">?</span></span>
-        <div class="field">
-          <label for="m-nom">Nom</label>
-          <input id="m-nom" type="text" placeholder="ex. Plex" autocomplete="off">
+
+      <!-- 1. l'application elle-même -->
+      <div class="mblock">
+        <div class="mblock-h" data-i18n="f.block.app">Application</div>
+        <div class="mblock-b">
+          <div class="field">
+            <label for="m-nom" data-i18n="f.name">Nom</label>
+            <input id="m-nom" type="text" placeholder="ex. Plex" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="m-url" data-i18n="f.url">URL</label>
+            <input id="m-url" type="text" placeholder="http://192.168.0.10:32400" autocomplete="off">
+            <span class="hint" data-i18n="f.url.hint">Sert aussi à détecter automatiquement si l'app est en ligne.</span>
+          </div>
+          <div class="mrow">
+            <div class="field">
+              <label for="m-role" data-i18n="f.label">Libellé</label>
+              <input id="m-role" type="text" placeholder="ex. Films & séries" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="m-cat" data-i18n="f.cat">Catégorie</label>
+              <select id="m-cat">
+                <option value="Média" data-i18n="cat.media">Média</option>
+                <option value="Maison" data-i18n="cat.home">Maison</option>
+                <option value="Fichiers & photos" data-i18n="cat.files">Fichiers &amp; photos</option>
+                <option value="Serveur" data-i18n="cat.server">Serveur</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label data-i18n="f.icon">Icône</label>
+            <div class="icon-row">
+              <span class="logo-chip s40" id="m-chip"><span class="cl" id="m-cl">?</span></span>
+              <div class="icon-actions">
+                <div class="av-edit-btns">
+                  <button class="btn-sm" id="m-ico-up" type="button" data-i18n="f.icon.file">Choisir un fichier</button>
+                  <button class="btn-sm" id="m-ico-auto" type="button" data-i18n="f.icon.auto">Automatique</button>
+                </div>
+                <input id="m-logo" type="text" data-i18n-ph="f.icon.url" placeholder="ou coller une URL d'image" autocomplete="off">
+              </div>
+              <input type="file" id="m-ico-file" accept="image/*" hidden>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="mrow">
-        <div class="field">
-          <label for="m-role" data-i18n="f.role">Rôle</label>
-          <input id="m-role" type="text" placeholder="ex. Films & séries" autocomplete="off">
+
+      <!-- 2. la configuration de l'intégration -->
+      <div class="mblock">
+        <div class="mblock-h"><span data-i18n="f.block.conf">Configuration</span> <span class="opt" data-i18n="f.optional">(optionnel)</span></div>
+        <div class="mblock-b">
+          <div class="field">
+            <label for="m-type" data-i18n="f.integration">Intégration</label>
+            <select id="m-type">
+              <option value="" data-i18n="f.integration.none">Aucune — simple lien</option>
+              <option value="plex">Plex</option>
+              <option value="ha">Home Assistant</option>
+              <option value="unraid">Unraid</option>
+              <option value="unifi">UniFi</option>
+            </select>
+            <span class="hint" id="m-type-hint" data-i18n="f.integration.hint">Sans intégration, la tuile est un simple raccourci. Avec, Atrium interroge le service pour en afficher les données.</span>
+          </div>
+          <div class="field" id="f-key" hidden>
+            <label for="m-key" id="m-key-label">Clé API</label>
+            <span class="pwd-wrap">
+              <input id="m-key" type="password" autocomplete="off">
+              <button class="pwd-eye" id="m-key-eye" type="button">👁</button>
+            </span>
+            <span class="hint" id="m-key-hint"></span>
+          </div>
+          <div class="field" id="f-temp" hidden>
+            <label for="m-temp" data-i18n="f.temp">Entité température intérieure</label>
+            <input id="m-temp" type="text" placeholder="auto — ex. sensor.temperature_salon" autocomplete="off">
+          </div>
+          <div class="field" id="f-sysmon" hidden>
+            <label data-i18n="f.sysmon">Capteurs système (CPU / RAM / Disque)</label>
+            <button class="btn-sm" id="m-sysmon" type="button" data-i18n="f.sysmon.btn">Activer automatiquement dans Home Assistant</button>
+          </div>
+          <div class="test-row" id="f-test" hidden>
+            <button class="btn-sm" id="m-test" type="button" data-i18n="f.test">Tester la connexion</button>
+            <span class="conn-status na" id="m-status"><span class="dot"></span><span class="lbl" data-i18n="f.test.idle">Non testé</span></span>
+          </div>
         </div>
-        <div class="field">
-          <label for="m-cat" data-i18n="f.cat">Catégorie</label>
-          <select id="m-cat">
-            <option value="Média" data-i18n="cat.media">Média</option>
-            <option value="Maison" data-i18n="cat.home">Maison</option>
-            <option value="Fichiers & photos" data-i18n="cat.files">Fichiers &amp; photos</option>
-            <option value="Serveur" data-i18n="cat.server">Serveur</option>
-          </select>
-        </div>
       </div>
-      <div class="field">
-        <label for="m-url" data-i18n="f.url">URL d'ouverture</label>
-        <input id="m-url" type="text" placeholder="http://192.168.0.251:32400" autocomplete="off">
-        <span class="hint" data-i18n="f.url.hint">Sert aussi à détecter automatiquement si l'app est en ligne.</span>
-      </div>
-      <div class="field">
-        <label for="m-logo" data-i18n="f.logo">Logo (URL, vide = automatique)</label>
-        <input id="m-logo" type="text" data-i18n-ph="f.logo.ph" placeholder="auto depuis le nom" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="m-type" data-i18n="f.integration">Intégration</label>
-        <select id="m-type">
-          <option value="" data-i18n="f.integration.none">Aucune — simple lien</option>
-          <option value="plex">Plex — lectures en cours</option>
-          <option value="ha">Home Assistant — domotique, lecteurs</option>
-          <option value="unraid">Unraid — CPU, RAM, grappe</option>
-          <option value="unifi">UniFi — routeur, clients</option>
-        </select>
-      </div>
-      <div class="field" id="f-key" hidden>
-        <label for="m-key" id="m-key-label">Clé API</label>
-        <input id="m-key" type="password" autocomplete="off">
-        <span class="hint" id="m-key-hint"></span>
-      </div>
-      <div class="field" id="f-temp" hidden>
-        <label for="m-temp" data-i18n="f.temp">Entité température intérieure (optionnel)</label>
-        <input id="m-temp" type="text" placeholder="auto — ex. sensor.temperature_salon" autocomplete="off">
-      </div>
-      <div class="field" id="f-sysmon" hidden>
-        <label data-i18n="f.sysmon">Capteurs système (CPU / RAM / Disque)</label>
-        <button class="btn-ghost" id="m-sysmon" type="button" data-i18n="f.sysmon.btn">Activer automatiquement dans Home Assistant</button>
-        <span class="hint" data-i18n="f.sysmon.hint">Crée l'intégration System Monitor et active les capteurs nécessaires.</span>
-      </div>
-      <div class="conn-status na" id="m-status" hidden><span class="dot"></span><span class="lbl"></span></div>
     </div>
     <div class="modal-foot">
       <button class="btn-ghost" id="m-cancel" data-i18n="btn.cancel">Annuler</button>
@@ -2011,6 +2051,66 @@ async function pullCfg() {
   return { serveur: true, vierge };
 }
 
+/* Test d'une intégration : même code pour le bouton « Tester » et pour les
+   relevés périodiques, afin qu'un test réussi garantisse un relevé réussi. */
+async function testerIntegration(type, url, cle) {
+  const base = (url || '').trim().replace(/\/+$/, '');
+  if (!base) return { ok: false, msg: t('f.test.nourl') };
+  if (!cle && type !== '') return { ok: false, msg: t('f.test.nokey') };
+  try {
+    if (type === 'ha') {
+      const r = await pxFetch(base + '/api/', { headers: { Authorization: 'Bearer ' + cle } });
+      if (r.status === 401 || r.status === 403) return { ok: false, msg: 'Jeton refusé (HTTP ' + r.status + ')' };
+      if (!r.ok) return { ok: false, msg: 'HTTP ' + r.status };
+      return { ok: true, msg: t('f.test.ok') };
+    }
+    if (type === 'plex') {
+      const r = await pxFetch(base + '/identity', { headers: { Accept: 'application/json', 'X-Plex-Token': cle } });
+      if (r.status === 401) return { ok: false, msg: 'Jeton Plex refusé (HTTP 401)' };
+      if (!r.ok) return { ok: false, msg: 'HTTP ' + r.status };
+      const j = await r.json().catch(() => null);
+      const nom = j && j.MediaContainer && j.MediaContainer.friendlyName;
+      return { ok: true, msg: nom ? t('f.test.ok') + ' — ' + nom : t('f.test.ok') };
+    }
+    if (type === 'unraid') {
+      /* on interroge exactement ce que l'intégration lit : une clé peut être
+         valide mais dépourvue des droits sur d'autres champs */
+      const r = await pxFetch(base + '/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': cle },
+        body: JSON.stringify({ query: '{ metrics { cpu { percentTotal } memory { percentTotal } } }' }),
+      });
+      if (r.status === 401 || r.status === 403) return { ok: false, msg: 'Clé API refusée (HTTP ' + r.status + ')' };
+      if (!r.ok) return { ok: false, msg: 'HTTP ' + r.status };
+      const j = await r.json().catch(() => null);
+      if (j && j.errors) {
+        const m = String((j.errors[0] && j.errors[0].message) || 'erreur API');
+        return { ok: false, msg: /valid|unauth/i.test(m) ? m + ' — vérifiez la clé et ses permissions' : m };
+      }
+      const cpu = j && j.data && j.data.metrics && j.data.metrics.cpu;
+      return { ok: !!cpu, msg: cpu ? t('f.test.ok') : 'réponse inattendue' };
+    }
+    if (type === 'unifi') {
+      const H = { 'X-API-KEY': cle, Accept: 'application/json' };
+      for (const root of [base + '/proxy/network/integration/v1', base + '/integration/v1']) {
+        const r = await pxFetch(root + '/sites', { headers: H });
+        if (r.status === 200) {
+          const j = await r.json().catch(() => null);
+          const n = j && j.data ? j.data.length : 0;
+          return { ok: true, msg: t('f.test.ok') + (n ? ' — ' + n + ' site(s)' : '') };
+        }
+        if (r.status === 401 || r.status === 403) {
+          return { ok: false, msg: 'Clé refusée (HTTP ' + r.status + ') — créez-la sur le contrôleur local, pas sur unifi.ui.com' };
+        }
+      }
+      return { ok: false, msg: 'API introuvable — vérifiez l\'URL (Network 9.0+ requis)' };
+    }
+    return { ok: false, msg: '' };
+  } catch (e) {
+    return { ok: false, msg: String(e.message || e) };
+  }
+}
+
 /* Machine hôte : mesurée par Atrium lui-même, sans aucune intégration. */
 async function pollHote() {
   try {
@@ -2261,9 +2361,43 @@ function syncKind() {
   }
   $('f-temp').hidden = kind !== 'ha';
   $('f-sysmon').hidden = kind !== 'ha';
-  $('m-status').hidden = !ui;
-  renderModalStatus();
+  $('f-test').hidden = !ui;
+  majTest('na', t('f.test.idle'));
 }
+
+/* état du test, commun à toutes les intégrations */
+function majTest(etat, msg) {
+  const el = $('m-status');
+  if (!el) return;
+  el.className = 'conn-status ' + etat;
+  el.querySelector('.lbl').textContent = msg;
+}
+$('m-test').addEventListener('click', async () => {
+  const type = $('m-type').value;
+  if (!type) return;
+  majTest('wait', t('f.test.wait'));
+  const r = await testerIntegration(type, $('m-url').value, $('m-key').value);
+  majTest(r.ok ? 'ok' : 'bad', r.msg);
+});
+
+/* icône : fichier local, URL, ou déduite du nom */
+bindPwd('m-key', 'm-key-eye', 'm-key-x', 'm-key-x');
+$('m-ico-up').addEventListener('click', () => $('m-ico-file').click());
+$('m-ico-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    $('m-logo').value = await lirePhoto(f);
+    syncChip();
+    toast(t('icon.updated'));
+  } catch (err) { toast(t('fail', { e: err.message })); }
+});
+$('m-ico-auto').addEventListener('click', () => {
+  $('m-logo').value = '';
+  syncChip();
+  toast(t('icon.auto'));
+});
 function openAppModal(index) {
   editIndex = index;
   const app = index === null
@@ -2363,26 +2497,9 @@ function haStatusInto(el) {
   }
 }
 function renderSetStatus() { renderConnPanel(); }
-function renderModalStatus() {
-  const el = $('m-status');
-  if (!el || el.hidden || $('ov-app').hidden) return;
-  const kind = $('m-type').value;
-  if (kind === 'ha') { haStatusInto(el); return; }
-  if (kind !== 'unraid' && kind !== 'unifi' && kind !== 'plex') return;
-  const nomK = kind === 'unraid' ? 'Unraid' : (kind === 'unifi' ? 'UniFi' : 'Plex');
-  const data = kind === 'unraid' ? DIRECT.unraid : (kind === 'unifi' ? DIRECT.unifi : (DIRECT.plexOk ? PLEX_MEDIAS : null));
-  const err = (DIRECT.err || {})[kind] || '';
-  if (data) {
-    el.className = 'conn-status ok';
-    el.querySelector('.lbl').textContent = nomK + ' connecté';
-  } else if (err) {
-    el.className = 'conn-status bad';
-    el.querySelector('.lbl').textContent = 'Erreur : ' + err;
-  } else {
-    el.className = 'conn-status na';
-    el.querySelector('.lbl').textContent = 'Non connecté — enregistre puis patiente quelques secondes';
-  }
-}
+/* le statut de la fiche reflète le dernier test lancé par l'utilisateur :
+   il n'est plus écrasé par les relevés périodiques */
+function renderModalStatus() {}
 /* ---------- page réglages ---------- */
 function openSettings(section) {
   $('spage').hidden = false;
