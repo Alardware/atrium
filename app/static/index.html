@@ -632,41 +632,30 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         </div>
       </div>
 
-      <!-- 2. la configuration de l'intégration -->
+      <!-- 2. configuration : identique pour toutes les applications -->
       <div class="mblock">
         <div class="mblock-h"><span data-i18n="f.block.conf">Configuration</span> <span class="opt" data-i18n="f.optional">(optionnel)</span></div>
         <div class="mblock-b">
           <div class="field">
-            <label for="m-type" data-i18n="f.integration">Intégration</label>
-            <select id="m-type">
-              <option value="" data-i18n="f.integration.none">Aucune — simple lien</option>
-              <option value="plex">Plex</option>
-              <option value="ha">Home Assistant</option>
-              <option value="unraid">Unraid</option>
-              <option value="unifi">UniFi</option>
-            </select>
-            <span class="hint" id="m-type-hint" data-i18n="f.integration.hint">Sans intégration, la tuile est un simple raccourci. Avec, Atrium interroge le service pour en afficher les données.</span>
-          </div>
-          <div class="field" id="f-key" hidden>
-            <label for="m-key" id="m-key-label">Clé API</label>
+            <label for="m-key" id="m-key-label" data-i18n="f.key">Clé API ou jeton</label>
             <span class="pwd-wrap">
-              <input id="m-key" type="password" autocomplete="off">
+              <input id="m-key" type="password" data-i18n-ph="f.key.ph" placeholder="laisser vide si le service n'en demande pas" autocomplete="off">
               <button class="pwd-eye" id="m-key-eye" type="button">👁</button>
             </span>
-            <span class="hint" id="m-key-hint"></span>
+            <span class="hint" id="m-key-hint" data-i18n="f.key.hint">Atrium reconnaît le service tout seul à partir de son URL. La clé ne sert qu'à lire ses données.</span>
           </div>
           <div class="field" id="f-temp" hidden>
             <label for="m-temp" data-i18n="f.temp">Entité température intérieure</label>
             <input id="m-temp" type="text" placeholder="auto — ex. sensor.temperature_salon" autocomplete="off">
           </div>
           <div class="field" id="f-sysmon" hidden>
-            <label data-i18n="f.sysmon">Capteurs système (CPU / RAM / Disque)</label>
-            <button class="btn-sm" id="m-sysmon" type="button" data-i18n="f.sysmon.btn">Activer automatiquement dans Home Assistant</button>
+            <button class="btn-sm" id="m-sysmon" type="button" data-i18n="f.sysmon.btn">Activer les capteurs système dans Home Assistant</button>
           </div>
-          <div class="test-row" id="f-test" hidden>
+          <div class="test-row">
             <button class="btn-sm" id="m-test" type="button" data-i18n="f.test">Tester la connexion</button>
             <span class="conn-status na" id="m-status"><span class="dot"></span><span class="lbl" data-i18n="f.test.idle">Non testé</span></span>
           </div>
+          <input type="hidden" id="m-type" value="">
         </div>
       </div>
     </div>
@@ -2351,34 +2340,66 @@ const KIND_UI = {
     hint: 'Plex Web → lire un média → ⋮ → Obtenir des informations → Afficher XML → copier la valeur X-Plex-Token dans l\'URL. Affiche les lectures en cours en direct, sans Home Assistant.',
   },
 };
+/* Les champs propres à une intégration n'apparaissent qu'une fois le service
+   reconnu. Rien à choisir : Atrium identifie le service depuis son URL. */
 function syncKind() {
   const kind = $('m-type').value;
-  const ui = KIND_UI[kind];
-  $('f-key').hidden = !ui;
-  if (ui) {
-    $('m-key-label').textContent = ui.key;
-    $('m-key-hint').textContent = ui.hint;
-  }
   $('f-temp').hidden = kind !== 'ha';
   $('f-sysmon').hidden = kind !== 'ha';
-  $('f-test').hidden = !ui;
-  majTest('na', t('f.test.idle'));
 }
 
-/* état du test, commun à toutes les intégrations */
 function majTest(etat, msg) {
   const el = $('m-status');
   if (!el) return;
   el.className = 'conn-status ' + etat;
   el.querySelector('.lbl').textContent = msg;
 }
-$('m-test').addEventListener('click', async () => {
-  const type = $('m-type').value;
-  if (!type) return;
+
+/* Test unique pour toutes les applications : Atrium sonde l'URL, annonce le
+   service reconnu, puis vérifie la clé lorsqu'elle est nécessaire. */
+async function detecterEtTester() {
+  const url = $('m-url').value.trim();
+  if (!url) { majTest('bad', t('f.test.nourl')); return; }
   majTest('wait', t('f.test.wait'));
-  const r = await testerIntegration(type, $('m-url').value, $('m-key').value);
-  majTest(r.ok ? 'ok' : 'bad', r.msg);
-});
+  let d;
+  try {
+    const r = await relayFetch('/api/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, cle: $('m-key').value }),
+    });
+    d = await r.json();
+    if (!r.ok) { majTest('bad', d.error || ('HTTP ' + r.status)); return; }
+  } catch (e) {
+    majTest('bad', String(e.message || e));
+    return;
+  }
+
+  if (!d.trouve) {
+    $('m-type').value = '';
+    syncKind();
+    majTest(d.joignable ? 'na' : 'bad',
+      d.joignable ? t('f.test.unknown') : t('f.test.unreachable'));
+    return;
+  }
+
+  $('m-type').value = d.type;
+  syncKind();
+  if (d.cle_libelle) {
+    $('m-key-label').textContent = d.cle_libelle;
+    const aide = (KIND_UI[d.type] || {}).hint;
+    $('m-key-hint').textContent = aide || t('f.key.hint');
+  }
+
+  const nom = d.nom + (d.version ? ' ' + d.version : '');
+  if (!d.cle_requise) { majTest('ok', t('f.test.detected', { nom })); return; }
+  if (!$('m-key').value.trim()) { majTest('na', t('f.test.detected.nokey', { nom })); return; }
+
+  // le service est reconnu : on valide la clé avec l'appel réellement utilisé
+  const v = await testerIntegration(d.type, url, $('m-key').value);
+  majTest(v.ok ? 'ok' : 'bad', v.ok ? t('f.test.detected', { nom }) : v.msg);
+}
+$('m-test').addEventListener('click', detecterEtTester);
 
 /* icône : fichier local, URL, ou déduite du nom */
 bindPwd('m-key', 'm-key-eye', 'm-key-x', 'm-key-x');
@@ -2413,22 +2434,24 @@ function openAppModal(index) {
   $('m-key').value = kindOfApp(app) === 'ha' ? (app.token || '') : (app.apiKey || '');
   $('m-temp').value = app.tempEntity || '';
   $('m-nom').classList.remove('err');
+  $('m-key-label').textContent = t('f.key');
+  $('m-key-hint').textContent = t('f.key.hint');
+  majTest('na', t('f.test.idle'));
   syncChip();
   syncKind();
   $('ov-app').hidden = false;
   $('m-nom').focus();
+  /* une application déjà configurée : on vérifie son état sans rien demander */
+  if (app.url && (app.token || app.apiKey || kindOfApp(app))) detecterEtTester();
 }
 function closeAppModal() { $('ov-app').hidden = true; editIndex = null; }
 $('m-nom').addEventListener('input', () => {
   $('m-nom').classList.remove('err');
   syncChip();
   /* le nom ne fait que proposer un type tant qu'aucun n'a été choisi */
-  if (!$('m-type').dataset.touche) {
-    const d = devinerType($('m-nom').value);
-    if (d) { $('m-type').value = d; syncKind(); }
-  }
 });
-$('m-type').addEventListener('change', () => { $('m-type').dataset.touche = '1'; syncKind(); });
+/* l'URL change : le service reconnu ne vaut plus, on invite à retester */
+$('m-url').addEventListener('input', () => majTest('na', t('f.test.idle')));
 $('m-logo').addEventListener('input', syncChip);
 $('m-cancel').addEventListener('click', closeAppModal);
 $('m-save').addEventListener('click', () => {

@@ -23,6 +23,7 @@ import urllib.parse
 import urllib.request
 
 import auth
+import services
 import systeme
 
 PORT = int(os.environ.get("ATRIUM_PORT", "8420"))
@@ -183,6 +184,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route in ("/cfg", "/api/config"):
             if self.exiger_session():
                 self.cfg_post()
+        elif route == "/api/detect":
+            if self.exiger_session():
+                self.detecter()
         elif route == "/api/login":
             self.login()
         elif route == "/api/logout":
@@ -193,6 +197,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.installer()
         else:
             self.send_error(404)
+
+    def detecter(self):
+        """Reconnait le service derriere une URL, et verifie la cle si fournie."""
+        d = self.json_recu() or {}
+        url = str(d.get("url", "")).strip()
+        cle = str(d.get("cle", ""))
+        if not url:
+            self.reply(400, json.dumps({"error": "URL requise"}, ensure_ascii=False).encode())
+            return
+        if not host_allowed(url if url.startswith(("http://", "https://")) else "http://" + url):
+            self.reply(403, json.dumps({"error": "Adresse hors du réseau privé"}, ensure_ascii=False).encode())
+            return
+        self.reply(200, json.dumps(services.identifier(url, cle), ensure_ascii=False).encode())
 
     # ---------- authentification ----------
     def session_get(self):
