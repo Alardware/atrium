@@ -78,14 +78,14 @@ def s_jellyfin(base, cle):
 
 
 def s_homeassistant(base, cle):
+    # un 401 nu ne prouve rien : quantite de services repondent ainsi sur
+    # /api/. On exige le message de l API, ou le manifeste de l application.
     code, corps, _ = _http(base + "/api/", {"Authorization": "Bearer " + cle} if cle else None)
     if code == 200 and b"API running" in corps:
         return "Home Assistant", None
-    if code == 401:
-        return "Home Assistant", None       # present, mais jeton requis
     code, corps, _ = _http(base + "/manifest.json")
     j = _json(corps)
-    if code == 200 and isinstance(j, dict) and "Home Assistant" in (j.get("name") or ""):
+    if code == 200 and isinstance(j, dict) and "home assistant" in (j.get("name") or "").lower():
         return "Home Assistant", None
     return None
 
@@ -97,7 +97,11 @@ def s_unraid(base, cle):
         "POST",
         b'{"query":"{ metrics { cpu { percentTotal } } }"}',
     )
-    if code in (200, 401, 403) and (b"metrics" in corps or b"API key" in corps or b"errors" in corps):
+    # soit les mesures arrivent, soit l API annonce explicitement une cle
+    # manquante ou invalide : dans les deux cas c est bien Unraid
+    if code == 200 and b"percentTotal" in corps:
+        return "Unraid", None
+    if b"API key" in corps or b"UNAUTHENTICATED" in corps:
         return "Unraid", None
     return None
 
@@ -201,7 +205,12 @@ def s_uptimekuma(base, cle):
 
 def s_proxmox(base, cle):
     code, corps, _ = _http(base + "/api2/json/version", {"Authorization": cle} if cle else None)
-    if code in (200, 401) and (b"version" in corps or b"authentication" in corps.lower()):
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("data"), dict) \
+            and "version" in j["data"]:
+        return "Proxmox", j["data"].get("version")
+    # non authentifie, Proxmox refuse avec un corps vide mais un en-tete typique
+    if code == 401 and b"PVEAuthCookie" in corps:
         return "Proxmox", None
     return None
 
@@ -215,8 +224,11 @@ def s_vaultwarden(base, cle):
 
 
 def s_paperless(base, cle):
+    # la racine d API liste ses collections : « documents » et « correspondents »
+    # ensemble sont propres a Paperless
     code, corps, _ = _http(base + "/api/", {"Authorization": ("Token " + cle) if cle else None})
-    if code in (200, 401, 403) and (b"documents" in corps or b"detail" in corps):
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and "documents" in j and "correspondents" in j:
         return "Paperless-ngx", None
     return None
 
@@ -275,37 +287,264 @@ def s_frigate(base, cle):
     return None
 
 
+# --- NAS et systemes hotes ---------------------------------------------------
+
+def s_truenas(base, cle):
+    """TrueNAS CORE / SCALE, et HexOS qui repose dessus."""
+    code, corps, _ = _http(base + "/api/v2.0/system/info",
+                           {"Authorization": ("Bearer " + cle) if cle else None})
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and "version" in j and "system_product" in j:
+        v = j.get("version") or ""
+        nom = "TrueNAS SCALE" if "SCALE" in v.upper() else "TrueNAS"
+        return nom, v or None
+    # sans jeton l API refuse, mais son message est reconnaissable
+    if code in (401, 403) and b"Not authenticated" in corps:
+        return "TrueNAS", None
+    return None
+
+
+def s_omv(base, cle):
+    code, corps, entetes = _http(base + "/rpc.php", methode="POST",
+                                 corps=b'{"service":"System","method":"noop"}')
+    if code in (200, 400, 401, 405) and (b"openmediavault" in corps.lower() or b"response" in corps.lower()):
+        return "OpenMediaVault", None
+    code, corps, _ = _http(base + "/")
+    if code == 200 and b"openmediavault" in corps.lower():
+        return "OpenMediaVault", None
+    return None
+
+
+def s_casaos(base, cle):
+    # CasaOS enveloppe ses reponses dans {success: <code>, message: ...}
+    for c in ("/v1/sys/health", "/v1/users/status"):
+        code, corps, _ = _http(base + c)
+        j = _json(corps)
+        if code == 200 and isinstance(j, dict) and isinstance(j.get("success"), int) \
+                and "message" in j:
+            return "CasaOS", None
+    return None
+
+
+def s_cosmos(base, cle):
+    code, corps, _ = _http(base + "/")
+    if code == 200 and b"cosmos-ui" in corps:
+        return "Cosmos", None
+    return None
+
+
+# --- supervision -------------------------------------------------------------
+
+def s_netdata(base, cle):
+    code, corps, _ = _http(base + "/api/v1/info")
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and j.get("uid") and "version" in j:
+        return "Netdata", j.get("version")
+    return None
+
+
+def s_glances(base, cle):
+    for v in ("4", "3"):
+        code, corps, _ = _http(base + "/api/%s/status" % v)
+        if code == 200:
+            return "Glances", None
+        code, corps, _ = _http(base + "/api/%s/all" % v)
+        j = _json(corps)
+        if code == 200 and isinstance(j, dict) and "cpu" in j and "mem" in j:
+            return "Glances", None
+    return None
+
+
+# --- domotique ---------------------------------------------------------------
+
+def s_openhab(base, cle):
+    code, corps, _ = _http(base + "/rest/", {"Authorization": ("Bearer " + cle) if cle else None})
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and (j.get("runtimeInfo") or j.get("version")):
+        ri = j.get("runtimeInfo") or {}
+        return "openHAB", ri.get("version")
+    return None
+
+
+def s_domoticz(base, cle):
+    code, corps, _ = _http(base + "/json.htm?type=command&param=getversion")
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and j.get("status") == "OK" and "version" in j:
+        return "Domoticz", j.get("version")
+    return None
+
+
+def s_iobroker(base, cle):
+    code, corps, _ = _http(base + "/")
+    if code == 200 and re.search(rb"iobroker", corps, re.I):
+        return "ioBroker", None
+    return None
+
+
+# --- media complementaires ---------------------------------------------------
+
+def s_kodi(base, cle):
+    code, corps, _ = _http(base + "/jsonrpc", {"Content-Type": "application/json"}, "POST",
+                           b'{"jsonrpc":"2.0","method":"JSONRPC.Version","id":1}')
+    j = _json(corps)
+    if code in (200, 401) and isinstance(j, dict) and ("result" in j or "error" in j) and "jsonrpc" in corps.decode("utf-8", "replace"):
+        v = _chemin(j, "result", "version", "major")
+        return "Kodi", (str(v) if v else None)
+    return None
+
+
+def s_navidrome(base, cle):
+    code, corps, _ = _http(base + "/rest/ping.view?f=json&v=1.16.1&c=atrium")
+    j = _json(corps)
+    sr = _chemin(j, "subsonic-response") or {}
+    if code == 200 and sr:
+        return ("Navidrome" if "navidrome" in json.dumps(sr).lower() else "Serveur Subsonic"), sr.get("serverVersion")
+    return None
+
+
+def s_audiobookshelf(base, cle):
+    code, corps, _ = _http(base + "/status")
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and ("isInit" in j or "serverVersion" in j):
+        return "Audiobookshelf", j.get("serverVersion")
+    return None
+
+
+def s_bazarr(base, cle):
+    code, corps, _ = _http(base + "/api/system/status", {"X-API-KEY": cle})
+    j = _json(corps)
+    d = _chemin(j, "data") or {}
+    if code == 200 and isinstance(d, dict) and "bazarr_version" in d:
+        return "Bazarr", d.get("bazarr_version")
+    return None
+
+
+def s_jellyseerr(base, cle):
+    """Jellyseerr et Overseerr partagent l API ; on les distingue par les
+    reglages exposes."""
+    code, corps, _ = _http(base + "/api/v1/status", {"X-Api-Key": cle})
+    j = _json(corps)
+    if code != 200 or not isinstance(j, dict) or not j.get("version"):
+        return None
+    code2, corps2, _ = _http(base + "/api/v1/settings/public", {"X-Api-Key": cle})
+    txt = (corps2 or b"").decode("utf-8", "replace").lower()
+    nom = "Jellyseerr" if "jellyfin" in txt else "Overseerr"
+    return nom, j.get("version")
+
+
+def s_mylar(base, cle):
+    code, corps, _ = _http(base + "/api?apikey=%s&cmd=getVersion" % urllib.parse.quote(cle or ""))
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and ("data" in j or "success" in j):
+        return "Mylar3", None
+    return None
+
+
+def s_kapowarr(base, cle):
+    code, corps, _ = _http(base + "/api/system/about?api_key=%s" % urllib.parse.quote(cle or ""))
+    j = _json(corps)
+    # « error » seul ne prouve rien : beaucoup d API repondent ainsi
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("result"), dict) \
+            and "version" in j["result"]:
+        return "Kapowarr", j["result"].get("version")
+    return None
+
+
+# --- reseau, fichiers, securite ---------------------------------------------
+
+def s_wgeasy(base, cle):
+    # marqueurs propres a WG-Easy : liste de pairs WireGuard, ou session
+    # annoncant « requiresPassword »
+    code, corps, _ = _http(base + "/api/wireguard/client")
+    j = _json(corps)
+    if code == 200 and isinstance(j, list) and (not j or (isinstance(j[0], dict) and "publicKey" in j[0])):
+        return "WG-Easy", None
+    code, corps, _ = _http(base + "/api/session")
+    j = _json(corps)
+    if code in (200, 401) and isinstance(j, dict) and "requiresPassword" in j:
+        return "WG-Easy", None
+    return None
+
+
+def s_filebrowser(base, cle):
+    # /health repond « healthy » ; un 401 sur /api/renew ne prouve rien
+    code, corps, _ = _http(base + "/health")
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and str(j.get("status", "")).lower() == "healthy":
+        return "FileBrowser", None
+    return None
+
+
+def s_authentik(base, cle):
+    # « detail » est le format d erreur de Django REST : trop repandu pour
+    # servir de preuve. On exige la liste des capacites propre a authentik.
+    code, corps, _ = _http(base + "/api/v3/root/config/",
+                           {"Authorization": ("Bearer " + cle) if cle else None})
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("capabilities"), list):
+        return "authentik", None
+    return None
+
+
 # id interne, sonde, cle attendue (libelle) ; l ordre compte : du plus
 # discriminant au plus generique
 CATALOGUE = [
+    # media
     ("plex", s_plex, "Jeton Plex (X-Plex-Token)"),
-    ("unraid", s_unraid, "Clé API Unraid"),
-    ("unifi", s_unifi, "Clé API UniFi"),
-    ("ha", s_homeassistant, "Jeton longue durée"),
     ("jellyfin", s_jellyfin, "Clé API"),
+    ("kodi", s_kodi, ""),
+    ("navidrome", s_navidrome, ""),
+    ("audiobookshelf", s_audiobookshelf, "Jeton d'API"),
+    ("tautulli", s_tautulli, "Clé API"),
+    ("jellyseerr", s_jellyseerr, "Clé API"),
+    ("overseerr", s_overseerr, "Clé API"),
+    # suite *arr
     ("sonarr", s_arr("Sonarr"), "Clé API"),
     ("radarr", s_arr("Radarr"), "Clé API"),
     ("lidarr", s_arr("Lidarr"), "Clé API"),
     ("readarr", s_arr("Readarr"), "Clé API"),
+    ("whisparr", s_arr("Whisparr"), "Clé API"),
     ("prowlarr", s_arr("Prowlarr"), "Clé API"),
-    ("overseerr", s_overseerr, "Clé API"),
-    ("tautulli", s_tautulli, "Clé API"),
-    ("immich", s_immich, "Clé API"),
-    ("nextcloud", s_nextcloud, ""),
-    ("paperless", s_paperless, "Jeton d'API"),
-    ("adguard", s_adguard, ""),
-    ("pihole", s_pihole, "Mot de passe / jeton"),
-    ("portainer", s_portainer, "Clé API"),
-    ("proxmox", s_proxmox, "Jeton d'API"),
-    ("grafana", s_grafana, "Clé API"),
-    ("gitea", s_gitea, ""),
-    ("npm", s_npm, ""),
-    ("vaultwarden", s_vaultwarden, ""),
+    ("bazarr", s_bazarr, "Clé API"),
+    ("mylar", s_mylar, "Clé API"),
+    ("kapowarr", s_kapowarr, "Clé API"),
+    # telechargement
     ("qbittorrent", s_qbittorrent, ""),
     ("sabnzbd", s_sabnzbd, "Clé API"),
-    ("syncthing", s_syncthing, "Clé API"),
+    # NAS et hyperviseurs
+    ("unraid", s_unraid, "Clé API Unraid"),
+    ("truenas", s_truenas, "Clé API"),
+    ("omv", s_omv, ""),
+    ("proxmox", s_proxmox, "Jeton d'API"),
+    ("casaos", s_casaos, ""),
+    ("cosmos", s_cosmos, ""),
+    # domotique
+    ("ha", s_homeassistant, "Jeton longue durée"),
+    ("openhab", s_openhab, "Jeton d'API"),
+    ("domoticz", s_domoticz, ""),
+    ("iobroker", s_iobroker, ""),
     ("frigate", s_frigate, ""),
+    # reseau
+    ("unifi", s_unifi, "Clé API UniFi"),
+    ("adguard", s_adguard, ""),
+    ("pihole", s_pihole, "Mot de passe / jeton"),
+    ("npm", s_npm, ""),
+    ("wgeasy", s_wgeasy, ""),
+    # fichiers
+    ("nextcloud", s_nextcloud, ""),
+    ("immich", s_immich, "Clé API"),
+    ("paperless", s_paperless, "Jeton d'API"),
+    ("filebrowser", s_filebrowser, ""),
+    ("syncthing", s_syncthing, "Clé API"),
+    # outils
+    ("portainer", s_portainer, "Clé API"),
+    ("netdata", s_netdata, ""),
+    ("glances", s_glances, ""),
+    ("grafana", s_grafana, "Clé API"),
     ("uptimekuma", s_uptimekuma, ""),
+    ("gitea", s_gitea, ""),
+    ("vaultwarden", s_vaultwarden, ""),
+    ("authentik", s_authentik, "Jeton d'API"),
 ]
 
 
