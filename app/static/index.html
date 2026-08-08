@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="i18n.js"></script>
 <style>
 :root{
   --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfcfd;
@@ -362,6 +363,18 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 .setup-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--accent);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
 .setup-skip{width:100%;text-align:center;font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted);padding:4px}
 .setup-skip:hover{color:var(--text-2)}
+/* choix guidé des services */
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px;max-height:44vh;overflow-y:auto;padding:2px}
+.pick-it{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);cursor:pointer;transition:border-color .13s,background .13s}
+.pick-it:hover{border-color:var(--border-3)}
+.pick-it.on{border-color:var(--accent);background:var(--accent-soft)}
+.pick-it .logo-chip{width:24px;height:24px;border-radius:6px;font-size:9px}
+.pick-it .logo-chip img{width:16px;height:16px}
+.pick-n{flex:1;min-width:0;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-it.on .pick-n{color:var(--accent-strong)}
+.pick-ck{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border-3);flex:none;display:grid;place-items:center;font-size:9px;color:transparent}
+.pick-it.on .pick-ck{background:var(--accent);border-color:var(--accent);color:#fff}
+
 .boot{position:fixed;inset:0;background:var(--bg);z-index:130;display:grid;place-items:center}
 .boot[hidden]{display:none}
 .boot .b{width:34px;height:34px;border-radius:50%;border:3px solid var(--track);border-top-color:var(--accent);animation:spin .8s linear infinite}
@@ -421,27 +434,27 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </div>
       <div>
         <div class="brand-name">Atrium</div>
-        <div class="brand-sub">Central Dashboard</div>
-        <div class="brand-sub2">Services | Serveurs</div>
+        <div class="brand-sub" data-i18n="app.sub">Central Dashboard</div>
+        <div class="brand-sub2" data-i18n="app.sub2">Services | Serveurs</div>
       </div>
     </div>
 
     <nav class="nav" id="nav-cats">
-      <div class="nav-title">Catégories</div>
+      <div class="nav-title" data-i18n="nav.categories">Catégories</div>
       <button class="nav-link active" data-cat="">
-        <span class="ico">▦</span>Toutes les apps
+        <span class="ico">▦</span><span data-i18n="nav.all">Toutes les apps</span>
         <span class="count" id="count-all"></span>
       </button>
     </nav>
 
     <div class="nav">
-      <div class="nav-title">Gérer</div>
-      <button class="nav-link" id="side-add"><span class="ico">+</span>Ajouter une app</button>
-      <button class="nav-link" id="side-settings"><span class="ico">⚙</span>Réglages</button>
+      <div class="nav-title" data-i18n="nav.manage">Gérer</div>
+      <button class="nav-link" id="side-add"><span class="ico">+</span><span data-i18n="nav.add">Ajouter une app</span></button>
+      <button class="nav-link" id="side-settings"><span class="ico">⚙</span><span data-i18n="nav.settings">Réglages</span></button>
     </div>
 
     <div class="health" id="health" style="display:none">
-      <div class="health-head"><span class="dot"></span>Serveurs</div>
+      <div class="health-head"><span class="dot"></span><span data-i18n="servers">Serveurs</span></div>
       <div class="health-rows" id="health-rows"></div>
       <div class="health-foot" id="health-foot" style="display:none"></div>
     </div>
@@ -452,7 +465,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <header class="topbar">
       <label class="search">
         <span>⌕</span>
-        <input id="search" type="text" placeholder="Rechercher une application…" autocomplete="off">
+        <input id="search" type="text" data-i18n-ph="search.ph" placeholder="Rechercher une application…" autocomplete="off">
         <span class="kbd">⌘K</span>
       </label>
       <div class="top-right">
@@ -476,13 +489,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               </span>
             </div>
             <div class="av-sep"></div>
-            <button class="av-item" id="avm-profil"><span class="ic">👤</span>Mon profil</button>
-            <button class="av-item" id="avm-params"><span class="ic">⚙</span>Paramètres</button>
+            <button class="av-item" id="avm-profil"><span class="ic">👤</span><span data-i18n="acc.profile">Mon profil</span></button>
+            <button class="av-item" id="avm-params"><span class="ic">⚙</span><span data-i18n="acc.settings">Paramètres</span></button>
             <div class="av-sep"></div>
-            <div class="av-lab">Changer de compte</div>
+            <div class="av-lab" data-i18n="acc.switch">Changer de compte</div>
             <div class="av-users" id="avm-users"></div>
             <div class="av-sep"></div>
-            <button class="av-item av-danger" id="avm-logout"><span class="ic">⎋</span>Se déconnecter</button>
+            <button class="av-item av-danger" id="avm-logout"><span class="ic">⎋</span><span data-i18n="acc.logout">Se déconnecter</span></button>
           </div>
         </div>
       </div>
@@ -492,12 +505,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
       <section class="rise-1" id="sec-featured">
         <div class="section-head">
-          <h2>En ce moment</h2>
+          <h2 data-i18n="now">En ce moment</h2>
         </div>
         <div class="featured" id="featured">
 
           <a href="#" class="card now-playing" id="np-card">
-            <div class="poster" id="np-poster"><span id="np-poster-lab">affiche</span></div>
+            <div class="poster" id="np-poster"><span id="np-poster-lab" data-i18n="poster">affiche</span></div>
             <div class="np-body">
               <div class="chip-row">
                 <span class="logo-chip s26" id="np-chip"><span class="cl">▶</span></span>
@@ -515,7 +528,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               </div>
               <div class="np-foot" id="np-setup" hidden>
                 <div class="np-btns">
-                  <span class="btn-primary" id="np-config">Connecter une source</span>
+                  <span class="btn-primary" id="np-config" data-i18n="now.connect">Connecter une source</span>
                 </div>
               </div>
               <div class="np-more" id="np-more"></div>
@@ -532,7 +545,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               <div class="ha-loc" id="ha-loc"></div>
             </div>
             <div class="ha-rows" id="ha-rows"></div>
-            <div class="ha-open">Ouvrir ↗</div>
+            <div class="ha-open" data-i18n="open">Ouvrir ↗</div>
           </a>
         </div>
       </section>
@@ -540,12 +553,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <section class="rise-2">
         <div class="apps-head">
           <div class="apps-title">
-            <h2>Toutes les applications</h2>
+            <h2 data-i18n="apps.all">Toutes les applications</h2>
             <span class="n" id="apps-count"></span>
           </div>
           <div class="seg" id="seg-view">
-            <button data-view="grid" class="on">Grille</button>
-            <button data-view="list">Liste</button>
+            <button data-view="grid" class="on" data-i18n="apps.grid">Grille</button>
+            <button data-view="list" data-i18n="apps.list">Liste</button>
           </div>
         </div>
         <div class="grid" id="apps-grid"></div>
@@ -569,32 +582,32 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </div>
       <div class="mrow">
         <div class="field">
-          <label for="m-role">Rôle</label>
+          <label for="m-role" data-i18n="f.role">Rôle</label>
           <input id="m-role" type="text" placeholder="ex. Films & séries" autocomplete="off">
         </div>
         <div class="field">
-          <label for="m-cat">Catégorie</label>
+          <label for="m-cat" data-i18n="f.cat">Catégorie</label>
           <select id="m-cat">
-            <option value="Média">Média</option>
-            <option value="Maison">Maison</option>
-            <option value="Fichiers & photos">Fichiers &amp; photos</option>
-            <option value="Serveur">Serveur</option>
+            <option value="Média" data-i18n="cat.media">Média</option>
+            <option value="Maison" data-i18n="cat.home">Maison</option>
+            <option value="Fichiers & photos" data-i18n="cat.files">Fichiers &amp; photos</option>
+            <option value="Serveur" data-i18n="cat.server">Serveur</option>
           </select>
         </div>
       </div>
       <div class="field">
-        <label for="m-url">URL d'ouverture</label>
+        <label for="m-url" data-i18n="f.url">URL d'ouverture</label>
         <input id="m-url" type="text" placeholder="http://192.168.0.251:32400" autocomplete="off">
-        <span class="hint">Sert aussi à détecter automatiquement si l'app est en ligne.</span>
+        <span class="hint" data-i18n="f.url.hint">Sert aussi à détecter automatiquement si l'app est en ligne.</span>
       </div>
       <div class="field">
-        <label for="m-logo">Logo (URL, vide = automatique)</label>
-        <input id="m-logo" type="text" placeholder="auto depuis le nom" autocomplete="off">
+        <label for="m-logo" data-i18n="f.logo">Logo (URL, vide = automatique)</label>
+        <input id="m-logo" type="text" data-i18n-ph="f.logo.ph" placeholder="auto depuis le nom" autocomplete="off">
       </div>
       <div class="field">
-        <label for="m-type">Intégration</label>
+        <label for="m-type" data-i18n="f.integration">Intégration</label>
         <select id="m-type">
-          <option value="">Aucune — simple lien</option>
+          <option value="" data-i18n="f.integration.none">Aucune — simple lien</option>
           <option value="plex">Plex — lectures en cours</option>
           <option value="ha">Home Assistant — domotique, lecteurs</option>
           <option value="unraid">Unraid — CPU, RAM, grappe</option>
@@ -607,19 +620,19 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <span class="hint" id="m-key-hint"></span>
       </div>
       <div class="field" id="f-temp" hidden>
-        <label for="m-temp">Entité température intérieure (optionnel)</label>
+        <label for="m-temp" data-i18n="f.temp">Entité température intérieure (optionnel)</label>
         <input id="m-temp" type="text" placeholder="auto — ex. sensor.temperature_salon" autocomplete="off">
       </div>
       <div class="field" id="f-sysmon" hidden>
-        <label>Capteurs système (CPU / RAM / Disque)</label>
-        <button class="btn-ghost" id="m-sysmon" type="button">Activer automatiquement dans Home Assistant</button>
-        <span class="hint">Crée l'intégration System Monitor et active les capteurs nécessaires. Jauges sous ~30 s.</span>
+        <label data-i18n="f.sysmon">Capteurs système (CPU / RAM / Disque)</label>
+        <button class="btn-ghost" id="m-sysmon" type="button" data-i18n="f.sysmon.btn">Activer automatiquement dans Home Assistant</button>
+        <span class="hint" data-i18n="f.sysmon.hint">Crée l'intégration System Monitor et active les capteurs nécessaires.</span>
       </div>
       <div class="conn-status na" id="m-status" hidden><span class="dot"></span><span class="lbl"></span></div>
     </div>
     <div class="modal-foot">
-      <button class="btn-ghost" id="m-cancel">Annuler</button>
-      <button class="btn-primary" id="m-save">Enregistrer</button>
+      <button class="btn-ghost" id="m-cancel" data-i18n="btn.cancel">Annuler</button>
+      <button class="btn-primary" id="m-save" data-i18n="btn.save">Enregistrer</button>
     </div>
   </div>
 </div>
@@ -628,10 +641,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <div class="overlay" id="ov-del" hidden>
   <div class="modal" role="dialog" aria-modal="true">
     <h3 id="d-title">Supprimer ?</h3>
-    <div class="modal-sub">L'application sera retirée du hub. Cette action est immédiate.</div>
+    <div class="modal-sub" data-i18n="del.sub">L'application sera retirée du hub. Cette action est immédiate.</div>
     <div class="modal-foot">
-      <button class="btn-ghost" id="d-cancel">Annuler</button>
-      <button class="btn-danger" id="d-confirm">Supprimer</button>
+      <button class="btn-ghost" id="d-cancel" data-i18n="btn.cancel">Annuler</button>
+      <button class="btn-danger" id="d-confirm" data-i18n="btn.delete">Supprimer</button>
     </div>
   </div>
 </div>
@@ -639,69 +652,70 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <!-- page réglages -->
 <div class="spage" id="spage" hidden>
   <div class="spage-head">
-    <button class="btn-ghost" id="sp-back">← Retour</button>
-    <h2>Réglages</h2>
+    <button class="btn-ghost" id="sp-back" data-i18n="btn.back">← Retour</button>
+    <h2 data-i18n="set.title">Réglages</h2>
   </div>
   <div class="spage-body">
     <nav class="spage-nav" id="sp-nav">
-      <div class="grp">Compte</div>
-      <button data-p="profil" class="on"><span class="ic">👤</span>Mon profil</button>
-      <button data-p="users"><span class="ic">👥</span>Utilisateurs</button>
-      <button data-p="security"><span class="ic">🛡</span>Sécurité</button>
-      <div class="grp">Application</div>
-      <button data-p="conn"><span class="ic">⇄</span>Connexions</button>
-      <button data-p="about"><span class="ic">ℹ</span>À propos</button>
+      <div class="grp" data-i18n="set.grp.account">Compte</div>
+      <button data-p="profil" class="on"><span class="ic">👤</span><span data-i18n="set.profile">Mon profil</span></button>
+      <button data-p="users"><span class="ic">👥</span><span data-i18n="set.users">Utilisateurs</span></button>
+      <button data-p="security"><span class="ic">🛡</span><span data-i18n="set.security">Sécurité</span></button>
+      <div class="grp" data-i18n="set.grp.app">Application</div>
+      <button data-p="conn"><span class="ic">⇄</span><span data-i18n="set.conn">Connexions</span></button>
+      <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span></button>
+      <button data-p="about"><span class="ic">ℹ</span><span data-i18n="set.about">À propos</span></button>
     </nav>
     <div class="spage-content">
 
       <!-- MON PROFIL -->
       <section class="spanel sp-inner" id="sp-profil">
         <div class="sp-head">
-          <div class="sp-title">Mon profil</div>
-          <div class="sp-lead">Votre identité dans Atrium, sur cet appareil et sur l'écran de profils.</div>
+          <div class="sp-title" data-i18n="set.profile">Mon profil</div>
+          <div class="sp-lead" data-i18n="profile.lead">Votre identité dans Atrium, sur cet appareil et sur l'écran de profils.</div>
         </div>
         <div id="p-vide" class="scard" hidden>
           <div class="scard-body">
-            <span class="hint">Aucun profil actif. Créez-en un dans <b>Utilisateurs</b>.</span>
+            <span class="hint" data-i18n="profile.none">Aucun profil actif. Créez-en un dans Utilisateurs.</span>
           </div>
         </div>
         <div id="p-fiche">
           <div class="scard">
-            <h4>Identité</h4>
+            <h4 data-i18n="profile.identity">Identité</h4>
             <div class="scard-body">
               <div class="av-edit">
                 <span class="av-big" id="p-av">?</span>
                 <div class="av-edit-actions">
                   <div class="av-edit-btns">
-                    <button class="btn-sm" id="p-av-up" type="button">Choisir une photo</button>
-                    <button class="btn-sm danger" id="p-av-del" type="button">Retirer</button>
+                    <button class="btn-sm" id="p-av-up" type="button" data-i18n="profile.photo">Choisir une photo</button>
+                    <button class="btn-sm danger" id="p-av-del" type="button" data-i18n="btn.remove">Retirer</button>
                   </div>
                 </div>
                 <input type="file" id="p-av-file" accept="image/*" hidden>
               </div>
               <div class="field">
-                <label for="p-nom">Nom affiché</label>
+                <label for="p-nom" data-i18n="profile.displayname">Nom affiché</label>
                 <input id="p-nom" type="text" autocomplete="off">
               </div>
             </div>
             <div class="scard-foot">
-              <button class="btn-primary" id="p-save">Enregistrer</button>
+              <button class="btn-primary" id="p-save" data-i18n="btn.save">Enregistrer</button>
             </div>
           </div>
 
           <div class="scard" style="margin-top:22px">
-            <h4>Changer le mot de passe</h4>
+            <h4 data-i18n="pwd.change">Changer le mot de passe</h4>
             <div class="scard-body">
               <div class="setup-err" id="p-pwd-err" hidden></div>
               <div class="field" id="p-anc-champ">
-                <label for="p-anc">Mot de passe actuel</label>
+                <label for="p-anc" data-i18n="pwd.current">Mot de passe actuel</label>
                 <span class="pwd-wrap">
                   <input id="p-anc" type="password" autocomplete="current-password">
                   <button class="pwd-eye" id="p-anc-eye" type="button" title="Afficher">👁</button>
                 </span>
               </div>
               <div class="field">
-                <label for="p-pwd">Nouveau mot de passe</label>
+                <label for="p-pwd" data-i18n="pwd.new">Nouveau mot de passe</label>
                 <span class="pwd-wrap">
                   <input id="p-pwd" type="password" autocomplete="new-password">
                   <button class="pwd-eye" id="p-pwd-eye" type="button" title="Afficher">👁</button>
@@ -712,7 +726,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 </div>
               </div>
               <div class="field">
-                <label for="p-pwd2">Confirmer le nouveau mot de passe</label>
+                <label for="p-pwd2" data-i18n="pwd.confirm">Confirmer le nouveau mot de passe</label>
                 <span class="pwd-wrap">
                   <input id="p-pwd2" type="password" autocomplete="new-password">
                   <button class="pwd-eye" id="p-pwd2-eye" type="button" title="Afficher">👁</button>
@@ -721,8 +735,8 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             </div>
             <div class="scard-foot">
               <span class="fill" id="p-pwd-etat"></span>
-              <button class="btn-sm danger" id="p-pwd-clear" type="button">Retirer</button>
-              <button class="btn-primary" id="p-pwd-save">Confirmer</button>
+              <button class="btn-sm danger" id="p-pwd-clear" type="button" data-i18n="btn.remove">Retirer</button>
+              <button class="btn-primary" id="p-pwd-save" data-i18n="btn.confirm">Confirmer</button>
             </div>
           </div>
         </div>
@@ -731,16 +745,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <!-- UTILISATEURS -->
       <section class="spanel sp-inner" id="sp-users" hidden>
         <div class="sp-head">
-          <div class="sp-title">Utilisateurs</div>
-          <div class="sp-lead">Les profils partagés par tous les appareils qui ouvrent Atrium.</div>
+          <div class="sp-title" data-i18n="set.users">Utilisateurs</div>
+          <div class="sp-lead" data-i18n="users.lead">Les profils partagés par tous les appareils qui ouvrent Atrium.</div>
         </div>
         <div class="scard">
-          <h4>Profils</h4>
+          <h4 data-i18n="users.profiles">Profils</h4>
           <div class="scard-body">
             <div class="users-list" id="spu-list"></div>
             <div class="u-addrow">
-              <input id="spu-new" type="text" placeholder="Nom du nouvel utilisateur" autocomplete="off">
-              <button class="btn-ghost" id="spu-add" type="button">Ajouter</button>
+              <input id="spu-new" type="text" data-i18n-ph="users.new.ph" placeholder="Nom du nouvel utilisateur" autocomplete="off">
+              <button class="btn-ghost" id="spu-add" type="button" data-i18n="users.add">Ajouter</button>
             </div>
           </div>
         </div>
@@ -753,24 +767,24 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 <span class="av-big" id="spu-av">?</span>
                 <div class="av-edit-actions">
                   <div class="av-edit-btns">
-                    <button class="btn-sm" id="spu-av-up" type="button">Choisir une photo</button>
-                    <button class="btn-sm danger" id="spu-av-del" type="button">Retirer</button>
+                    <button class="btn-sm" id="spu-av-up" type="button" data-i18n="profile.photo">Choisir une photo</button>
+                    <button class="btn-sm danger" id="spu-av-del" type="button" data-i18n="btn.remove">Retirer</button>
                   </div>
                 </div>
                 <input type="file" id="spu-av-file" accept="image/*" hidden>
               </div>
               <div class="field">
-                <label for="spu-nom">Nom</label>
+                <label for="spu-nom" data-i18n="f.name">Nom</label>
                 <input id="spu-nom" type="text" autocomplete="off">
               </div>
               <div class="field">
-                <label for="spu-pwd">Mot de passe</label>
+                <label for="spu-pwd" data-i18n="setup.pwd">Mot de passe</label>
                 <div class="u-addrow">
                   <span class="pwd-wrap">
                     <input id="spu-pwd" type="password" placeholder="aucun — taper pour définir" autocomplete="new-password">
                     <button class="pwd-eye" id="spu-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
                   </span>
-                  <button class="btn-sm danger" id="spu-pwd-clear" type="button">Retirer</button>
+                  <button class="btn-sm danger" id="spu-pwd-clear" type="button" data-i18n="btn.remove">Retirer</button>
                 </div>
                 <div class="pwd-meter" id="spu-meter" hidden>
                   <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
@@ -779,16 +793,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               </div>
             </div>
             <div class="scard-foot">
-              <button class="btn-sm" id="spu-activate" type="button">Activer sur cet appareil</button>
-              <button class="btn-primary" id="spu-save">Enregistrer</button>
+              <button class="btn-sm" id="spu-activate" type="button" data-i18n="users.activate">Activer sur cet appareil</button>
+              <button class="btn-primary" id="spu-save" data-i18n="btn.save">Enregistrer</button>
             </div>
           </div>
           <div class="dzone" style="margin-top:22px">
             <div class="dz-txt">
-              <div class="dz-title">Supprimer définitivement l'utilisateur</div>
-              <div class="dz-sub">Supprime ce profil, sa photo et son mot de passe. Il ne sera pas averti.</div>
+              <div class="dz-title" data-i18n="users.delete.title">Supprimer définitivement l'utilisateur</div>
+              <div class="dz-sub" data-i18n="users.delete.sub">Supprime ce profil, sa photo et son mot de passe. Il ne sera pas averti.</div>
             </div>
-            <button class="btn-danger" id="spu-del">Supprimer</button>
+            <button class="btn-danger" id="spu-del" data-i18n="btn.delete">Supprimer</button>
           </div>
         </div>
       </section>
@@ -796,32 +810,32 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <!-- SÉCURITÉ -->
       <section class="spanel sp-inner" id="sp-security" hidden>
         <div class="sp-head">
-          <div class="sp-title">Sécurité</div>
-          <div class="sp-lead">Contrôle l'accès à Atrium au chargement de la page.</div>
+          <div class="sp-title" data-i18n="set.security">Sécurité</div>
+          <div class="sp-lead" data-i18n="sec.lead">Contrôle l'accès à Atrium au chargement de la page.</div>
         </div>
         <div class="scard">
-          <h4>Protection du compte</h4>
+          <h4 data-i18n="sec.protect">Protection du compte</h4>
           <div class="scard-body">
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Mots de passe hachés</b><span>PBKDF2-SHA256, 240 000 itérations, sel unique. Le mot de passe n'est jamais enregistré en clair.</span></div></div>
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Session vérifiée par le serveur</b><span>Cookie <code>HttpOnly</code> illisible par JavaScript. Sans session valide, la configuration et les clés API sont refusées.</span></div></div>
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Tentatives limitées</b><span>Au-delà de 8 essais en 5 minutes, les connexions sont bloquées temporairement.</span></div></div>
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b>Relais restreint</b><span>Le serveur ne relaie que vers le réseau privé : il ne peut pas servir de rebond vers Internet.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.hash">Mots de passe hachés</b><span data-i18n="sec.hash.d">PBKDF2-SHA256, 240 000 itérations, sel unique. Le mot de passe n'est jamais enregistré en clair.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.session">Session vérifiée par le serveur</b><span data-i18n="sec.session.d">Cookie HttpOnly illisible par JavaScript. Sans session valide, la configuration et les clés API sont refusées.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.rate">Tentatives limitées</b><span data-i18n="sec.rate.d">Au-delà de 8 essais en 5 minutes, les connexions sont bloquées temporairement.</span></div></div>
+            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.relay">Relais restreint</b><span data-i18n="sec.relay.d">Le serveur ne relaie que vers le réseau privé : il ne peut pas servir de rebond vers Internet.</span></div></div>
           </div>
         </div>
         <div class="scard" style="margin-top:22px">
-          <h4>Sessions</h4>
+          <h4 data-i18n="sec.sessions">Sessions</h4>
           <div class="scard-body">
             <div class="field">
-              <label>Connexion en cours</label>
-              <div class="conn-row"><span class="dot" style="background:var(--ok)"></span><span class="cr-nom" id="sec-user">—</span><button class="btn-sm danger" id="sec-logout-all" type="button">Fermer les autres sessions</button></div>
-              <span class="hint">Utile si vous avez laissé Atrium ouvert sur un appareil que vous n'avez plus.</span>
+              <label data-i18n="sec.current">Connexion en cours</label>
+              <div class="conn-row"><span class="dot" style="background:var(--ok)"></span><span class="cr-nom" id="sec-user">—</span><button class="btn-sm danger" id="sec-logout-all" type="button" data-i18n="sec.logoutall">Fermer les autres sessions</button></div>
+              <span class="hint" data-i18n="sec.logoutall.hint">Utile si vous avez laissé Atrium ouvert sur un appareil que vous n'avez plus.</span>
             </div>
           </div>
         </div>
         <div class="scard" style="margin-top:22px">
-          <h4>Avant d'exposer Atrium sur Internet</h4>
+          <h4 data-i18n="sec.expose">Avant d'exposer Atrium sur Internet</h4>
           <div class="scard-body">
-            <span class="hint">L'authentification ci-dessus protège l'accès depuis votre réseau. Pour une exposition publique, ajoutez du <b>HTTPS</b> et de préférence un portail d'authentification en amont (Authelia, Authentik, Cloudflare Access) : les cookies de session ne sont pleinement protégés qu'en HTTPS.</span>
+            <span class="hint" data-i18n="sec.expose.d">L'authentification ci-dessus protège l'accès depuis votre réseau. Pour une exposition publique, ajoutez du HTTPS et de préférence un portail d'authentification en amont (Authelia, Authentik, Cloudflare Access).</span>
           </div>
         </div>
       </section>
@@ -829,13 +843,27 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <!-- CONNEXIONS -->
       <section class="spanel sp-inner" id="sp-conn" hidden>
         <div class="sp-head">
-          <div class="sp-title">Connexions</div>
-          <div class="sp-lead">Chaque intégration est optionnelle. Les identifiants se saisissent sur la fiche de l'application correspondante.</div>
+          <div class="sp-title" data-i18n="set.conn">Connexions</div>
+          <div class="sp-lead" data-i18n="conn.lead">Chaque intégration est optionnelle. Les identifiants se saisissent sur la fiche de l'application correspondante.</div>
         </div>
         <div class="scard">
-          <h4>Sources</h4>
+          <h4 data-i18n="conn.sources">Sources</h4>
           <div class="scard-body">
             <div id="conn-list" style="display:flex;flex-direction:column;gap:9px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LANGUE -->
+      <section class="spanel sp-inner" id="sp-lang" hidden>
+        <div class="sp-head">
+          <div class="sp-title" data-i18n="set.lang">Langue</div>
+          <div class="sp-lead" data-i18n="set.lang.lead">Langue de l'interface, propre à cet appareil.</div>
+        </div>
+        <div class="scard">
+          <h4 data-i18n="set.lang">Langue</h4>
+          <div class="scard-body">
+            <div class="users-list" id="lang-list"></div>
           </div>
         </div>
       </section>
@@ -843,11 +871,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <!-- À PROPOS -->
       <section class="spanel sp-inner" id="sp-about" hidden>
         <div class="sp-head">
-          <div class="sp-title">À propos</div>
-          <div class="sp-lead">Atrium <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.</div>
+          <div class="sp-title" data-i18n="set.about">À propos</div>
+          <div class="sp-lead" id="about-lead">Atrium <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.</div>
         </div>
         <div class="scard">
-          <h4>Fonctionnement</h4>
+          <h4 data-i18n="about.how">Fonctionnement</h4>
           <div class="scard-body">
             <div class="about-txt">
               Application autonome : un conteneur sert l'interface, stocke la configuration et relaie les appels vers les API de vos services.<br><br>
@@ -882,19 +910,19 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <path d="M38 84V50a12 12 0 0 1 24 0v34" fill="none" stroke="url(#atrium-gs)" stroke-width="7" stroke-linecap="round" opacity=".45"/>
       </svg>
     </div>
-    <div class="setup-h">Bienvenue dans Atrium</div>
-    <div class="setup-p">Créez votre profil administrateur pour commencer.</div>
+    <div class="setup-h" data-i18n="setup.welcome">Bienvenue dans Atrium</div>
+    <div class="setup-p" data-i18n="setup.lead">Créez votre profil administrateur pour commencer.</div>
     <div class="setup-card">
       <div class="setup-err" id="su-err" hidden></div>
       <div class="field">
-        <label for="su-nom">Nom d'utilisateur</label>
-        <input id="su-nom" type="text" placeholder="ex. Guillaume" autocomplete="off">
+        <label for="su-nom" data-i18n="setup.user">Nom d'utilisateur</label>
+        <input id="su-nom" type="text" data-i18n-ph="setup.user.ph" placeholder="ex. Guillaume" autocomplete="off">
       </div>
       <div class="field">
-        <label for="su-pwd">Mot de passe</label>
+        <label for="su-pwd" data-i18n="setup.pwd">Mot de passe</label>
         <span class="pwd-wrap">
-          <input id="su-pwd" type="password" placeholder="au moins 6 caractères" autocomplete="new-password">
-          <button class="pwd-eye" id="su-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
+          <input id="su-pwd" type="password" data-i18n-ph="setup.pwd.ph" placeholder="au moins 6 caractères" autocomplete="new-password">
+          <button class="pwd-eye" id="su-pwd-eye" type="button">👁</button>
         </span>
         <div class="pwd-meter" id="su-meter" hidden>
           <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
@@ -902,12 +930,30 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         </div>
       </div>
       <div class="field">
-        <label for="su-pwd2">Confirmer le mot de passe</label>
+        <label for="su-pwd2" data-i18n="setup.pwd2">Confirmer le mot de passe</label>
         <input id="su-pwd2" type="password" autocomplete="new-password">
       </div>
-      <label class="check"><input id="su-lock" type="checkbox" checked>Demander le mot de passe à l'ouverture</label>
-      <button class="setup-btn" id="su-go">Créer le profil</button>
-      <button class="setup-skip" id="su-skip">Continuer sans profil</button>
+      <label class="check"><input id="su-lock" type="checkbox" checked><span data-i18n="setup.ask">Demander le mot de passe à l'ouverture</span></label>
+      <button class="setup-btn" id="su-go" data-i18n="setup.create">Créer le profil</button>
+      <button class="setup-skip" id="su-skip" data-i18n="setup.skip">Continuer sans profil</button>
+    </div>
+  </div>
+</div>
+
+<!-- choix guidé des services (2ᵉ étape du premier lancement) -->
+<div class="setup" id="pick" hidden>
+  <div class="setup-box" style="width:640px">
+    <div class="setup-h" data-i18n="pick.title">Vos services</div>
+    <div class="setup-p" data-i18n="pick.lead">Sélectionnez ceux que vous utilisez.</div>
+    <div class="setup-card">
+      <input id="pick-search" type="text" data-i18n-ph="pick.search" placeholder="Rechercher un service…" autocomplete="off"
+             style="padding:9px 11px;border-radius:9px;border:1px solid var(--border-2);background:var(--surface-2);color:var(--text);font:500 13px/1.3 'Plus Jakarta Sans',sans-serif;outline:none">
+      <div class="pick-grid" id="pick-grid"></div>
+      <div class="scard-foot" style="background:none;border:0;padding:0;margin-top:4px">
+        <span class="fill" id="pick-count"></span>
+        <button class="btn-sm" id="pick-none" type="button" data-i18n="pick.empty">Commencer avec une liste vide</button>
+        <button class="btn-primary" id="pick-go" data-i18n="pick.continue">Continuer</button>
+      </div>
     </div>
   </div>
 </div>
@@ -931,9 +977,9 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <div class="lock-profiles" id="lock-profiles"></div>
     <div id="lock-form" style="display:flex;flex-direction:column;gap:14px;width:100%;align-items:center" hidden>
       <div class="setup-err" id="lock-err" hidden style="width:100%"></div>
-      <input id="lock-input" type="password" placeholder="Mot de passe" autocomplete="current-password">
-      <label class="lock-remember"><input id="lock-remember" type="checkbox">Rester connecté sur cet appareil</label>
-      <button class="lock-btn" id="lock-go">Se connecter</button>
+      <input id="lock-input" type="password" data-i18n-ph="login.pwd" placeholder="Mot de passe" autocomplete="current-password">
+      <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
+      <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
     </div>
   </div>
 </div>
@@ -966,8 +1012,8 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <div class="app-role"></div>
     </div>
     <div class="app-foot">
-      <span class="badge-on" hidden><span class="dot"></span>en ligne</span>
-      <span class="badge-off" hidden><span class="dot"></span>hors ligne</span>
+      <span class="badge-on" hidden><span class="dot"></span><span data-i18n="app.online">en ligne</span></span>
+      <span class="badge-off" hidden><span class="dot"></span><span data-i18n="app.offline">hors ligne</span></span>
       <span class="badge-na" hidden><span class="dot"></span><span class="lbl">vérification…</span></span>
     </div>
   </a>
@@ -975,7 +1021,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-add-card">
   <button class="add-card">
     <div class="add-ring">+</div>
-    <div class="add-lab">Ajouter une application</div>
+    <div class="add-lab" data-i18n="apps.add">Ajouter une application</div>
   </button>
 </template>
 <template id="tpl-empty">
@@ -992,27 +1038,53 @@ const icone = (nom) => 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/
 
 const A = (nom, role, cat) => ({ nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' });
 
-const DEFAUTS = [
+/* Catalogue proposé au premier lancement. Rien n'est imposé : l'utilisateur
+   coche ce qu'il possède, et peut repartir d'une liste vide. */
+const CATALOGUE = [
   A('Plex', 'Films & séries', 'Média'),
+  A('Jellyfin', 'Films & séries', 'Média'),
+  A('Emby', 'Films & séries', 'Média'),
+  A('Sonarr', 'Séries', 'Média'),
+  A('Radarr', 'Films', 'Média'),
+  A('Lidarr', 'Musique', 'Média'),
+  A('Prowlarr', 'Indexeurs', 'Média'),
+  A('Bazarr', 'Sous-titres', 'Média'),
+  A('Overseerr', 'Demandes', 'Média'),
+  A('Tautulli', 'Statistiques Plex', 'Média'),
+  A('qBittorrent', 'Téléchargements', 'Média'),
+  A('SABnzbd', 'Téléchargements', 'Média'),
+  A('Navidrome', 'Musique', 'Média'),
   A('Home Assistant', 'Domotique', 'Maison'),
-  A('Nextcloud', 'Fichiers & photos', 'Fichiers & photos'),
-  A('Immich', 'Photos de famille', 'Fichiers & photos'),
-  A('Jellyfin', 'Média de secours', 'Média'),
-  A('Sonarr', 'Séries à venir', 'Média'),
-  A('Radarr', 'Films à venir', 'Média'),
-  A('Portainer', 'Conteneurs', 'Serveur'),
   A('Pi-hole', 'Filtrage des pubs', 'Maison'),
-  A('Vaultwarden', 'Mots de passe', 'Serveur'),
+  A('AdGuard Home', 'Filtrage des pubs', 'Maison'),
+  A('Zigbee2MQTT', 'Zigbee', 'Maison'),
+  A('Frigate', 'Caméras', 'Maison'),
+  A('Nextcloud', 'Fichiers', 'Fichiers & photos'),
+  A('Immich', 'Photos', 'Fichiers & photos'),
+  A('Photoprism', 'Photos', 'Fichiers & photos'),
   A('Paperless', 'Documents', 'Fichiers & photos'),
+  A('Syncthing', 'Synchronisation', 'Fichiers & photos'),
+  A('Filebrowser', 'Fichiers', 'Fichiers & photos'),
+  A('Unraid', 'Serveur', 'Serveur'),
+  A('Proxmox', 'Virtualisation', 'Serveur'),
+  A('UniFi', 'Réseau', 'Serveur'),
+  A('Portainer', 'Conteneurs', 'Serveur'),
+  A('Vaultwarden', 'Mots de passe', 'Serveur'),
   A('Grafana', 'Graphiques', 'Serveur'),
   A('Uptime Kuma', 'Surveillance', 'Serveur'),
+  A('Nginx Proxy Manager', 'Reverse proxy', 'Serveur'),
+  A('Gitea', 'Forge git', 'Serveur'),
+  A('Duplicati', 'Sauvegardes', 'Serveur'),
+  A('Heimdall', 'Portail', 'Serveur'),
+  A('Watchtower', 'Mises à jour', 'Serveur'),
 ];
+const DEFAUTS = [];   // aucune application imposée : le choix se fait à l'installation
 
 const CATEGORIES = [
-  { nom: 'Média', icone: '▶' },
-  { nom: 'Maison', icone: '⌂' },
-  { nom: 'Fichiers & photos', icone: '❐' },
-  { nom: 'Serveur', icone: '⛁' },
+  { nom: 'Média', cle: 'cat.media', icone: '▶' },
+  { nom: 'Maison', cle: 'cat.home', icone: '⌂' },
+  { nom: 'Fichiers & photos', cle: 'cat.files', icone: '❐' },
+  { nom: 'Serveur', cle: 'cat.server', icone: '⛁' },
 ];
 
 const clone = (id) => document.getElementById(id).content.firstElementChild.cloneNode(true);
@@ -1166,13 +1238,13 @@ function peindreAvatar(el, u) {
 /* recadre en carré et compresse : la photo est stockée dans la config */
 function lirePhoto(file) {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) { reject(new Error('ce fichier n\'est pas une image')); return; }
-    if (file.size > 8 * 1024 * 1024) { reject(new Error('image trop lourde (8 Mo maximum)')); return; }
+    if (!file.type.startsWith('image/')) { reject(new Error(t('img.notimage'))); return; }
+    if (file.size > 8 * 1024 * 1024) { reject(new Error(t('img.toobig'))); return; }
     const fr = new FileReader();
     fr.onerror = () => reject(new Error('lecture impossible'));
     fr.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error('image illisible'));
+      img.onerror = () => reject(new Error(t('img.unreadable')));
       img.onload = () => {
         const T = 256;
         const c = document.createElement('canvas');
@@ -1288,7 +1360,7 @@ function renderSidebar() {
     b.dataset.cat = cat.nom;
     if (activeCat === cat.nom) b.classList.add('active');
     b.querySelector('.ico').textContent = cat.icone;
-    b.querySelector('.lab').textContent = cat.nom;
+    b.querySelector('.lab').textContent = cat.cle ? t(cat.cle) : cat.nom;
     b.querySelector('.count').textContent = apps.filter((a) => a.cat === cat.nom).length;
     nav.appendChild(b);
   });
@@ -1461,10 +1533,10 @@ function derive() {
   NET = [];
   const wan = S.find((s) => s.entity_id.startsWith('binary_sensor.') &&
     /wan|internet/.test(s.entity_id) && !['unavailable', 'unknown'].includes(s.state));
-  if (wan) NET.push({ label: 'Internet', valeur: wan.state === 'on' ? 'en ligne' : 'coupé' });
+  if (wan) NET.push({ label: t('net.internet'), valeur: t(wan.state === 'on' ? 'net.online' : 'net.down') });
   const cli = S.find((s) => s.entity_id.startsWith('sensor.') &&
     /unifi|network/.test(s.entity_id) && /client/.test(s.entity_id) && num(s) !== null);
-  if (cli) NET.push({ label: 'Appareils connectés', valeur: String(num(cli)) });
+  if (cli) NET.push({ label: t('net.clients'), valeur: String(num(cli)) });
 
   BOOT = S.find((s) => s.entity_id.includes('last_boot') && !isNaN(Date.parse(s.state))) || null;
 }
@@ -1513,7 +1585,7 @@ function renderMajPop() {
   if (!pop || pop.hidden) return;
   pop.textContent = '';
   const h = document.createElement('h4');
-  h.textContent = 'Mises à jour disponibles';
+  h.textContent = t('update.title');
   pop.appendChild(h);
   UPDATES.forEach((u) => {
     const row = document.createElement('div');
@@ -1540,7 +1612,7 @@ function renderMajPop() {
   if (!UPDATES.length) {
     const e = document.createElement('div');
     e.className = 'mu-row';
-    e.textContent = 'Tout est à jour.';
+    e.textContent = t('update.none');
     pop.appendChild(e);
   }
 }
@@ -1561,7 +1633,7 @@ function setCardLink(card, url) {
 function renderLive() {
   /* pastille mises à jour */
   $('pill-maj').style.display = (CONN === 'ok' && N_MAJ) ? '' : 'none';
-  if (N_MAJ) $('maj-label').textContent = N_MAJ + ' mise' + (N_MAJ > 1 ? 's' : '') + ' à jour';
+  if (N_MAJ) $('maj-label').textContent = t(N_MAJ > 1 ? 'update.many' : 'update.one', { n: N_MAJ });
   $('featured').classList.toggle('solo', !(CONN === 'ok'));
 
   /* carte lecture */
@@ -1581,7 +1653,7 @@ function renderLive() {
     const live = $('np-live');
     live.hidden = false;
     live.className = MEDIA.etat === 'playing' ? 'badge-live' : 'badge-na';
-    live.querySelector('.lbl').textContent = MEDIA.etat === 'playing' ? 'lecture en cours' : 'en pause';
+    live.querySelector('.lbl').textContent = t(MEDIA.etat === 'playing' ? 'now.playing' : 'now.paused');
     $('np-title').textContent = MEDIA.titre;
     $('np-sub').textContent = MEDIA.ligne2.join(' · ');
     if (MEDIA.poster) {
@@ -1592,7 +1664,7 @@ function renderLive() {
       $('np-poster').appendChild(img);
     }
     if (MEDIA.dur) { $('np-foot').hidden = false; tickProgress(); }
-    $('np-open').textContent = matched ? 'Ouvrir ' + matched.nom + ' ↗' : '';
+    $('np-open').textContent = matched ? t('now.open', { nom: matched.nom }) : '';
     $('np-open').parentElement.style.display = (matched && matched.url) ? '' : 'none';
     setCardLink(npCard, matched ? matched.url : '');
     /* autres lectures simultanées en lignes compactes */
@@ -1632,7 +1704,7 @@ function renderLive() {
       d.textContent = m.ligne2.join(' · ');
       const st2 = document.createElement('span');
       st2.className = 'mr-s' + (m.etat === 'paused' ? ' pause' : '');
-      st2.textContent = m.etat === 'paused' ? 'en pause' : 'lecture';
+      st2.textContent = t(m.etat === 'paused' ? 'now.paused' : 'now.playing');
       row.appendChild(chip);
       row.appendChild(t);
       row.appendChild(d);
@@ -1652,16 +1724,16 @@ function renderLive() {
       const a = appByKind(k);
       return a && (a.apiKey || a.token);
     });
-    $('np-name').textContent = 'Lecture';
+    $('np-name').textContent = t('now.label');
     chipCl.textContent = '▶';
     mountLogo($('np-chip'), '');
     if (sourcesMedia.length) {
-      $('np-title').textContent = 'Rien en cours';
-      $('np-sub').textContent = 'Aucune de vos sources média ne joue quelque chose.';
+      $('np-title').textContent = t('now.none.title');
+      $('np-sub').textContent = t('now.none.sub');
       setCardLink(npCard, '');
     } else {
-      $('np-title').textContent = 'Aucune source média';
-      $('np-sub').textContent = 'Connectez Plex, Jellyfin ou Home Assistant pour suivre les lectures en cours.';
+      $('np-title').textContent = t('now.nosrc.title');
+      $('np-sub').textContent = t('now.nosrc.sub');
       $('np-setup').hidden = false;
       setCardLink(npCard, '');
     }
@@ -1701,11 +1773,11 @@ function renderLive() {
       row.querySelector('.hr-val').textContent = val;
       rows.appendChild(row);
     };
-    addRow('Lumières allumées', String(N_LUM));
-    addRow('Portes ouvertes', String(N_PORTES));
+    addRow(t('home.lights'), String(N_LUM));
+    addRow(t('home.doors'), String(N_PORTES));
     if (VACUUM && !['unavailable', 'unknown'].includes(VACUUM.state)) {
       const VAC_FR = { docked: 'sur la base', charging: 'en charge', cleaning: 'nettoyage', returning: 'retour base', idle: 'inactif', paused: 'pause', error: 'erreur' };
-      addRow('Aspirateur', VAC_FR[VACUUM.state] || VACUUM.state);
+      addRow(t('home.vacuum'), VAC_FR[VACUUM.state] || VACUUM.state);
     }
   }
   $('featured').classList.toggle('solo', !home);
@@ -1743,15 +1815,15 @@ function renderLive() {
       let sous = HOTE.os || '';
       if (HOTE.demarrage) {
         const j = Math.floor(HOTE.demarrage.secondes / 86400);
-        sous += (sous ? ' · ' : '') + (j >= 1 ? 'allumé depuis ' + j + ' j' : 'allumé depuis moins d\'un jour');
+        sous += (sous ? ' · ' : '') + (j >= 1 ? t('host.up.days', { n: j }) : t('host.up.less'));
       }
       dSrv.unshift({ titre: HOTE.nom || 'Cette machine', rows, hote: true, sous, kind: self ? self.kind : '' });
     }
   }
   let dNet = baseNet.slice();
   if (DIRECT.clients != null) {
-    dNet = dNet.filter((r) => r.label !== 'Appareils connectés');
-    dNet.push({ label: 'Appareils connectés', valeur: String(DIRECT.clients) });
+    dNet = dNet.filter((r) => r.label !== t('net.clients'));
+    dNet.push({ label: t('net.clients'), valeur: String(DIRECT.clients) });
   }
   const health = $('health');
   if (dSrv.length || dNet.length) {
@@ -1804,7 +1876,7 @@ function renderLive() {
       });
     });
     if (dNet.length) {
-      const box = srvBox('Réseau', 'unifi', DIRECT.clients != null ? 'direct' : 'via HA');
+      const box = srvBox(t('net.reseau'), 'unifi', '');
       dNet.forEach((r) => {
         const row = clone('tpl-health-row');
         row.querySelector('.hl-label').textContent = r.label;
@@ -2092,6 +2164,7 @@ async function pollDirect() {
 /* ---------- grille d'apps ---------- */
 function appCard(app, index) {
   const a = clone('tpl-app-card');
+  i18n.appliquer(a);            // les gabarits clonés portent aussi des libellés
   a.querySelector('.cl').textContent = (app.nom || '?')[0].toUpperCase();
   a.querySelector('.app-name').textContent = app.nom;
   a.querySelector('.app-role').textContent = app.role;
@@ -2102,7 +2175,7 @@ function appCard(app, index) {
   else {
     const na = a.querySelector('.badge-na');
     na.hidden = false;
-    na.querySelector('.lbl').textContent = app.url ? 'vérification…' : "pas d'URL";
+    na.querySelector('.lbl').textContent = t(app.url ? 'app.checking' : 'app.nourl');
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
   if (app.url) { a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; }
@@ -2138,8 +2211,8 @@ function renderApps() {
   if (!shown.length) {
     const d = clone('tpl-empty');
     d.textContent = q
-      ? 'Aucune application ne correspond à « ' + query.trim() + ' »'
-      : 'Aucune application dans cette catégorie.';
+      ? t('apps.none.search', { q: query.trim() })
+      : t('apps.none.cat');
     grid.appendChild(d);
   }
   const add = clone('tpl-add-card');
@@ -2196,7 +2269,7 @@ function openAppModal(index) {
   const app = index === null
     ? { nom: '', role: '', cat: activeCat || 'Média', url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' }
     : apps[index];
-  $('m-title').textContent = index === null ? 'Ajouter une application' : 'Modifier « ' + app.nom + ' »';
+  $('m-title').textContent = index === null ? t('app.new') : t('app.edit', { nom: app.nom });
   $('m-nom').value = app.nom;
   $('m-role').value = app.role;
   $('m-cat').value = app.cat;
@@ -2261,7 +2334,7 @@ $('side-add').addEventListener('click', () => openAppModal(null));
 /* ---------- modale suppression ---------- */
 function openDelModal(index) {
   delIndex = index;
-  $('d-title').textContent = 'Supprimer « ' + apps[index].nom + ' » ?';
+  $('d-title').textContent = t('del.title', { nom: apps[index].nom });
   $('ov-del').hidden = false;
   $('d-confirm').focus();
 }
@@ -2318,7 +2391,7 @@ function openSettings(section) {
 function closeSettings() { $('spage').hidden = true; }
 function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
-  ['profil', 'users', 'security', 'conn', 'about'].forEach((k) => { $('sp-' + k).hidden = k !== p; });
+  ['profil', 'users', 'security', 'conn', 'lang', 'about'].forEach((k) => { $('sp-' + k).hidden = k !== p; });
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
   if (p === 'profil') {
@@ -2327,6 +2400,8 @@ function spNav(p) {
     renderUsersPage();
   } else if (p === 'security') {
     $('sec-user').textContent = SESSION_USER || ACTIVE || '—';
+  } else if (p === 'lang') {
+    renderLangues();
   } else if (p === 'conn') {
     renderConnPanel();
   }
@@ -2336,7 +2411,43 @@ $('sp-nav').addEventListener('click', (e) => {
   if (b) spNav(b.dataset.p);
 });
 $('sp-back').addEventListener('click', closeSettings);
-$('side-settings').addEventListener('click', () => openSettings('users'));
+$('side-settings').addEventListener('click', () => openSettings('profil'));
+
+/* ---------- langue ---------- */
+const LANGUES = [
+  { code: 'fr', drapeau: '🇫🇷', nom: 'Français' },
+  { code: 'en', drapeau: '🇬🇧', nom: 'English' },
+];
+function renderLangues() {
+  const l = $('lang-list');
+  if (!l) return;
+  l.textContent = '';
+  LANGUES.forEach((L) => {
+    const row = document.createElement('div');
+    row.className = 'user-row' + (i18n.langue === L.code ? ' actif' : '');
+    const d = document.createElement('span');
+    d.style.fontSize = '19px';
+    d.textContent = L.drapeau;
+    const n = document.createElement('span');
+    n.className = 'u-nom';
+    n.textContent = L.nom;
+    row.appendChild(d);
+    row.appendChild(n);
+    if (i18n.langue === L.code) {
+      const b = document.createElement('span');
+      b.className = 'u-actif';
+      b.textContent = '✓';
+      row.appendChild(b);
+    }
+    row.addEventListener('click', () => {
+      i18n.langue = L.code;
+      refresh();
+      renderLive();
+      spNav('lang');
+    });
+    l.appendChild(row);
+  });
+}
 
 /* carte média sans source → page des connexions */
 $('np-config').addEventListener('click', (e) => {
@@ -2355,16 +2466,16 @@ function renderConnPanel() {
      rien n'est codé en dur, chaque installation affiche les siennes. */
   const etat = (kind) => {
     if (kind === 'ha') {
-      return { ok: CONN === 'ok', st: CONN === 'ok' ? STATES.length + ' entités' : (CONN === 'error' ? CONN_ERR : 'jeton manquant') };
+      return { ok: CONN === 'ok', st: CONN === 'ok' ? t('conn.entities', { n: STATES.length }) : (CONN === 'error' ? CONN_ERR : t('conn.notoken')) };
     }
     if (kind === 'plex') {
-      return { ok: !!DIRECT.plexOk, st: DIRECT.plexOk ? PLEX_MEDIAS.length + ' lecture(s) en cours' : ((DIRECT.err || {}).plex || 'non configuré') };
+      return { ok: !!DIRECT.plexOk, st: DIRECT.plexOk ? t('conn.sessions', { n: PLEX_MEDIAS.length }) : ((DIRECT.err || {}).plex || t('conn.notset')) };
     }
     if (kind === 'unraid') {
-      return { ok: !!DIRECT.unraid, st: DIRECT.unraid ? 'connecté' : ((DIRECT.err || {}).unraid || 'non configuré') };
+      return { ok: !!DIRECT.unraid, st: DIRECT.unraid ? t('conn.connected') : ((DIRECT.err || {}).unraid || t('conn.notset')) };
     }
     if (kind === 'unifi') {
-      return { ok: !!DIRECT.unifi, st: DIRECT.unifi ? 'connecté' : ((DIRECT.err || {}).unifi || 'non configuré') };
+      return { ok: !!DIRECT.unifi, st: DIRECT.unifi ? t('conn.connected') : ((DIRECT.err || {}).unifi || t('conn.notset')) };
     }
     return { ok: false, st: '' };
   };
@@ -2376,7 +2487,7 @@ function renderConnPanel() {
   if (!rows.length) {
     const v = document.createElement('span');
     v.className = 'hint';
-    v.textContent = 'Aucune intégration configurée. Ouvrez la fiche d\'une application (✎ sur sa tuile) et choisissez son type.';
+    v.textContent = t('conn.none');
     list.appendChild(v);
     return;
   }
@@ -2403,7 +2514,7 @@ function renderConnPanel() {
     st.title = r.st;
     const btn = document.createElement('button');
     btn.className = 'btn-ghost';
-    btn.textContent = app ? 'Configurer' : 'Ajouter la fiche';
+    btn.textContent = t(app ? 'conn.configure' : 'conn.addcard');
     btn.addEventListener('click', () => {
       let i = apps.findIndex((a) => kindOfApp(a) === r.kind);
       if (i === -1) {
@@ -2448,10 +2559,10 @@ function renderAvMenu() {
   peindreAvatar(av, u);
   if (u) {
     $('avm-nom').textContent = u.nom;
-    $('avm-sub').textContent = u.pwd ? 'Profil protégé' : 'Profil sans mot de passe';
+    $('avm-sub').textContent = t(u.pwd ? 'acc.protected' : 'acc.unprotected');
   } else {
-    $('avm-nom').textContent = 'Aucun profil';
-    $('avm-sub').textContent = 'Créer un profil dans les réglages';
+    $('avm-nom').textContent = t('acc.none');
+    $('avm-sub').textContent = t('acc.none.sub');
   }
   const list = $('avm-users');
   list.textContent = '';
@@ -2462,7 +2573,7 @@ function renderAvMenu() {
     e.style.textTransform = 'none';
     e.style.letterSpacing = '0';
     e.style.fontWeight = '500';
-    e.textContent = USERS.length ? 'Aucun autre profil' : 'Aucun profil créé';
+    e.textContent = t(USERS.length ? 'acc.noother' : 'acc.nouser');
     list.appendChild(e);
     return;
   }
@@ -2497,7 +2608,7 @@ function renderAvMenu() {
         if (!prot) { seConnecter(x.nom, ''); return; }
         $('lock-form').hidden = false;
         $('lock-input').value = '';
-        $('lock-input').placeholder = 'Mot de passe de ' + x.nom;
+        $('lock-input').placeholder = t('login.pwdof', { nom: x.nom });
         $('lock-input').focus();
       }
     });
@@ -2601,7 +2712,7 @@ function renderProfil() {
   ['p-anc-eye', 'p-pwd-eye', 'p-pwd2-eye'].forEach((id) => { $(id).textContent = '👁'; });
   pwdErr('');
   $('p-anc-champ').hidden = !u.pwd;          // rien à confirmer s'il n'y en a pas encore
-  $('p-pwd-etat').textContent = u.pwd ? 'Protégé par mot de passe' : 'Aucun mot de passe défini';
+  $('p-pwd-etat').textContent = t(u.pwd ? 'pwd.set' : 'pwd.unset');
   $('p-pwd-clear').disabled = !u.pwd;
   $('p-pwd-clear').style.opacity = u.pwd ? '1' : '.45';
   syncProfilPwd();
@@ -2623,27 +2734,27 @@ $('p-av-file').addEventListener('change', async (e) => {
   try {
     const data = await lirePhoto(f);
     majProfil((u) => { u.photo = data; });
-    toast('Photo de profil mise à jour');
-  } catch (err) { toast('Échec : ' + err.message); }
+    toast(t('photo.updated'));
+  } catch (err) { toast(t('fail', { e: err.message })); }
 });
 $('p-av-del').addEventListener('click', () => {
   if ($('p-av-del').disabled) return;
   majProfil((u) => { u.photo = ''; });
-  toast('Photo retirée');
+  toast(t('photo.removed'));
 });
 $('p-save').addEventListener('click', () => {
   const u = userActif();
   if (!u) return;
   const nv = $('p-nom').value.trim();
-  if (!nv) { toast('Le nom ne peut pas être vide'); return; }
+  if (!nv) { toast(t('name.empty')); return; }
   if (nv !== u.nom && USERS.some((x) => x !== u && x.nom.toLowerCase() === nv.toLowerCase())) {
-    toast('Ce nom est déjà utilisé'); return;
+    toast(t('name.taken')); return;
   }
   majProfil((x) => {
     if (ACTIVE === x.nom) { ACTIVE = nv; store.set('activeUser', nv); }
     x.nom = nv;
   });
-  toast('Profil enregistré');
+  toast(t('profile.saved'));
 });
 bindPwd('p-anc', 'p-anc-eye', 'p-anc-x', 'p-anc-x');   /* œil seul, pas de jauge */
 bindPwd('p-pwd2', 'p-pwd2-eye', 'p-pwd2-x', 'p-pwd2-x');
@@ -2666,13 +2777,13 @@ $('p-pwd-save').addEventListener('click', async () => {
   const p1 = $('p-pwd').value;
   const p2 = $('p-pwd2').value;
   pwdErr('');
-  if (p1.length < 6) { pwdErr('Le nouveau mot de passe doit faire au moins 6 caractères.'); $('p-pwd').focus(); return; }
-  if (p1 !== p2) { pwdErr('Les deux mots de passe ne correspondent pas.'); $('p-pwd2').focus(); return; }
+  if (p1.length < 6) { pwdErr(t('pwd.short')); $('p-pwd').focus(); return; }
+  if (p1 !== p2) { pwdErr(t('pwd.mismatch')); $('p-pwd2').focus(); return; }
   try {
     await envoyerMdp(p1);
     await pullCfg();
     renderProfil();
-    toast('Mot de passe modifié');
+    toast(t('pwd.changed'));
   } catch (e) { pwdErr(e.message); }
 });
 $('p-pwd-clear').addEventListener('click', async () => {
@@ -2682,7 +2793,7 @@ $('p-pwd-clear').addEventListener('click', async () => {
     await envoyerMdp('');
     await pullCfg();
     renderProfil();
-    toast('Mot de passe retiré');
+    toast(t('pwd.removed'));
   } catch (e) { pwdErr(e.message); }
 });
 
@@ -2717,7 +2828,7 @@ $('spu-av-file').addEventListener('change', async (e) => {
     renderUsersPage();
     renderAvatar();
     toast('Photo mise à jour');
-  } catch (err) { toast('Échec : ' + err.message); }
+  } catch (err) { toast(t('fail', { e: err.message })); }
 });
 $('spu-av-del').addEventListener('click', () => {
   const u = USERS[SEL_USER];
@@ -2727,7 +2838,7 @@ $('spu-av-del').addEventListener('click', () => {
   pushCfg();
   renderUsersPage();
   renderAvatar();
-  toast('Photo retirée');
+  toast(t('photo.removed'));
 });
 function renderUsersPage() {
   const list = $('spu-list');
@@ -2747,12 +2858,12 @@ function renderUsersPage() {
     row.appendChild(nom);
     const tag = document.createElement('span');
     tag.className = 'u-tag';
-    tag.textContent = u.pwd ? '🔒 protégé' : 'sans mot de passe';
+    tag.textContent = t(u.pwd ? 'users.protected' : 'users.nopwd');
     row.appendChild(tag);
     if (u.nom === act) {
       const b = document.createElement('span');
       b.className = 'u-actif';
-      b.textContent = 'actif';
+      b.textContent = t('users.active');
       row.appendChild(b);
     }
     row.addEventListener('click', () => {
@@ -2765,7 +2876,7 @@ function renderUsersPage() {
   if (!USERS.length) {
     const e = document.createElement('div');
     e.className = 'hint';
-    e.textContent = 'Aucun utilisateur — ajoute le premier ci-dessous.';
+    e.textContent = t('users.none');
     list.appendChild(e);
   }
   fillFiche();
@@ -2871,7 +2982,7 @@ function renderLockUi() {
         if (!u.protege) { seConnecter(u.nom, ''); return; }
         $('lock-form').hidden = false;
         $('lock-input').value = '';
-        $('lock-input').placeholder = 'Mot de passe de ' + u.nom;
+        $('lock-input').placeholder = t('login.pwdof', { nom: u.nom });
         $('lock-input').focus();
       });
       profs.appendChild(p);
@@ -2892,7 +3003,7 @@ async function seConnecter(nom, motdepasse) {
     });
     const j = await r.json();
     if (!r.ok) {
-      lockErr(j.error || 'Connexion refusée.');
+      lockErr(j.error || t('login.refused'));
       if (inp) { inp.classList.remove('err'); void inp.offsetWidth; inp.classList.add('err'); inp.select(); }
       return;
     }
@@ -2908,7 +3019,7 @@ async function seConnecter(nom, motdepasse) {
     probeAll();
     pollDirect();
   } catch (e) {
-    lockErr('Serveur injoignable.');
+    lockErr(t('login.unreachable'));
   }
 }
 function applyLock() {
@@ -3081,47 +3192,99 @@ function finirSetup() {
   pollDirect();
   pollHote();
 }
-async function creerCompte(nom, motdepasse) {
+async function creerCompte(nom, motdepasse, listeApps) {
   const r = await relayFetch('/api/setup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nom, motdepasse, apps: DEFAUTS.map((a) => ({ ...a })) }),
+    body: JSON.stringify({ nom, motdepasse, apps: listeApps || [] }),
   });
   const j = await r.json();
   if (!r.ok) throw new Error(j.error || 'Création impossible.');
   return j;
 }
-$('su-go').addEventListener('click', async () => {
+
+/* ---------- étape 2 : choix guidé des services ---------- */
+const PICK = new Set();
+let SETUP_IDENT = null;      // identifiants saisis à l'étape 1
+
+function renderPick() {
+  const g = $('pick-grid');
+  const q = normTxt($('pick-search').value.trim());
+  g.textContent = '';
+  CATALOGUE.filter((s) => !q || normTxt(s.nom + ' ' + s.role).includes(q)).forEach((s) => {
+    const it = document.createElement('div');
+    it.className = 'pick-it' + (PICK.has(s.nom) ? ' on' : '');
+    const chip = document.createElement('span');
+    chip.className = 'logo-chip';
+    const cl = document.createElement('span');
+    cl.className = 'cl';
+    cl.textContent = s.nom[0];
+    chip.appendChild(cl);
+    mountLogo(chip, icone(s.nom));
+    const n = document.createElement('span');
+    n.className = 'pick-n';
+    n.textContent = s.nom;
+    n.title = s.nom + ' — ' + s.role;
+    const ck = document.createElement('span');
+    ck.className = 'pick-ck';
+    ck.textContent = '✓';
+    it.appendChild(chip);
+    it.appendChild(n);
+    it.appendChild(ck);
+    it.addEventListener('click', () => {
+      if (PICK.has(s.nom)) PICK.delete(s.nom); else PICK.add(s.nom);
+      renderPick();
+    });
+    g.appendChild(it);
+  });
+  $('pick-count').textContent = t('pick.selected', { n: PICK.size });
+}
+$('pick-search').addEventListener('input', renderPick);
+
+async function terminerInstallation(listeApps) {
+  try {
+    await creerCompte(SETUP_IDENT.nom, SETUP_IDENT.mdp, listeApps);
+    SESSION_USER = SETUP_IDENT.nom;
+    ACTIVE = SETUP_IDENT.nom;
+    store.set('activeUser', ACTIVE);
+    $('pick').hidden = true;
+    await pullCfg();
+    renderAvatar();
+    finirSetup();
+    toast(t('setup.welcome.toast', { nom: SETUP_IDENT.nom }));
+  } catch (e) {
+    $('pick').hidden = true;
+    $('setup').hidden = false;
+    setupErr(e.message);
+  }
+}
+$('pick-go').addEventListener('click', () => {
+  const choisies = CATALOGUE.filter((s) => PICK.has(s.nom)).map((s) => ({ ...s }));
+  terminerInstallation(choisies);
+});
+$('pick-none').addEventListener('click', () => terminerInstallation([]));
+function versChoixServices(nom, mdp) {
+  SETUP_IDENT = { nom, mdp };
+  $('setup').hidden = true;
+  $('pick').hidden = false;
+  PICK.clear();
+  $('pick-search').value = '';
+  renderPick();
+  $('pick-search').focus();
+}
+$('su-go').addEventListener('click', () => {
   const nom = $('su-nom').value.trim();
   const p1 = $('su-pwd').value;
   const p2 = $('su-pwd2').value;
-  if (!nom) { setupErr('Choisissez un nom d\'utilisateur.'); $('su-nom').focus(); return; }
-  if (p1.length < 6) { setupErr('Le mot de passe doit faire au moins 6 caractères.'); $('su-pwd').focus(); return; }
-  if (p1 !== p2) { setupErr('Les deux mots de passe ne correspondent pas.'); $('su-pwd2').focus(); return; }
+  if (!nom) { setupErr(t('setup.needuser')); $('su-nom').focus(); return; }
+  if (p1.length < 6) { setupErr(t('setup.pwdshort')); $('su-pwd').focus(); return; }
+  if (p1 !== p2) { setupErr(t('pwd.mismatch')); $('su-pwd2').focus(); return; }
   setupErr('');
-  try {
-    await creerCompte(nom, p1);
-    SESSION_USER = nom;
-    ACTIVE = nom;
-    store.set('activeUser', nom);
-    await pullCfg();
-    renderAvatar();
-    finirSetup();
-    toast('Bienvenue, ' + nom);
-  } catch (e) { setupErr(e.message); }
+  versChoixServices(nom, p1);
 });
-$('su-skip').addEventListener('click', async () => {
-  const nom = ($('su-nom').value.trim() || 'Utilisateur');
+$('su-skip').addEventListener('click', () => {
   setupErr('');
-  try {
-    await creerCompte(nom, '');   // profil sans mot de passe : accès libre
-    SESSION_USER = nom;
-    ACTIVE = nom;
-    store.set('activeUser', nom);
-    await pullCfg();
-    renderAvatar();
-    finirSetup();
-  } catch (e) { setupErr(e.message); }
+  versChoixServices($('su-nom').value.trim() || 'Utilisateur', '');
 });
 $('su-pwd2').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('su-go').click(); });
 
@@ -3140,6 +3303,7 @@ async function lireSession() {
 
 (async function demarrer() {
   applyTheme();
+  i18n.appliquer();          // langue du navigateur, ou celle choisie
   renderAvatar();
   const etat = await lireSession();
   $('boot').hidden = true;
