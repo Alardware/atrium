@@ -234,13 +234,16 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 
 /* Une tuile qui porte des chiffres s'élargit sur deux colonnes au lieu de
    s'allonger : les autres tuiles de la rangée gardent leur hauteur. */
-.grid:not(.list) .app-card.wide{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;gap:12px 18px}
+/* Colonnes dimensionnées au contenu et calées à gauche : l'écart entre le nom
+   et la première pastille est identique quel que soit leur nombre. */
+.grid:not(.list) .app-card.wide{display:grid;grid-template-columns:auto auto;grid-template-rows:auto 1fr auto;justify-content:start;gap:12px 18px}
+.grid:not(.list) .app-card.wide .app-mid{max-width:180px}
 .grid:not(.list) .app-card.wide.n1{grid-column:span 2}
 .grid:not(.list) .app-card.wide.n2{grid-column:span 3}
 .grid:not(.list) .app-card.wide.n3{grid-column:span 4}
 .grid:not(.list) .app-card.wide .app-top{grid-column:1;grid-row:1}
 .grid:not(.list) .app-card.wide .app-mid{grid-column:1;grid-row:2}
-.grid:not(.list) .app-card.wide .app-foot{grid-column:1;grid-row:3;align-self:end}
+.grid:not(.list) .app-card.wide .app-foot{grid-column:1 / -1;grid-row:3;align-self:end}
 .grid:not(.list) .app-card.wide .app-stats{grid-column:2;grid-row:1 / 4;align-self:center;margin-top:0}
 .grid:not(.list) .app-card.wide .app-stats .st{min-width:72px}
 /* écran étroit : toutes les tuiles reprennent une disposition verticale */
