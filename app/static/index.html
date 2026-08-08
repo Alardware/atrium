@@ -80,8 +80,8 @@ template{display:none}
 .nav-link.active{background:var(--accent-soft);color:var(--accent-strong)}
 .nav-link.active .ico{color:var(--accent-strong)}
 .nav-link.active .count{color:var(--accent)}
-.health{margin-top:auto;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);flex:none}
-.health-head{display:flex;align-items:center;gap:7px;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text);margin-bottom:12px}
+.health{margin-top:auto;flex:none}
+.health-head{display:flex;align-items:center;gap:7px;padding:0 4px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3);margin-bottom:9px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
 .health-rows{display:flex;flex-direction:column;gap:10px}
 .health-row{display:flex;flex-direction:column;gap:6px}
@@ -90,7 +90,10 @@ template{display:none}
 .bar{height:5px;border-radius:99px;background:var(--track);overflow:hidden}
 .bar > i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .6s cubic-bezier(.2,.7,.3,1)}
 .health-foot{margin-top:12px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
-.srv-box{padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:9px}
+.srv-box{padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:9px}
+.srv-box.hote{border-color:var(--accent-border);background:var(--accent-soft)}
+.srv-box.hote .srv-name{color:var(--accent-strong)}
+.srv-sub{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);margin-top:-4px}
 .srv-head{display:flex;align-items:center;gap:7px}
 .srv-name{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .srv-src{margin-left:auto;font:500 9px/1 'IBM Plex Mono',monospace;color:var(--muted-2);padding:2.5px 6px;border:1px solid var(--border);border-radius:99px}
@@ -588,6 +591,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <label for="m-logo">Logo (URL, vide = automatique)</label>
         <input id="m-logo" type="text" placeholder="auto depuis le nom" autocomplete="off">
       </div>
+      <div class="field">
+        <label for="m-type">Intégration</label>
+        <select id="m-type">
+          <option value="">Aucune — simple lien</option>
+          <option value="plex">Plex — lectures en cours</option>
+          <option value="ha">Home Assistant — domotique, lecteurs</option>
+          <option value="unraid">Unraid — CPU, RAM, grappe</option>
+          <option value="unifi">UniFi — routeur, clients</option>
+        </select>
+      </div>
       <div class="field" id="f-key" hidden>
         <label for="m-key" id="m-key-label">Clé API</label>
         <input id="m-key" type="password" autocomplete="off">
@@ -1046,16 +1059,27 @@ let apps = loadApps();
 
 const normTxt = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-/* type d'intégration d'une app, déduit de son nom */
-const kindOf = (nom) => {
-  const n = String(nom).toLowerCase();
-  if (n.includes('home assistant')) return 'ha';
+/* Type d'intégration : choisi explicitement dans la fiche de l'app.
+   Le nom n'est qu'une suggestion de départ, chacun nomme ses services comme
+   il veut (« Média du salon » peut très bien être un serveur Plex). */
+const TYPES = {
+  '': 'Aucune (lien simple)',
+  plex: 'Plex',
+  ha: 'Home Assistant',
+  unraid: 'Unraid',
+  unifi: 'UniFi',
+};
+const devinerType = (nom) => {
+  const n = normTxt(nom);
+  if (n.includes('home assistant') || n === 'hass' || n.includes('hassio')) return 'ha';
   if (n.includes('unraid')) return 'unraid';
   if (n.includes('unifi')) return 'unifi';
   if (n.includes('plex')) return 'plex';
   return '';
 };
-const appByKind = (k) => apps.find((a) => kindOf(a.nom) === k);
+const kindOfApp = (a) => (a && typeof a.type === 'string' && a.type !== '' ? a.type : devinerType(a ? a.nom : ''));
+const kindOf = (nom) => devinerType(nom);       // compat : appels par nom seul
+const appByKind = (k) => apps.find((a) => kindOfApp(a) === k);
 
 /* migration : anciennes valeurs des Réglages → fiches d'apps */
 (function migrate() {
@@ -1201,6 +1225,7 @@ let majByName = {};
 let UPDATES = [];               // mises à jour détaillées (entités update.* de HA)
 let statusByName = {};          // true / false / undefined = en cours
 let DIRECT = { unraid: null, unifi: null, clients: null };   // connexions directes via relais
+let HOTE = null;            // mesures de la machine qui héberge Atrium
 
 /* ---------- logos (lettre en secours) ---------- */
 function mountLogo(chip, logoUrl) {
@@ -1400,7 +1425,7 @@ function derive() {
   pickSys(['processor_use', 'cpu_usage', 'cpu_percent', 'processeur'], 'CPU');
   pickSys(['memory_use', 'memory_usage', 'ram_use', 'memoire'], 'RAM');
   pickSys(['disk_use', 'disk_usage', 'storage_use', 'disque', 'stockage'], 'Disque');
-  if (sysRows.length) SRV.push({ titre: 'Home Assistant', rows: sysRows, kind: 'ha', src: 'système' });
+  if (sysRows.length) SRV.push({ titre: 'Home Assistant', rows: sysRows, kind: 'ha', src: 'via HA' });
 
   const un = S.filter((s) => s.entity_id.includes('unraid') && s.state !== 'unavailable');
   if (un.length) {
@@ -1691,6 +1716,23 @@ function renderLive() {
   const dSrv = baseSrv.filter((g) => !((g.titre === 'Unraid' && DIRECT.unraid) || (g.titre === 'UniFi' && DIRECT.unifi)));
   if (DIRECT.unraid) dSrv.push({ titre: 'Unraid', rows: DIRECT.unraid, kind: 'unraid', src: 'direct' });
   if (DIRECT.unifi) dSrv.push({ titre: 'UniFi', rows: DIRECT.unifi, kind: 'unifi', src: 'direct' });
+
+  /* la machine qui héberge Atrium passe en tête : c'est la mesure la plus sûre,
+     elle ne dépend d'aucune intégration */
+  if (HOTE) {
+    const rows = [];
+    if (HOTE.cpu != null) rows.push({ label: 'CPU', v: HOTE.cpu });
+    if (HOTE.memoire) rows.push({ label: 'RAM', v: HOTE.memoire.pourcent, detail: HOTE.memoire.utilise_go + ' / ' + HOTE.memoire.total_go + ' Go' });
+    if (HOTE.disque) rows.push({ label: 'Disque', v: HOTE.disque.pourcent, detail: HOTE.disque.utilise_go + ' / ' + HOTE.disque.total_go + ' Go' });
+    if (rows.length) {
+      let sous = HOTE.os || '';
+      if (HOTE.demarrage) {
+        const j = Math.floor(HOTE.demarrage.secondes / 86400);
+        sous += (sous ? ' · ' : '') + (j >= 1 ? 'allumé depuis ' + j + ' j' : 'allumé depuis moins d\'un jour');
+      }
+      dSrv.unshift({ titre: HOTE.nom || 'Cette machine', rows, hote: true, sous, src: 'local' });
+    }
+  }
   let dNet = baseNet.slice();
   if (DIRECT.clients != null) {
     dNet = dNet.filter((r) => r.label !== 'Appareils connectés');
@@ -1701,16 +1743,17 @@ function renderLive() {
     health.style.display = '';
     const hr = $('health-rows');
     hr.textContent = '';
-    const srvBox = (titre, kind, src) => {
+    const srvBox = (titre, kind, src, opts) => {
+      const o = opts || {};
       const box = document.createElement('div');
-      box.className = 'srv-box';
+      box.className = 'srv-box' + (o.hote ? ' hote' : '');
       const head = document.createElement('div');
       head.className = 'srv-head';
       const chip = document.createElement('span');
       chip.className = 'logo-chip s18';
       const cl = document.createElement('span');
       cl.className = 'cl';
-      cl.textContent = (titre[0] || '?').toUpperCase();
+      cl.textContent = o.hote ? '▪' : (titre[0] || '?').toUpperCase();
       chip.appendChild(cl);
       const app = kind ? appByKind(kind) : null;
       if (app) mountLogo(chip, logoDe(app));
@@ -1726,17 +1769,24 @@ function renderLive() {
         head.appendChild(tag);
       }
       box.appendChild(head);
+      if (o.sous) {
+        const s = document.createElement('div');
+        s.className = 'srv-sub';
+        s.textContent = o.sous;
+        box.appendChild(s);
+      }
       hr.appendChild(box);
       return box;
     };
     dSrv.forEach((g) => {
-      const box = srvBox(g.titre, g.kind, g.src);
+      const box = srvBox(g.titre, g.kind, g.src, { hote: g.hote, sous: g.sous });
       g.rows.forEach((r) => {
         const row = clone('tpl-health-row');
         row.querySelector('.hl-label').textContent = r.label;
         if (r.v != null) {
           row.querySelector('.hl-val').textContent = r.v + ' %';
           row.querySelector('.bar > i').style.width = Math.min(100, r.v) + '%';
+          if (r.detail) row.querySelector('.hl-label').title = r.detail;
         } else {
           row.querySelector('.hl-val').textContent = r.txt;
           row.querySelector('.bar').remove();
@@ -1837,6 +1887,7 @@ const normApp = (a) => ({
   nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
   url: a.url || '', logoUrl: a.logoUrl || '',
   token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
+  type: a.type || '',      // intégration choisie explicitement ('' = aucune)
 });
 const normUser = (u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' });
 
@@ -1877,6 +1928,17 @@ async function pullCfg() {
     pollDirect();
   }
   return { serveur: true, vierge };
+}
+
+/* Machine hôte : mesurée par Atrium lui-même, sans aucune intégration. */
+async function pollHote() {
+  try {
+    const r = await relayFetch('/api/system', { cache: 'no-store' });
+    if (!r.ok) { HOTE = null; return; }
+    const j = await r.json();
+    HOTE = j.disponible ? j : null;
+  } catch (e) { HOTE = null; }
+  renderLive();
 }
 
 async function pollDirect() {
@@ -2108,7 +2170,7 @@ const KIND_UI = {
   },
 };
 function syncKind() {
-  const kind = kindOf($('m-nom').value.trim());
+  const kind = $('m-type').value;
   const ui = KIND_UI[kind];
   $('f-key').hidden = !ui;
   if (ui) {
@@ -2131,7 +2193,8 @@ function openAppModal(index) {
   $('m-cat').value = app.cat;
   $('m-url').value = app.url;
   $('m-logo').value = app.logoUrl;
-  $('m-key').value = kindOf(app.nom) === 'ha' ? (app.token || '') : (app.apiKey || '');
+  $('m-type').value = kindOfApp(app);
+  $('m-key').value = kindOfApp(app) === 'ha' ? (app.token || '') : (app.apiKey || '');
   $('m-temp').value = app.tempEntity || '';
   $('m-nom').classList.remove('err');
   syncChip();
@@ -2140,7 +2203,16 @@ function openAppModal(index) {
   $('m-nom').focus();
 }
 function closeAppModal() { $('ov-app').hidden = true; editIndex = null; }
-$('m-nom').addEventListener('input', () => { $('m-nom').classList.remove('err'); syncChip(); syncKind(); });
+$('m-nom').addEventListener('input', () => {
+  $('m-nom').classList.remove('err');
+  syncChip();
+  /* le nom ne fait que proposer un type tant qu'aucun n'a été choisi */
+  if (!$('m-type').dataset.touche) {
+    const d = devinerType($('m-nom').value);
+    if (d) { $('m-type').value = d; syncKind(); }
+  }
+});
+$('m-type').addEventListener('change', () => { $('m-type').dataset.touche = '1'; syncKind(); });
 $('m-logo').addEventListener('input', syncChip);
 $('m-cancel').addEventListener('click', closeAppModal);
 $('m-save').addEventListener('click', () => {
@@ -2153,11 +2225,12 @@ $('m-save').addEventListener('click', () => {
     cat: $('m-cat').value,
     url: $('m-url').value.trim(),
     logoUrl: $('m-logo').value.trim(),
+    type: $('m-type').value,
     token: prev.token || '',
     apiKey: prev.apiKey || '',
     tempEntity: prev.tempEntity || '',
   };
-  const kind = kindOf(nom);
+  const kind = app.type;
   const key = $('m-key').value.trim();
   if (kind === 'ha') {
     app.token = key;
@@ -2211,7 +2284,7 @@ function renderSetStatus() { renderConnPanel(); }
 function renderModalStatus() {
   const el = $('m-status');
   if (!el || el.hidden || $('ov-app').hidden) return;
-  const kind = kindOf($('m-nom').value.trim());
+  const kind = $('m-type').value;
   if (kind === 'ha') { haStatusInto(el); return; }
   if (kind !== 'unraid' && kind !== 'unifi' && kind !== 'plex') return;
   const nomK = kind === 'unraid' ? 'Unraid' : (kind === 'unifi' ? 'UniFi' : 'Plex');
@@ -2299,7 +2372,7 @@ function renderConnPanel() {
     btn.className = 'btn-ghost';
     btn.textContent = app ? 'Configurer' : 'Ajouter la fiche';
     btn.addEventListener('click', () => {
-      let i = apps.findIndex((a) => kindOf(a.nom) === r.kind);
+      let i = apps.findIndex((a) => kindOfApp(a) === r.kind);
       if (i === -1) {
         apps.push({ nom: r.nom, role: '', cat: 'Serveur', url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' });
         saveApps();
@@ -2973,6 +3046,7 @@ function finirSetup() {
   fetchStates();
   probeAll();
   pollDirect();
+  pollHote();
 }
 async function creerCompte(nom, motdepasse) {
   const r = await relayFetch('/api/setup', {
@@ -3069,11 +3143,13 @@ async function lireSession() {
   fetchStates();
   probeAll();
   pollDirect();
+  pollHote();
 })();
 
 setInterval(fetchStates, 15000);
 setInterval(probeAll, 60000);
 setInterval(pollDirect, 30000);
+setInterval(pollHote, 10000);
 setInterval(() => { if ($('setup').hidden) pullCfg(); }, 60000);
 </script>
 </body>

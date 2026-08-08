@@ -23,6 +23,7 @@ import urllib.parse
 import urllib.request
 
 import auth
+import systeme
 
 PORT = int(os.environ.get("ATRIUM_PORT", "8420"))
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -168,6 +169,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.reply(200, json.dumps({"ok": True, "app": "atrium"}).encode())
         elif route == "/api/session":
             self.session_get()
+        elif route == "/api/system":
+            if self.exiger_session():
+                self.reply(200, json.dumps(systeme.mesures(CONFIG_DIR), ensure_ascii=False).encode())
         else:
             super().do_GET()
 
