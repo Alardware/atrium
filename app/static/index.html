@@ -228,6 +228,20 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-stats .v{font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-stats .l{margin-top:2px;font:600 8.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .grid.list .app-stats{margin-top:0;max-width:290px}
+
+/* Une tuile qui porte des chiffres s'élargit sur deux colonnes au lieu de
+   s'allonger : les autres tuiles de la rangée gardent leur hauteur. */
+.grid:not(.list) .app-card.wide{grid-column:span 2;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;gap:12px 18px}
+.grid:not(.list) .app-card.wide .app-top{grid-column:1;grid-row:1}
+.grid:not(.list) .app-card.wide .app-mid{grid-column:1;grid-row:2}
+.grid:not(.list) .app-card.wide .app-foot{grid-column:1;grid-row:3;align-self:end}
+.grid:not(.list) .app-card.wide .app-stats{grid-column:2;grid-row:1 / 4;align-self:center;margin-top:0}
+.grid:not(.list) .app-card.wide .app-stats .st{min-width:72px}
+/* une seule colonne disponible : la tuile reprend sa forme normale */
+@media (max-width:620px){
+  .grid:not(.list) .app-card.wide{grid-column:span 1;display:flex}
+  .grid:not(.list) .app-card.wide .app-stats{min-width:0;margin-top:2px}
+}
 .badge-on{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
 .badge-off{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--bad-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-off .dot{background:var(--bad)}
@@ -2294,6 +2308,7 @@ function appCard(app, index) {
   const zone = a.querySelector('.app-stats');
   if (chiffres && chiffres.length) {
     zone.hidden = false;
+    a.classList.add('wide');      // s'élargit au lieu de s'allonger
     chiffres.forEach((s) => {
       const c = document.createElement('div');
       c.className = 'st';

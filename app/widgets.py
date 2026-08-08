@@ -85,9 +85,9 @@ def _w_arr(nom_collection, libelle):
         file = _arr_compte(base, cle, "/api/v3/queue?pageSize=1")
         stats = []
         if manquants is not None:
-            stats.append({"lab": "MANQUANTS", "val": _n(manquants)})
+            stats.append({"lab": "MANQUE", "val": _n(manquants)})
         if file is not None:
-            stats.append({"lab": "EN FILE", "val": _n(file)})
+            stats.append({"lab": "FILE", "val": _n(file)})
         if total is not None:
             stats.append({"lab": libelle, "val": _n(total)})
         return stats or None
@@ -123,7 +123,7 @@ def w_sabnzbd(base, cle):
         return None
     return [
         {"lab": "DÉBIT", "val": "%.1f Mo/s" % (float(q.get("kbpersec") or 0) / 1024)},
-        {"lab": "EN FILE", "val": _n(q.get("noofslots", 0))},
+        {"lab": "FILE", "val": _n(q.get("noofslots", 0))},
     ]
 
 
