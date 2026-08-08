@@ -221,6 +221,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-name{font:700 14.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
 .app-role{margin-top:3px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .app-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--divider)}
+
+/* chiffres remontés du service, sur la tuile */
+.app-stats{display:flex;gap:6px;margin-top:2px}
+.app-stats .st{flex:1;min-width:0;padding:7px 8px;border-radius:8px;background:var(--subtle);text-align:center}
+.app-stats .v{font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-stats .l{margin-top:2px;font:600 8.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grid.list .app-stats{margin-top:0;max-width:290px}
 .badge-on{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
 .badge-off{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--bad-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-off .dot{background:var(--bad)}
@@ -598,7 +605,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="field">
             <label for="m-url" data-i18n="f.url">URL</label>
             <input id="m-url" type="text" placeholder="http://192.168.0.10:32400" autocomplete="off">
-            <span class="hint" data-i18n="f.url.hint">Sert aussi à détecter automatiquement si l'app est en ligne.</span>
           </div>
           <div class="mrow">
             <div class="field">
@@ -639,10 +645,9 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="field">
             <label for="m-key" id="m-key-label" data-i18n="f.key">Clé API ou jeton</label>
             <span class="pwd-wrap">
-              <input id="m-key" type="password" data-i18n-ph="f.key.ph" placeholder="laisser vide si le service n'en demande pas" autocomplete="off">
+              <input id="m-key" type="password" data-i18n-ph="f.key.ph" placeholder="facultatif" autocomplete="off">
               <button class="pwd-eye" id="m-key-eye" type="button">👁</button>
             </span>
-            <span class="hint" id="m-key-hint" data-i18n="f.key.hint">Atrium reconnaît le service tout seul à partir de son URL. La clé ne sert qu'à lire ses données.</span>
           </div>
           <div class="field" id="f-temp" hidden>
             <label for="m-temp" data-i18n="f.temp">Entité température intérieure</label>
@@ -1040,6 +1045,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <div class="app-name"></div>
       <div class="app-role"></div>
     </div>
+    <div class="app-stats" hidden></div>
     <div class="app-foot">
       <span class="badge-on" hidden><span class="dot"></span><span data-i18n="app.online">en ligne</span></span>
       <span class="badge-off" hidden><span class="dot"></span><span data-i18n="app.offline">hors ligne</span></span>
@@ -1327,6 +1333,7 @@ let UPDATES = [];               // mises à jour détaillées (entités update.*
 let statusByName = {};          // true / false / undefined = en cours
 let DIRECT = { unraid: null, unifi: null, clients: null };   // connexions directes via relais
 let HOTE = null;            // mesures de la machine qui héberge Atrium
+let STATS = {};             // chiffres remontés par service, par nom d'app
 
 /* ---------- logos (lettre en secours) ---------- */
 function mountLogo(chip, logoUrl) {
@@ -2101,6 +2108,20 @@ async function testerIntegration(type, url, cle) {
 }
 
 /* Machine hôte : mesurée par Atrium lui-même, sans aucune intégration. */
+/* Chiffres des services : le serveur les collecte, le navigateur ne reçoit
+   que les valeurs — les clés ne quittent jamais le serveur. */
+async function pollStats() {
+  try {
+    const r = await relayFetch('/api/widgets', { cache: 'no-store' });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (JSON.stringify(j) !== JSON.stringify(STATS)) {
+      STATS = j;
+      renderApps();
+    }
+  } catch (e) { /* sans importance : les tuiles restent sans chiffres */ }
+}
+
 async function pollHote() {
   try {
     const r = await relayFetch('/api/system', { cache: 'no-store' });
@@ -2267,6 +2288,27 @@ function appCard(app, index) {
     na.querySelector('.lbl').textContent = t(app.url ? 'app.checking' : 'app.nourl');
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
+
+  /* chiffres du service, quand il en fournit */
+  const chiffres = STATS[app.nom];
+  const zone = a.querySelector('.app-stats');
+  if (chiffres && chiffres.length) {
+    zone.hidden = false;
+    chiffres.forEach((s) => {
+      const c = document.createElement('div');
+      c.className = 'st';
+      const v = document.createElement('div');
+      v.className = 'v';
+      v.textContent = s.val;
+      const l = document.createElement('div');
+      l.className = 'l';
+      l.textContent = s.lab;
+      c.appendChild(v);
+      c.appendChild(l);
+      zone.appendChild(c);
+    });
+  }
+
   if (app.url) { a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; }
   a.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]');
@@ -2385,11 +2427,7 @@ async function detecterEtTester() {
 
   $('m-type').value = d.type;
   syncKind();
-  if (d.cle_libelle) {
-    $('m-key-label').textContent = d.cle_libelle;
-    const aide = (KIND_UI[d.type] || {}).hint;
-    $('m-key-hint').textContent = aide || t('f.key.hint');
-  }
+  if (d.cle_libelle) $('m-key-label').textContent = d.cle_libelle;
 
   const nom = d.nom + (d.version ? ' ' + d.version : '');
   if (!d.cle_requise) { majTest('ok', t('f.test.detected', { nom })); return; }
@@ -2435,7 +2473,6 @@ function openAppModal(index) {
   $('m-temp').value = app.tempEntity || '';
   $('m-nom').classList.remove('err');
   $('m-key-label').textContent = t('f.key');
-  $('m-key-hint').textContent = t('f.key.hint');
   majTest('na', t('f.test.idle'));
   syncChip();
   syncKind();
@@ -3331,6 +3368,7 @@ function finirSetup() {
   probeAll();
   pollDirect();
   pollHote();
+  pollStats();
 }
 async function creerCompte(nom, motdepasse, listeApps) {
   const r = await relayFetch('/api/setup', {
@@ -3481,12 +3519,14 @@ async function lireSession() {
   probeAll();
   pollDirect();
   pollHote();
+  pollStats();
 })();
 
 setInterval(fetchStates, 15000);
 setInterval(probeAll, 60000);
 setInterval(pollDirect, 30000);
 setInterval(pollHote, 10000);
+setInterval(pollStats, 30000);
 setInterval(() => { if ($('setup').hidden) pullCfg(); }, 60000);
 </script>
 </body>

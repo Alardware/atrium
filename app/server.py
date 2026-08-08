@@ -25,6 +25,7 @@ import urllib.request
 import auth
 import services
 import systeme
+import widgets
 
 PORT = int(os.environ.get("ATRIUM_PORT", "8420"))
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -77,7 +78,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
 
-    def reply(self, code, data, ctype="application/json", cookie=None):
+    def reply(self, code, data, ctype="application/json; charset=utf-8", cookie=None):
         self.send_response(code)
         self.cors()
         self.send_header("Content-Type", ctype)
@@ -98,8 +99,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     # ---------- etat / session ----------
     def lire_config(self):
+        # utf-8-sig : tolere un BOM, qu ajoutent certains editeurs et outils
         try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            with open(CONFIG_FILE, "r", encoding="utf-8-sig") as f:
                 return json.load(f)
         except (OSError, ValueError):
             return {}
@@ -173,6 +175,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/system":
             if self.exiger_session():
                 self.reply(200, json.dumps(systeme.mesures(CONFIG_DIR), ensure_ascii=False).encode())
+        elif route == "/api/widgets":
+            if self.exiger_session():
+                self.widgets()
         else:
             super().do_GET()
 
@@ -210,6 +215,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.reply(403, json.dumps({"error": "Adresse hors du réseau privé"}, ensure_ascii=False).encode())
             return
         self.reply(200, json.dumps(services.identifier(url, cle), ensure_ascii=False).encode())
+
+    def widgets(self):
+        """Donnees a afficher sur les tuiles. Les identifiants restent au
+        serveur : le navigateur ne recoit que les chiffres."""
+        cfg = self.lire_config()
+        sortie = {}
+        for a in (cfg.get("apps") or []):
+            type_service = a.get("type") or ""
+            url = a.get("url") or ""
+            if not type_service or not url or not host_allowed(url):
+                continue
+            cle = a.get("token") if type_service == "ha" else a.get("apiKey")
+            stats = widgets.mesurer(type_service, url, cle or "")
+            if stats:
+                sortie[a.get("nom")] = stats
+        self.reply(200, json.dumps(sortie, ensure_ascii=False).encode())
 
     # ---------- authentification ----------
     def session_get(self):
