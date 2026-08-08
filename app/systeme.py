@@ -9,9 +9,11 @@ Sous Windows (developpement), /proc n existe pas : « disponible » vaut False e
 l interface masque simplement la carte.
 """
 import os
+import threading
 import time
 
 _precedent = {"total": 0, "actif": 0}
+_cpu_dernier = {"valeur": None}
 
 
 def _lire(chemin):
@@ -35,10 +37,12 @@ def cpu_pourcent():
     total = sum(champs)
     repos = champs[3] + (champs[4] if len(champs) > 4 else 0)  # idle + iowait
     actif = total - repos
-    dt, da = total - _precedent["total"], actif - _precedent["actif"]
+    dt = total - _precedent["total"]
+    da = actif - _precedent["actif"]
+    premier = _precedent["total"] == 0
     _precedent["total"], _precedent["actif"] = total, actif
-    if dt <= 0 or _precedent["total"] == total:
-        return None
+    if premier or dt <= 0:
+        return None          # il faut deux releves pour calculer une charge
     return max(0, min(100, round(da * 100 / dt)))
 
 
@@ -105,9 +109,25 @@ def systeme_hote():
     return os.environ.get("HOST_OS", "").strip()  # « Unraid », etc.
 
 
+def _echantillonner():
+    """Releve la charge en continu : une valeur est prete des le premier
+    affichage, au lieu d attendre deux appels de l interface."""
+    while True:
+        v = cpu_pourcent()
+        if v is not None:
+            _cpu_dernier["valeur"] = v
+        time.sleep(3)
+
+
+def demarrer_echantillonnage():
+    if not os.path.exists("/proc/stat"):
+        return
+    threading.Thread(target=_echantillonner, daemon=True).start()
+
+
 def mesures(chemin_config):
     """Instantane complet ; disponible=False si la plateforme ne l expose pas."""
-    cpu = cpu_pourcent()
+    cpu = _cpu_dernier["valeur"]
     mem = memoire()
     dsk = disque(chemin_config)
     if cpu is None and mem is None and dsk is None:

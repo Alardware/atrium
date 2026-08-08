@@ -1717,20 +1717,35 @@ function renderLive() {
   if (DIRECT.unraid) dSrv.push({ titre: 'Unraid', rows: DIRECT.unraid, kind: 'unraid', src: 'direct' });
   if (DIRECT.unifi) dSrv.push({ titre: 'UniFi', rows: DIRECT.unifi, kind: 'unifi', src: 'direct' });
 
-  /* la machine qui héberge Atrium passe en tête : c'est la mesure la plus sûre,
-     elle ne dépend d'aucune intégration */
+  /* La machine qui héberge Atrium passe en tête. Si une intégration décrit
+     cette même machine (Atrium installé sur le NAS), les deux cartes n'en font
+     qu'une : mesures locales pour le processeur et la mémoire, données de
+     l'intégration pour ce qu'elle seule connaît (la grappe, par exemple). */
   if (HOTE) {
     const rows = [];
     if (HOTE.cpu != null) rows.push({ label: 'CPU', v: HOTE.cpu });
     if (HOTE.memoire) rows.push({ label: 'RAM', v: HOTE.memoire.pourcent, detail: HOTE.memoire.utilise_go + ' / ' + HOTE.memoire.total_go + ' Go' });
-    if (HOTE.disque) rows.push({ label: 'Disque', v: HOTE.disque.pourcent, detail: HOTE.disque.utilise_go + ' / ' + HOTE.disque.total_go + ' Go' });
+
+    const osHote = normTxt(HOTE.os || '');
+    const iSelf = osHote ? dSrv.findIndex((g) => g.kind && osHote.includes(g.kind)) : -1;
+    const self = iSelf >= 0 ? dSrv.splice(iSelf, 1)[0] : null;
+
+    if (self) {
+      // on ne reprend de l'intégration que ce que la mesure locale n'a pas
+      self.rows.forEach((r) => {
+        if (!rows.some((x) => x.label === r.label)) rows.push(r);
+      });
+    }
+    if (HOTE.disque && !rows.some((r) => r.label === 'Disque')) {
+      rows.push({ label: 'Disque', v: HOTE.disque.pourcent, detail: HOTE.disque.utilise_go + ' / ' + HOTE.disque.total_go + ' Go' });
+    }
     if (rows.length) {
       let sous = HOTE.os || '';
       if (HOTE.demarrage) {
         const j = Math.floor(HOTE.demarrage.secondes / 86400);
         sous += (sous ? ' · ' : '') + (j >= 1 ? 'allumé depuis ' + j + ' j' : 'allumé depuis moins d\'un jour');
       }
-      dSrv.unshift({ titre: HOTE.nom || 'Cette machine', rows, hote: true, sous, src: 'local' });
+      dSrv.unshift({ titre: HOTE.nom || 'Cette machine', rows, hote: true, sous, kind: self ? self.kind : '' });
     }
   }
   let dNet = baseNet.slice();
@@ -1762,12 +1777,6 @@ function renderLive() {
       name.textContent = titre;
       head.appendChild(chip);
       head.appendChild(name);
-      if (src) {
-        const tag = document.createElement('span');
-        tag.className = 'srv-src';
-        tag.textContent = src;
-        head.appendChild(tag);
-      }
       box.appendChild(head);
       if (o.sous) {
         const s = document.createElement('div');
@@ -2341,12 +2350,36 @@ function renderConnPanel() {
   const list = $('conn-list');
   if (!list || $('spage').hidden || $('sp-conn').hidden) return;
   list.textContent = '';
-  const rows = [
-    { nom: 'Home Assistant', kind: 'ha', ok: CONN === 'ok', st: CONN === 'ok' ? STATES.length + ' entités' : (CONN === 'error' ? CONN_ERR : 'token manquant') },
-    { nom: 'Plex', kind: 'plex', ok: !!DIRECT.plexOk, st: DIRECT.plexOk ? PLEX_MEDIAS.length + ' session(s) en cours' : ((DIRECT.err || {}).plex || 'non configuré') },
-    { nom: 'Unraid', kind: 'unraid', ok: !!DIRECT.unraid, st: DIRECT.unraid ? 'connecté (direct)' : ((DIRECT.err || {}).unraid || 'non configuré') },
-    { nom: 'UniFi', kind: 'unifi', ok: !!DIRECT.unifi, st: DIRECT.unifi ? 'connecté (direct)' : ((DIRECT.err || {}).unifi || 'non configuré') },
-  ];
+
+  /* Liste construite à partir des applications réellement configurées :
+     rien n'est codé en dur, chaque installation affiche les siennes. */
+  const etat = (kind) => {
+    if (kind === 'ha') {
+      return { ok: CONN === 'ok', st: CONN === 'ok' ? STATES.length + ' entités' : (CONN === 'error' ? CONN_ERR : 'jeton manquant') };
+    }
+    if (kind === 'plex') {
+      return { ok: !!DIRECT.plexOk, st: DIRECT.plexOk ? PLEX_MEDIAS.length + ' lecture(s) en cours' : ((DIRECT.err || {}).plex || 'non configuré') };
+    }
+    if (kind === 'unraid') {
+      return { ok: !!DIRECT.unraid, st: DIRECT.unraid ? 'connecté' : ((DIRECT.err || {}).unraid || 'non configuré') };
+    }
+    if (kind === 'unifi') {
+      return { ok: !!DIRECT.unifi, st: DIRECT.unifi ? 'connecté' : ((DIRECT.err || {}).unifi || 'non configuré') };
+    }
+    return { ok: false, st: '' };
+  };
+  const rows = apps
+    .map((a) => ({ app: a, kind: kindOfApp(a) }))
+    .filter((x) => x.kind)
+    .map((x) => Object.assign({ nom: x.app.nom, kind: x.kind }, etat(x.kind)));
+
+  if (!rows.length) {
+    const v = document.createElement('span');
+    v.className = 'hint';
+    v.textContent = 'Aucune intégration configurée. Ouvrez la fiche d\'une application (✎ sur sa tuile) et choisissez son type.';
+    list.appendChild(v);
+    return;
+  }
   rows.forEach((r) => {
     const row = document.createElement('div');
     row.className = 'conn-row';

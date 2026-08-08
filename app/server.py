@@ -426,4 +426,5 @@ if __name__ == "__main__":
     print("Atrium — http://0.0.0.0:%d" % PORT, flush=True)
     print("Configuration : %s" % CONFIG_FILE, flush=True)
     verifier_config_inscriptible()
+    systeme.demarrer_echantillonnage()
     Server(("0.0.0.0", PORT), Handler).serve_forever()
