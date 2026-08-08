@@ -213,10 +213,11 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .seg{display:flex;gap:6px;padding:3px;border-radius:9px;background:var(--track)}
 .seg button{padding:6px 12px;border-radius:7px;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .seg button.on{background:var(--surface);box-shadow:var(--sh-1);color:var(--text)}
-/* Colonnes fines : la largeur d'une tuile se règle par le nombre de colonnes
-   qu'elle occupe, donc au plus près de ce qu'elle a à afficher. */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:14px}
-.grid:not(.list) > *{grid-column:span 2}
+/* Disposition souple : une tuile porteuse de chiffres prend exactement la
+   largeur de son contenu, les tuiles ordinaires s'étirent pour combler la
+   rangée. Aucune colonne imposée, donc aucun vide résiduel. */
+.grid{display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start}
+.grid:not(.list) > *{flex:1 1 214px;min-width:0}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
 .app-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .badge-maj{padding:4px 8px;border-radius:6px;background:var(--warn-soft);border:1px solid var(--warn-border);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text)}
@@ -236,24 +237,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    s'allonger : les autres tuiles de la rangée gardent leur hauteur. */
 /* Colonnes dimensionnées au contenu et calées à gauche : l'écart entre le nom
    et la première pastille est identique quel que soit leur nombre. */
-.grid:not(.list) .app-card.wide{display:grid;grid-template-columns:auto auto;grid-template-rows:auto 1fr auto;justify-content:start;gap:12px 18px}
-.grid:not(.list) .app-card.wide .app-mid{max-width:180px}
-.grid:not(.list) .app-card.wide.n1{grid-column:span 2}
-.grid:not(.list) .app-card.wide.n2{grid-column:span 3}
-.grid:not(.list) .app-card.wide.n3{grid-column:span 4}
+/* largeur au contenu : la tuile ne s'étire pas, elle ne se comprime pas */
+.grid:not(.list) .app-card.wide{flex:0 0 auto;display:grid;grid-template-columns:auto auto;grid-template-rows:auto 1fr auto;justify-content:start;gap:12px 18px}
+.grid:not(.list) .app-card.wide .app-mid{min-width:104px;max-width:190px}
 .grid:not(.list) .app-card.wide .app-top{grid-column:1;grid-row:1}
 .grid:not(.list) .app-card.wide .app-mid{grid-column:1;grid-row:2}
 .grid:not(.list) .app-card.wide .app-foot{grid-column:1 / -1;grid-row:3;align-self:end}
 .grid:not(.list) .app-card.wide .app-stats{grid-column:2;grid-row:1 / 4;align-self:center;margin-top:0}
 .grid:not(.list) .app-card.wide .app-stats .st{min-width:72px}
-/* écran étroit : toutes les tuiles reprennent une disposition verticale */
+/* écran étroit : une tuile par rangée, disposition verticale */
 @media (max-width:620px){
-  .grid:not(.list){grid-template-columns:1fr}
-  .grid:not(.list) > *,
-  .grid:not(.list) .app-card.wide.n1,
-  .grid:not(.list) .app-card.wide.n2,
-  .grid:not(.list) .app-card.wide.n3{grid-column:span 1}
-  .grid:not(.list) .app-card.wide{display:flex}
+  .grid:not(.list) > *{flex:1 1 100%}
+  .grid:not(.list) .app-card.wide{flex:1 1 100%;display:flex}
+  .grid:not(.list) .app-card.wide .app-mid{min-width:0;max-width:none}
   .grid:not(.list) .app-card.wide .app-stats{min-width:0;margin-top:2px}
 }
 .badge-on{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
@@ -275,7 +271,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .act-btn.danger:hover{color:var(--bad);border-color:var(--bad)}
 
 /* list view */
-.grid.list{grid-template-columns:1fr;gap:8px}
+.grid.list{flex-direction:column;gap:8px}
+.grid.list > *{flex:0 0 auto}
 .grid.list .app-card{flex-direction:row;align-items:center;gap:14px;padding:12px 16px}
 .grid.list .app-mid{flex:1;min-width:0}
 .grid.list .app-role{margin-top:2px}
@@ -284,8 +281,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid.list .add-card{min-height:0;flex-direction:row;padding:12px 16px}
 .grid.list .add-ring{width:26px;height:26px;font-size:14px}
 
-.grid .empty{grid-column:1/-1}
-.empty{grid-column:1/-1;padding:34px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);text-align:center;font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.grid .empty{flex:1 1 100%}
+.empty{padding:34px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);text-align:center;font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 
 /* ---- modales ---- */
 .overlay{position:fixed;inset:0;background:var(--overlay);display:grid;place-items:center;z-index:50;animation:fade .18s ease both;padding:16px}
