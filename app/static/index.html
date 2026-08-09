@@ -126,6 +126,8 @@ template{display:none}
 .mu-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .mu-app{font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent);padding:3px 7px;border-radius:99px;background:var(--accent-soft);white-space:nowrap}
 .mu-ver{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+.mu-tout{width:100%;margin-top:8px;padding:8px 0;border-radius:8px;border:1px solid var(--border-2);background:var(--surface-2);font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.mu-tout:hover{border-color:var(--accent);color:var(--accent)}
 
 /* ---- cloche et centre d'alertes ---- */
 .bell-wrap{position:relative}
@@ -233,7 +235,9 @@ template{display:none}
 /* ---- personnalisation du tableau de bord ---- */
 .sec-head-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .sec-head-row h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
-.sec-head-row .btn-sm{margin-left:auto}
+.sec-head-row #w-auto{margin-left:auto}
+.btn-sm.bascule.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.btn-sm.bascule.on::before{content:'●';margin-right:6px;font-size:8px;vertical-align:middle}
 .featured > .w-off{display:none !important}
 .featured.edit > .w-force{display:flex !important}
 .featured.edit > .card,.featured.edit > .cock{position:relative;outline:1px dashed var(--dash);outline-offset:3px}
@@ -752,6 +756,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <section class="rise-1" id="sec-featured">
         <div class="sec-head-row">
           <h2 data-i18n="now">En ce moment</h2>
+          <button class="btn-sm bascule" id="w-auto" type="button" data-i18n="w.auto">Automatique</button>
           <button class="btn-sm" id="w-edit" type="button" data-i18n="w.customize">Personnaliser</button>
         </div>
         <div class="featured" id="featured">
@@ -2090,7 +2095,10 @@ function renderMajPop() {
   const h = document.createElement('h4');
   h.textContent = t('update.title');
   pop.appendChild(h);
-  UPDATES.forEach((u) => {
+  /* au-delà d'une poignée, la liste devient un mur : on la replie */
+  const tout = pop.dataset.tout === '1';
+  const montrees = tout ? UPDATES : UPDATES.slice(0, 8);
+  montrees.forEach((u) => {
     const row = document.createElement('div');
     row.className = 'mu-row';
     const name = document.createElement('span');
@@ -2099,10 +2107,10 @@ function renderMajPop() {
     name.title = u.nom;
     row.appendChild(name);
     if (u.app) {
-      const t = document.createElement('span');
-      t.className = 'mu-app';
-      t.textContent = u.app;
-      row.appendChild(t);
+      const tag = document.createElement('span');
+      tag.className = 'mu-app';
+      tag.textContent = u.app;
+      row.appendChild(tag);
     }
     if (u.vers) {
       const v = document.createElement('span');
@@ -2112,6 +2120,18 @@ function renderMajPop() {
     }
     pop.appendChild(row);
   });
+  if (UPDATES.length > montrees.length) {
+    const b = document.createElement('button');
+    b.className = 'mu-tout';
+    b.type = 'button';
+    b.textContent = t('update.all', { n: UPDATES.length - montrees.length });
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pop.dataset.tout = '1';
+      renderMajPop();
+    });
+    pop.appendChild(b);
+  }
   if (!UPDATES.length) {
     const e = document.createElement('div');
     e.className = 'mu-row';
@@ -2124,6 +2144,7 @@ $('pill-maj').addEventListener('click', (e) => {
   if (e.target.closest('.maj-pop')) return;   // clic dans le panneau = ne pas refermer
   const p = $('maj-pop');
   p.hidden = !p.hidden;
+  if (!p.hidden) p.dataset.tout = '';         // la liste repart repliée
   renderMajPop();
 });
 document.addEventListener('click', () => { $('maj-pop').hidden = true; });
@@ -3058,6 +3079,51 @@ const REGISTRE_W = {
 const WIDGETS_DEFAUT = ['media', 'maison', 'serveur', 'plex'];
 const CARTES_FIXES = ['np-card', 'haw-card', 'srv-card', 'px-card'];
 
+/* ---------- disposition automatique ----------
+   Atrium remonte ce qui se passe. Le score n'est pas une humeur : il ne monte
+   que sur un fait constaté — une alerte ouverte, une lecture en cours, un
+   conteneur arrêté. À égalité, l'ordre choisi par l'utilisateur est conservé,
+   donc rien ne bouge tant que rien ne se passe. */
+const RANG_NIVEAU = { info: 0, surveillance: 20, avertissement: 50, critique: 90 };
+
+function priorite(id) {
+  const alertes = SUPER.alertes.alertes;
+  const pire = (filtre) => alertes.filter(filtre)
+    .reduce((n, a) => Math.max(n, RANG_NIVEAU[a.niveau] || 0), 0);
+  switch (id) {
+    case 'alertes':
+      return pire((a) => a.niveau !== 'info') + (SUPER.alertes.problemes ? 10 : 0);
+    case 'serveur':
+      return pire((a) => ['disque', 'ram'].includes(a.code));
+    case 'media':
+      return MEDIA ? (MEDIA.etat === 'playing' ? 45 : 25) : 0;
+    case 'plex':
+      return (DIRECT.plexSessions || 0) > 1 ? 40 : ((DIRECT.plexSessions || 0) ? 22 : 0);
+    /* Pas de règle sur les conteneurs arrêtés : beaucoup le sont volontairement,
+       et la tuile resterait en tête indéfiniment. Un arrêt qui pose vraiment
+       problème remonte déjà par le service injoignable. */
+    case 'reseau':
+      return NET.some((r) => /coup|down/i.test(r.valeur)) ? 80 : 0;
+    case 'maison':
+      return N_PORTES ? 15 : 0;
+    default:
+      return 0;
+  }
+}
+
+function ordreAffiche() {
+  const places = WIDGETS.filter((id) => REGISTRE_W[id]);
+  if (!AUTO_W || EDIT_W) return places;
+  /* une alerte ouverte s'invite en tête, même si le widget n'a pas été placé :
+     c'est tout l'intérêt du mode automatique */
+  const liste = places.slice();
+  if (SUPER.alertes.problemes && !liste.includes('alertes')) liste.unshift('alertes');
+  return liste
+    .map((id, rang) => ({ id, rang, p: priorite(id) }))
+    .sort((a, b) => b.p - a.p || a.rang - b.rang)
+    .map((x) => x.id);
+}
+
 function chargerWidgets() {
   try {
     const brut = JSON.parse(store.get('widgets', ''));
@@ -3070,9 +3136,11 @@ function chargerWidgets() {
 }
 let WIDGETS = chargerWidgets();
 let EDIT_W = false;
+let AUTO_W = store.get('autoW', '') === '1';
 
 function saveWidgets() {
   store.set('widgets', JSON.stringify(WIDGETS));
+  store.set('autoW', AUTO_W ? '1' : '0');
   pushCfg();
 }
 
@@ -3147,7 +3215,7 @@ function appliquerDisposition() {
   zone.querySelectorAll('.w-gen, .w-add, .wbar').forEach((e) => e.remove());
   zone.classList.toggle('edit', EDIT_W);
 
-  const places = WIDGETS.filter((id) => REGISTRE_W[id]);
+  const places = ordreAffiche();
   /* le widget Docker a besoin de la liste des conteneurs : on la demande une
      fois, puis on redessine — l'appel est mis en cache une minute */
   if ((places.includes('docker') || EDIT_W) && Date.now() - DOCKER.a > 60000) {
@@ -3292,11 +3360,26 @@ $('featured').addEventListener('click', (e) => {
   if (EDIT_W && !e.target.closest('.wbar') && !e.target.closest('.w-add')) e.preventDefault();
 }, true);
 
+function majBoutonsWidgets() {
+  $('w-edit').textContent = t(EDIT_W ? 'w.done' : 'w.customize');
+  const a = $('w-auto');
+  a.classList.toggle('on', AUTO_W);
+  a.textContent = t('w.auto');
+  a.title = t(AUTO_W ? 'w.auto.on' : 'w.auto.off');
+}
 $('w-edit').addEventListener('click', () => {
   EDIT_W = !EDIT_W;
-  $('w-edit').textContent = t(EDIT_W ? 'w.done' : 'w.customize');
+  majBoutonsWidgets();
   renderCockpit();
 });
+$('w-auto').addEventListener('click', () => {
+  AUTO_W = !AUTO_W;
+  majBoutonsWidgets();
+  saveWidgets();
+  renderCockpit();
+  toast(t(AUTO_W ? 'w.auto.on' : 'w.auto.off'));
+});
+majBoutonsWidgets();
 
 async function ouvrirChoixWidget() {
   await chargerConteneurs();          // pour savoir si Docker est proposable
@@ -3423,7 +3506,9 @@ function renderAlertes() {
   /* bandeau : ce qui va mal, résumé en une ligne */
   const graves = res.alertes.filter((a) => a.niveau !== 'info');
   const strip = $('strip');
-  strip.hidden = !graves.length;
+  /* le bandeau ne double pas le widget Alertes quand celui-ci est à l'écran */
+  const widgetAlertes = !EDIT_W && ordreAffiche().includes('alertes');
+  strip.hidden = !graves.length || widgetAlertes;
   if (graves.length) {
     strip.classList.toggle('grave', pire >= 3 || graves.some((a) => a.niveau === 'critique'));
     $('strip-ico').textContent = pire >= 3 ? '🔴' : '🟠';
@@ -3486,7 +3571,7 @@ async function pushCfg() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apps, users: USERS, lockHash: LOCK, lockReq: LOCK_REQ,
-                              widgets: WIDGETS }),
+                              widgets: WIDGETS, widgetsAuto: AUTO_W }),
     });
   } catch (e) { /* relais absent : la config reste locale */ }
 }
@@ -3536,9 +3621,12 @@ async function pullCfg() {
     applyLock();
   }
   const wSrv = Array.isArray(j.widgets) ? j.widgets.filter((w) => REGISTRE_W[w]) : null;
-  if (wSrv && JSON.stringify(wSrv) !== JSON.stringify(WIDGETS)) {
-    WIDGETS = wSrv;
-    store.set('widgets', JSON.stringify(WIDGETS));
+  const aSrv = typeof j.widgetsAuto === 'boolean' ? j.widgetsAuto : null;
+  if ((wSrv && JSON.stringify(wSrv) !== JSON.stringify(WIDGETS)) ||
+      (aSrv !== null && aSrv !== AUTO_W)) {
+    if (wSrv) { WIDGETS = wSrv; store.set('widgets', JSON.stringify(WIDGETS)); }
+    if (aSrv !== null) { AUTO_W = aSrv; store.set('autoW', AUTO_W ? '1' : '0'); }
+    majBoutonsWidgets();
     renderCockpit();
   }
   if (appsSrv.length && JSON.stringify(appsSrv) !== JSON.stringify(apps)) {
