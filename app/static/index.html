@@ -221,6 +221,40 @@ template{display:none}
 .cock-lab b{font:600 12px/1 'IBM Plex Mono',monospace;color:var(--text)}
 .cock-row.plain{display:flex;align-items:center;justify-content:space-between;font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .cock-row.plain b{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.cock-liste{display:flex;flex-direction:column;margin-top:auto;max-height:196px;overflow-y:auto}
+.cock-row .pt{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;vertical-align:middle;background:var(--muted-2)}
+.cock-row .pt.ok{background:var(--ok)}
+.cock-row .pt.surveillance{background:var(--accent)}
+.cock-row .pt.avertissement{background:var(--warn)}
+.cock-row .pt.critique{background:var(--bad)}
+.cock-row.plain .l2{display:block;font:500 10.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2);margin-top:2px}
+.cock-vide{margin-top:auto;padding:14px 0;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+
+/* ---- personnalisation du tableau de bord ---- */
+.sec-head-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sec-head-row h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
+.sec-head-row .btn-sm{margin-left:auto}
+.featured > .w-off{display:none !important}
+.featured.edit > .w-force{display:flex !important}
+.featured.edit > .card,.featured.edit > .cock{position:relative;outline:1px dashed var(--dash);outline-offset:3px}
+.featured.edit > .card.glisse{opacity:.4}
+.featured.edit > .card.cible{outline:2px solid var(--accent);outline-offset:3px}
+.wbar{position:absolute;top:-11px;right:8px;display:flex;gap:4px;z-index:3}
+.wbar button{width:24px;height:24px;border-radius:6px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:11px;line-height:1;box-shadow:var(--sh-1)}
+.wbar button:hover{color:var(--accent);border-color:var(--accent)}
+.wbar button.ret:hover{color:var(--bad);border-color:var(--bad)}
+.wbar .poignee{cursor:grab;color:var(--muted-2)}
+.w-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:132px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;flex:1 1 246px;max-width:360px}
+.w-add:hover{border-color:var(--accent);color:var(--accent)}
+.w-choix{display:flex;flex-direction:column;gap:4px;max-height:min(56vh,440px);overflow-y:auto}
+.w-choix button{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;border:1px solid var(--border-2);background:var(--surface-2);text-align:left;transition:border-color .13s,background .13s}
+.w-choix button:hover{border-color:var(--accent);background:var(--surface)}
+.w-choix button[disabled]{opacity:.5;pointer-events:none}
+.w-choix .ic{font-size:17px;line-height:1;width:22px;text-align:center}
+.w-choix .tx{flex:1;min-width:0}
+.w-choix .nm{display:block;font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.w-choix .ds{display:block;font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.w-choix .et{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3);white-space:nowrap}
 .card{border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-1);color:inherit;transition:box-shadow .2s,transform .2s,border-color .2s}
 a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transform:translateY(-2px);color:inherit}
 .now-playing{display:flex;gap:18px;padding:18px}
@@ -716,8 +750,9 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </div>
 
       <section class="rise-1" id="sec-featured">
-        <div class="section-head">
+        <div class="sec-head-row">
           <h2 data-i18n="now">En ce moment</h2>
+          <button class="btn-sm" id="w-edit" type="button" data-i18n="w.customize">Personnaliser</button>
         </div>
         <div class="featured" id="featured">
 
@@ -905,6 +940,18 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <div class="modal-foot">
       <button class="btn-ghost" id="d-cancel" data-i18n="btn.cancel">Annuler</button>
       <button class="btn-danger" id="d-confirm" data-i18n="btn.delete">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- choix d'un widget à ajouter au tableau de bord -->
+<div class="overlay" id="ov-widget" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 data-i18n="w.add">Ajouter un widget</h3>
+    <div class="modal-sub" data-i18n="w.add.sub">Seuls les widgets dont Atrium a les données peuvent être ajoutés.</div>
+    <div class="w-choix" id="w-choix"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="w-cancel" data-i18n="btn.close">Fermer</button>
     </div>
   </div>
 </div>
@@ -1294,6 +1341,29 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 </template>
 <template id="tpl-ha-row">
   <div class="ha-row"><span class="hr-label"></span><b class="hr-val"></b></div>
+</template>
+<template id="tpl-w-carte">
+  <div class="card cock">
+    <div class="chip-row">
+      <span class="logo-chip s26"><span class="cl">?</span></span>
+      <span class="chip-name"></span>
+    </div>
+  </div>
+</template>
+<template id="tpl-w-choix">
+  <button type="button">
+    <span class="ic"></span>
+    <span class="tx"><span class="nm"></span><span class="ds"></span></span>
+    <span class="et"></span>
+  </button>
+</template>
+<template id="tpl-wbar">
+  <div class="wbar">
+    <button class="poignee" data-w="glisser" title="Déplacer">⠿</button>
+    <button data-w="gauche" title="Vers la gauche">◄</button>
+    <button data-w="droite" title="Vers la droite">►</button>
+    <button class="ret" data-w="retirer" title="Retirer">✕</button>
+  </div>
 </template>
 <template id="tpl-qitem">
   <button type="button"><span class="ic"></span><span class="lb"></span></button>
@@ -2363,15 +2433,17 @@ const clefConteneur = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 async function chargerConteneurs() {
   if (Date.now() - DOCKER.a < 60000) return DOCKER;
+  /* l'horodatage est posé même en cas d'échec : sans cela un serveur muet
+     serait re-interrogé à chaque rendu du tableau de bord */
+  DOCKER.a = Date.now();
   try {
     const r = await relayFetch('/api/conteneurs', { cache: 'no-store' });
     if (r.ok) {
       const j = await r.json();
       DOCKER.actif = !!j.docker;
       DOCKER.noms = j.liste || [];
-      DOCKER.a = Date.now();
     }
-  } catch (e) { /* menu sans redémarrage, simplement */ }
+  } catch (e) { /* menu sans redémarrage, tableau de bord sans Docker */ }
   return DOCKER;
 }
 const conteneurDe = (app) => DOCKER.noms.find((c) => clefConteneur(c.nom) === clefConteneur(app.nom));
@@ -2785,6 +2857,225 @@ document.querySelector('.health-head').addEventListener('click', ouvrirServeurs)
 /* ---------- cockpit : tuiles qui n'apparaissent qu'en ayant de quoi dire ---- */
 const NIV_JAUGE = (v) => 's' + (v >= 95 ? 4 : v >= 85 ? 3 : v >= 70 ? 2 : 1);
 
+/* Une ligne « libellé / valeur » dans une tuile du cockpit. */
+function cRow(zone, libelle, valeur, options) {
+  const o = options || {};
+  const p = clone('tpl-cock-row');
+  const l = p.querySelector('.cr-l');
+  if (o.pastille !== undefined) {
+    const pt = document.createElement('span');
+    pt.className = 'pt ' + (o.pastille || '');
+    l.appendChild(pt);
+  }
+  l.appendChild(document.createTextNode(libelle));
+  if (o.sous) {
+    const s = document.createElement('span');
+    s.className = 'l2';
+    s.textContent = o.sous;
+    l.appendChild(s);
+  }
+  p.querySelector('.cr-v').textContent = valeur;
+  zone.appendChild(p);
+  return p;
+}
+function cListe(carte) {
+  const z = document.createElement('div');
+  z.className = 'cock-rows cock-liste';
+  carte.appendChild(z);
+  return z;
+}
+function cGrand(carte, valeur, unite) {
+  const g = document.createElement('div');
+  g.className = 'cock-big';
+  const n = document.createElement('span');
+  n.className = 'cock-n';
+  n.textContent = valeur;
+  const u = document.createElement('span');
+  u.className = 'cock-u';
+  u.textContent = unite || '';
+  g.appendChild(n);
+  g.appendChild(u);
+  carte.appendChild(g);
+  return g;
+}
+
+const attrE = (s) => s.attributes || {};
+const nomE = (s) => attrE(s).friendly_name || s.entity_id;
+const nbE = (s) => { const v = parseFloat(s.state); return isNaN(v) ? null : v; };
+const capteurs = (classe) => (CONN === 'ok' ? STATES : []).filter(
+  (s) => s.entity_id.startsWith('sensor.') && attrE(s).device_class === classe && nbE(s) !== null);
+
+/* Chaque widget dit s'il a de quoi s'afficher : « dispo » décide de sa présence
+   dans le choix, « rendre » remplit la tuile et renvoie faux s'il n'a rien. */
+const REGISTRE_W = {
+  media: { icone: '🎵', cle: 'w.media', fixe: 'np-card', dispo: () => true },
+  maison: { icone: '🏠', cle: 'w.maison', fixe: 'haw-card', dispo: () => CONN === 'ok' },
+  serveur: { icone: '🖥️', cle: 'w.serveur', fixe: 'srv-card', dispo: () => !!COCK_HOTE },
+  plex: {
+    icone: '🎬', cle: 'w.plex', fixe: 'px-card',
+    dispo: () => !!appByKind('plex'),
+  },
+  alertes: {
+    icone: '🚨', cle: 'w.alertes',
+    dispo: () => true,
+    rendre(carte) {
+      const liste = SUPER.alertes.alertes;
+      const graves = liste.filter((a) => a.niveau !== 'info');
+      cGrand(carte, String(graves.length), t(graves.length > 1 ? 'w.alertes.n' : 'w.alertes.1'));
+      if (!liste.length) {
+        const v = document.createElement('div');
+        v.className = 'cock-vide';
+        v.textContent = t('alert.none');
+        carte.appendChild(v);
+        return true;
+      }
+      const z = cListe(carte);
+      liste.slice(0, 5).forEach((a) => cRow(z, a.service, age(a.depuis),
+                                            { pastille: a.niveau, sous: texteAlerte(a) }));
+      return true;
+    },
+  },
+  docker: {
+    icone: '📦', cle: 'w.docker',
+    dispo: () => DOCKER.actif,
+    rendre(carte) {
+      if (!DOCKER.actif) return false;
+      const actifs = DOCKER.noms.filter((c) => c.etat === 'running');
+      const arretes = DOCKER.noms.filter((c) => c.etat !== 'running');
+      cGrand(carte, String(actifs.length), t('w.docker.run'));
+      const z = cListe(carte);
+      cRow(z, t('w.docker.total'), String(DOCKER.noms.length));
+      if (arretes.length) {
+        cRow(z, t('w.docker.stopped'), String(arretes.length),
+             { sous: arretes.slice(0, 3).map((c) => c.nom).join(', ') });
+      }
+      return true;
+    },
+  },
+  reseau: {
+    icone: '📡', cle: 'w.reseau',
+    dispo: () => DIRECT.clients != null || !!appByKind('unifi') || NET.length > 0,
+    rendre(carte) {
+      const un = appByKind('unifi');
+      const pastilles = un ? (STATS[un.nom] || []) : [];
+      const clients = DIRECT.clients != null ? DIRECT.clients
+        : (pastilles.find((s) => s.lab === 'CLIENTS') || {}).val;
+      if (clients == null && !NET.length && !pastilles.length) return false;
+      if (clients != null) cGrand(carte, String(clients), t('w.reseau.clients'));
+      const z = cListe(carte);
+      pastilles.filter((s) => s.lab !== 'CLIENTS')
+        .forEach((s) => cRow(z, s.lab, s.val));
+      (DIRECT.unifi || []).forEach((r) => cRow(z, r.label, r.v + ' %'));
+      NET.forEach((r) => cRow(z, r.label, r.valeur));
+      return !!(clients != null || z.childElementCount);
+    },
+  },
+  meteo: {
+    icone: '☀️', cle: 'w.meteo',
+    dispo: () => !!WEATHER,
+    rendre(carte) {
+      if (!WEATHER) return false;
+      const a = attrE(WEATHER);
+      if (a.temperature == null) return false;
+      cGrand(carte, Math.round(a.temperature) + '°', t('w.meteo.' + WEATHER.state) === 'w.meteo.' + WEATHER.state
+        ? WEATHER.state.replace(/-/g, ' ') : t('w.meteo.' + WEATHER.state));
+      const z = cListe(carte);
+      if (a.humidity != null) cRow(z, t('w.meteo.hum'), Math.round(a.humidity) + ' %');
+      if (a.wind_speed != null) {
+        cRow(z, t('w.meteo.wind'), Math.round(a.wind_speed) + ' ' + (a.wind_speed_unit || 'km/h'));
+      }
+      if (a.pressure != null) cRow(z, t('w.meteo.pres'), Math.round(a.pressure) + ' hPa');
+      return true;
+    },
+  },
+  temperature: {
+    icone: '🌡️', cle: 'w.temp',
+    dispo: () => capteurs('temperature').length > 0,
+    rendre(carte) {
+      const liste = capteurs('temperature')
+        .sort((a, b) => nbE(b) - nbE(a));
+      if (!liste.length) return false;
+      if (TEMP_IN) cGrand(carte, TEMP_IN.v + '°', TEMP_IN.nom.toLowerCase());
+      const z = cListe(carte);
+      liste.slice(0, 6).forEach((s) => cRow(z, nomE(s),
+        Math.round(nbE(s) * 10) / 10 + ' ' + (attrE(s).unit_of_measurement || '°')));
+      return true;
+    },
+  },
+  energie: {
+    icone: '⚡', cle: 'w.energie',
+    dispo: () => capteurs('power').length > 0 || capteurs('energy').length > 0,
+    rendre(carte) {
+      const puissance = capteurs('power').sort((a, b) => nbE(b) - nbE(a));
+      const energie = capteurs('energy').sort((a, b) => nbE(b) - nbE(a));
+      if (!puissance.length && !energie.length) return false;
+      if (puissance.length) {
+        const tot = puissance.reduce((n, s) => n + nbE(s), 0);
+        cGrand(carte, Math.round(tot) + ' ' + (attrE(puissance[0]).unit_of_measurement || 'W'),
+               t('w.energie.now'));
+      }
+      const z = cListe(carte);
+      puissance.slice(0, 4).forEach((s) => cRow(z, nomE(s),
+        Math.round(nbE(s)) + ' ' + (attrE(s).unit_of_measurement || 'W')));
+      energie.slice(0, 2).forEach((s) => cRow(z, nomE(s),
+        Math.round(nbE(s) * 10) / 10 + ' ' + (attrE(s).unit_of_measurement || 'kWh')));
+      return true;
+    },
+  },
+  calendrier: {
+    icone: '📅', cle: 'w.cal',
+    dispo: () => (CONN === 'ok' ? STATES : []).some((s) => s.entity_id.startsWith('calendar.')),
+    rendre(carte) {
+      const evts = [];
+      (CONN === 'ok' ? STATES : []).forEach((s) => {
+        if (!s.entity_id.startsWith('calendar.')) return;
+        const a = attrE(s);
+        if (!a.message) return;
+        const debut = a.start_time ? Date.parse(a.start_time.replace(' ', 'T')) : NaN;
+        evts.push({ titre: a.message, quand: debut, source: nomE(s),
+                    tout: !!a.all_day, lieu: a.location || '' });
+      });
+      if (!evts.length) return false;
+      evts.sort((a, b) => (a.quand || 0) - (b.quand || 0));
+      const z = cListe(carte);
+      evts.slice(0, 5).forEach((e) => {
+        let q = '—';
+        if (!isNaN(e.quand)) {
+          const d = new Date(e.quand);
+          const jour = d.toDateString() === new Date().toDateString();
+          q = e.tout ? t('w.cal.allday')
+            : d.toLocaleTimeString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR',
+                                   { hour: '2-digit', minute: '2-digit' });
+          if (!jour) q = d.toLocaleDateString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR',
+                                              { day: 'numeric', month: 'short' }) + ' ' + q;
+        }
+        cRow(z, e.titre, q, { sous: e.lieu || e.source });
+      });
+      return true;
+    },
+  },
+};
+const WIDGETS_DEFAUT = ['media', 'maison', 'serveur', 'plex'];
+const CARTES_FIXES = ['np-card', 'haw-card', 'srv-card', 'px-card'];
+
+function chargerWidgets() {
+  try {
+    const brut = JSON.parse(store.get('widgets', ''));
+    if (Array.isArray(brut)) {
+      const propre = brut.filter((w) => REGISTRE_W[w]);
+      if (propre.length) return propre;
+    }
+  } catch (e) { /* rien d'enregistré : disposition d'origine */ }
+  return WIDGETS_DEFAUT.slice();
+}
+let WIDGETS = chargerWidgets();
+let EDIT_W = false;
+
+function saveWidgets() {
+  store.set('widgets', JSON.stringify(WIDGETS));
+  pushCfg();
+}
+
 function renderCockpit() {
   const srv = $('srv-card');
   srv.hidden = !COCK_HOTE;
@@ -2843,7 +3134,194 @@ function renderCockpit() {
     if (deb) ligne(t('cock.rate'), deb.val);
     setCardLink(px, pxApp.url);
   }
+
+  appliquerDisposition();
 }
+
+/* ---------- disposition du tableau de bord ---------- */
+/* Les quatre tuiles historiques gardent leur balisage et leur logique : la
+   disposition ne fait que les ordonner et les masquer. Les autres sont
+   fabriquées ici. */
+function appliquerDisposition() {
+  const zone = $('featured');
+  zone.querySelectorAll('.w-gen, .w-add, .wbar').forEach((e) => e.remove());
+  zone.classList.toggle('edit', EDIT_W);
+
+  const places = WIDGETS.filter((id) => REGISTRE_W[id]);
+  /* le widget Docker a besoin de la liste des conteneurs : on la demande une
+     fois, puis on redessine — l'appel est mis en cache une minute */
+  if ((places.includes('docker') || EDIT_W) && Date.now() - DOCKER.a > 60000) {
+    chargerConteneurs().then(appliquerDisposition);
+  }
+  CARTES_FIXES.forEach((cid) => {
+    const el = $(cid);
+    if (!el) return;
+    const id = Object.keys(REGISTRE_W).find((k) => REGISTRE_W[k].fixe === cid);
+    const rang = places.indexOf(id);
+    /* « w-off » masque sans toucher à la logique propre de la carte, qui
+       continue de décider seule si elle a quelque chose à montrer. */
+    el.classList.toggle('w-off', rang < 0);
+    el.classList.remove('w-force');
+    el.dataset.w = id;          // sert au glisser-déposer et au repérage
+    if (rang >= 0) el.style.order = rang;
+  });
+
+  places.forEach((id, rang) => {
+    const w = REGISTRE_W[id];
+    if (w.fixe || !w.rendre) return;
+    const carte = clone('tpl-w-carte');
+    carte.classList.add('w-gen');
+    carte.dataset.w = id;
+    carte.style.order = rang;
+    carte.querySelector('.cl').textContent = w.icone;
+    carte.querySelector('.chip-name').textContent = t(w.cle);
+    let ok = false;
+    try { ok = w.rendre(carte) !== false; } catch (e) { ok = false; }
+    if (!ok && !EDIT_W) return;
+    if (!ok) {
+      const v = document.createElement('div');
+      v.className = 'cock-vide';
+      v.textContent = t('w.nodata');
+      carte.appendChild(v);
+    }
+    zone.appendChild(carte);
+  });
+
+  if (EDIT_W) {
+    places.forEach((id, rang) => {
+      const el = REGISTRE_W[id].fixe ? $(REGISTRE_W[id].fixe)
+        : zone.querySelector('[data-w="' + id + '"]');
+      if (!el) return;
+      /* en édition, une tuile placée reste visible même sans données : sinon
+         on ne pourrait ni la déplacer ni la retirer. Sa logique propre reprend
+         la main au rendu suivant, une fois l'édition terminée. */
+      el.classList.add('w-force');
+      el.hidden = false;
+      el.style.order = rang;
+      el.draggable = true;
+      const bar = clone('tpl-wbar');
+      bar.querySelectorAll('button').forEach((b) => {
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const a = b.dataset.w;
+          if (a === 'retirer') retirerWidget(id);
+          else if (a === 'gauche') deplacerWidget(id, -1);
+          else if (a === 'droite') deplacerWidget(id, 1);
+        });
+      });
+      el.appendChild(bar);
+    });
+    const plus = document.createElement('button');
+    plus.className = 'w-add';
+    plus.type = 'button';
+    plus.style.order = 999;
+    const anneau = document.createElement('div');
+    anneau.className = 'add-ring';
+    anneau.textContent = '+';
+    const lab = document.createElement('div');
+    lab.className = 'add-lab';
+    lab.textContent = t('w.add');
+    plus.appendChild(anneau);
+    plus.appendChild(lab);
+    plus.addEventListener('click', ouvrirChoixWidget);
+    zone.appendChild(plus);
+  } else {
+    zone.querySelectorAll('[draggable]').forEach((e) => { e.draggable = false; });
+  }
+}
+
+function deplacerWidget(id, sens) {
+  const i = WIDGETS.indexOf(id);
+  const j = i + sens;
+  if (i < 0 || j < 0 || j >= WIDGETS.length) return;
+  WIDGETS.splice(j, 0, WIDGETS.splice(i, 1)[0]);
+  saveWidgets();
+  appliquerDisposition();
+}
+function retirerWidget(id) {
+  WIDGETS = WIDGETS.filter((w) => w !== id);
+  saveWidgets();
+  renderCockpit();
+}
+function ajouterWidget(id) {
+  if (WIDGETS.includes(id)) return;
+  WIDGETS.push(id);
+  saveWidgets();
+  $('ov-widget').hidden = true;
+  renderCockpit();
+}
+
+/* glisser-déposer : on insère la tuile tirée à la place de celle survolée */
+let GLISSE = null;
+$('featured').addEventListener('dragstart', (e) => {
+  const c = e.target.closest('[data-w]');
+  if (!EDIT_W || !c) return;
+  GLISSE = c.dataset.w;
+  c.classList.add('glisse');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', GLISSE); } catch (err) { /* Safari */ }
+});
+$('featured').addEventListener('dragend', () => {
+  GLISSE = null;
+  $('featured').querySelectorAll('.glisse, .cible')
+    .forEach((e) => e.classList.remove('glisse', 'cible'));
+});
+$('featured').addEventListener('dragover', (e) => {
+  if (!EDIT_W || !GLISSE) return;
+  e.preventDefault();
+  const c = e.target.closest('[data-w]');
+  $('featured').querySelectorAll('.cible').forEach((x) => x.classList.remove('cible'));
+  if (c && c.dataset.w !== GLISSE) c.classList.add('cible');
+});
+$('featured').addEventListener('drop', (e) => {
+  if (!EDIT_W || !GLISSE) return;
+  e.preventDefault();
+  const c = e.target.closest('[data-w]');
+  if (!c || c.dataset.w === GLISSE) return;
+  const depuis = WIDGETS.indexOf(GLISSE);
+  const vers = WIDGETS.indexOf(c.dataset.w);
+  if (depuis < 0 || vers < 0) return;
+  WIDGETS.splice(vers, 0, WIDGETS.splice(depuis, 1)[0]);
+  GLISSE = null;
+  saveWidgets();
+  appliquerDisposition();
+});
+/* en édition, une tuile ne doit pas ouvrir son service */
+$('featured').addEventListener('click', (e) => {
+  if (EDIT_W && !e.target.closest('.wbar') && !e.target.closest('.w-add')) e.preventDefault();
+}, true);
+
+$('w-edit').addEventListener('click', () => {
+  EDIT_W = !EDIT_W;
+  $('w-edit').textContent = t(EDIT_W ? 'w.done' : 'w.customize');
+  renderCockpit();
+});
+
+async function ouvrirChoixWidget() {
+  await chargerConteneurs();          // pour savoir si Docker est proposable
+  const zone = $('w-choix');
+  zone.textContent = '';
+  Object.keys(REGISTRE_W).forEach((id) => {
+    const w = REGISTRE_W[id];
+    const deja = WIDGETS.includes(id);
+    let dispo = false;
+    try { dispo = w.dispo(); } catch (e) { dispo = false; }
+    const b = clone('tpl-w-choix');
+    b.querySelector('.ic').textContent = w.icone;
+    b.querySelector('.nm').textContent = t(w.cle);
+    b.querySelector('.ds').textContent = t(w.cle + '.d');
+    b.querySelector('.et').textContent = deja ? t('w.already') : (dispo ? '' : t('w.nodata.short'));
+    if (deja || !dispo) b.disabled = true;
+    else b.addEventListener('click', () => ajouterWidget(id));
+    zone.appendChild(b);
+  });
+  $('ov-widget').hidden = false;
+}
+$('w-cancel').addEventListener('click', () => { $('ov-widget').hidden = true; });
+$('ov-widget').addEventListener('click', (e) => {
+  if (e.target === $('ov-widget')) $('ov-widget').hidden = true;
+});
 
 /* ---------- supervision ----------
    Le serveur sonde les services en continu et en déduit les alertes ; le
@@ -3007,7 +3485,8 @@ async function pushCfg() {
     await relayFetch('/cfg', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apps, users: USERS, lockHash: LOCK, lockReq: LOCK_REQ }),
+      body: JSON.stringify({ apps, users: USERS, lockHash: LOCK, lockReq: LOCK_REQ,
+                              widgets: WIDGETS }),
     });
   } catch (e) { /* relais absent : la config reste locale */ }
 }
@@ -3055,6 +3534,12 @@ async function pullCfg() {
     store.set('lockHash', LOCK);
     store.set('lockReq', LOCK_REQ ? '1' : '0');
     applyLock();
+  }
+  const wSrv = Array.isArray(j.widgets) ? j.widgets.filter((w) => REGISTRE_W[w]) : null;
+  if (wSrv && JSON.stringify(wSrv) !== JSON.stringify(WIDGETS)) {
+    WIDGETS = wSrv;
+    store.set('widgets', JSON.stringify(WIDGETS));
+    renderCockpit();
   }
   if (appsSrv.length && JSON.stringify(appsSrv) !== JSON.stringify(apps)) {
     apps = appsSrv.map(normApp);
