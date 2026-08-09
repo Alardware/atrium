@@ -18,12 +18,15 @@ import os
 import socketserver
 import ssl
 import sys
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
 import auth
 import services
+import supervision
 import systeme
 import widgets
 
@@ -57,6 +60,83 @@ def host_allowed(url):
     except ValueError:
         return False
     return any(host == h or host.startswith(h) for h in ALLOW_HOSTS)
+
+
+def charger_config():
+    # utf-8-sig : tolere un BOM, qu'ajoutent certains editeurs et outils
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+# ---------- collecte de fond ----------
+# Toutes les mesures sont prises par le serveur, a intervalle fixe. L'interface
+# ne fait que lire le dernier releve : elle ne declenche aucun appel vers les
+# services, et l'etat reste connu meme quand aucun navigateur n'est ouvert.
+CYCLE = 30
+ECHECS_AVANT_DOUTE = 3   # avant de mettre en cause une cle d'API
+
+_releve = {"widgets": {}, "hote": {"disponible": False}, "maj": 0, "a": 0}
+_echecs_widget = {}
+_deja_lu = set()   # services ayant deja livre leurs donnees au moins une fois
+
+
+def _collecter():
+    cfg = charger_config()
+    apps = cfg.get("apps") or []
+    supervision.sonder_apps(apps)
+    hote = systeme.mesures(CONFIG_DIR)
+    etats = supervision.etats()
+
+    tuiles, erreurs, maj = {}, {}, 0
+    for a in apps:
+        nom, type_service, url = a.get("nom"), a.get("type") or "", a.get("url") or ""
+        if not nom or not url or not host_allowed(url):
+            continue
+        cle = a.get("token") if type_service == "ha" else a.get("apiKey")
+        if type_service == "ha" and cle:
+            n = widgets.maj_ha(url, cle)
+            if n:
+                maj += n
+        if type_service not in widgets.REGISTRE:
+            continue
+        stats = widgets.mesurer(type_service, url, cle or "")
+        if stats:
+            tuiles[nom] = stats
+            _deja_lu.add(nom)
+            _echecs_widget.pop(nom, None)
+        elif nom in _deja_lu:
+            _echecs_widget[nom] = _echecs_widget.get(nom, 0) + 1
+            if _echecs_widget[nom] < ECHECS_AVANT_DOUTE:
+                # un creux passager ne doit pas vider la tuile sous les yeux de
+                # l'utilisateur : on garde le dernier chiffre connu
+                anciens = _releve["widgets"].get(nom)
+                if anciens:
+                    tuiles[nom] = anciens
+            elif cle and (etats.get(nom) or {}).get("en_ligne"):
+                # On ne met en cause une cle que si ce service a deja livre ses
+                # donnees : sans cette preuve, un service qui n'en expose tout
+                # simplement pas serait signale a tort.
+                erreurs[nom] = "Service joignable, données refusées : vérifiez la clé d'API"
+
+    _releve.update(widgets=tuiles, hote=hote, maj=maj, a=time.time())
+    supervision.evaluer(apps, hote, maj, erreurs)
+
+
+def boucle_collecte():
+    while True:
+        try:
+            _collecter()
+        except Exception as e:                       # une sonde ne doit jamais
+            if os.environ.get("ATRIUM_DEBUG"):       # interrompre la boucle
+                sys.stderr.write("collecte : %s\n" % e)
+        time.sleep(CYCLE)
+
+
+def demarrer_collecte():
+    threading.Thread(target=boucle_collecte, daemon=True).start()
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -99,12 +179,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     # ---------- etat / session ----------
     def lire_config(self):
-        # utf-8-sig : tolere un BOM, qu ajoutent certains editeurs et outils
-        try:
-            with open(CONFIG_FILE, "r", encoding="utf-8-sig") as f:
-                return json.load(f)
-        except (OSError, ValueError):
-            return {}
+        return charger_config()
 
     def msg_ecriture(self, e):
         return ("Impossible d'écrire la configuration dans %s (%s). "
@@ -177,7 +252,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.reply(200, json.dumps(systeme.mesures(CONFIG_DIR), ensure_ascii=False).encode())
         elif route == "/api/widgets":
             if self.exiger_session():
-                self.widgets()
+                self.reply(200, json.dumps(_releve["widgets"], ensure_ascii=False).encode())
+        elif route == "/api/supervision":
+            if self.exiger_session():
+                self.supervision_get()
         else:
             super().do_GET()
 
@@ -200,6 +278,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.changer_mdp()
         elif route == "/api/setup":
             self.installer()
+        elif route == "/api/alertes/lues":
+            if self.exiger_session():
+                supervision.marquer_lues()
+                self.reply(200, b'{"ok":true}')
         else:
             self.send_error(404)
 
@@ -216,21 +298,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         self.reply(200, json.dumps(services.identifier(url, cle), ensure_ascii=False).encode())
 
-    def widgets(self):
-        """Donnees a afficher sur les tuiles. Les identifiants restent au
-        serveur : le navigateur ne recoit que les chiffres."""
-        cfg = self.lire_config()
-        sortie = {}
-        for a in (cfg.get("apps") or []):
-            type_service = a.get("type") or ""
-            url = a.get("url") or ""
-            if not type_service or not url or not host_allowed(url):
-                continue
-            cle = a.get("token") if type_service == "ha" else a.get("apiKey")
-            stats = widgets.mesurer(type_service, url, cle or "")
-            if stats:
-                sortie[a.get("nom")] = stats
-        self.reply(200, json.dumps(sortie, ensure_ascii=False).encode())
+    def supervision_get(self):
+        """Dernier releve complet : etat et temps de reponse de chaque service,
+        mesures de l'hote, tuiles, alertes. Les identifiants restent au serveur,
+        le navigateur ne recoit que des chiffres."""
+        self.reply(200, json.dumps({
+            "etats": supervision.etats(),
+            "alertes": supervision.resume(),
+            "hote": _releve["hote"],
+            "widgets": _releve["widgets"],
+            "maj": _releve["maj"],
+            "releve": _releve["a"],
+            "cycle": CYCLE,
+        }, ensure_ascii=False).encode())
 
     # ---------- authentification ----------
     def session_get(self):
@@ -465,4 +545,5 @@ if __name__ == "__main__":
     print("Configuration : %s" % CONFIG_FILE, flush=True)
     verifier_config_inscriptible()
     systeme.demarrer_echantillonnage()
+    demarrer_collecte()
     Server(("0.0.0.0", PORT), Handler).serve_forever()

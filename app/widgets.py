@@ -175,8 +175,6 @@ def w_portainer(base, cle):
         if s:
             actifs += s[0].get("RunningContainerCount", 0) or 0
             arretes += s[0].get("StoppedContainerCount", 0) or 0
-    if actifs == arretes == 0:
-        return None
     return [
         {"lab": "ACTIFS", "val": _n(actifs)},
         {"lab": "ARRÊTÉS", "val": _n(arretes)},
@@ -230,6 +228,52 @@ def w_nextcloud(base, cle):
     return stats or None
 
 
+def _gabarit_ha(base, cle, gabarit):
+    """Interroge Home Assistant par gabarit : la reponse tient en quelques
+    octets, la ou /api/states renverrait l integralite des entites."""
+    corps = json.dumps({"template": gabarit}).encode()
+    code, rep, _ = _http(base.rstrip("/") + "/api/template",
+                         {"Authorization": "Bearer " + cle,
+                          "Content-Type": "application/json"}, "POST", corps)
+    if code != 200:
+        return None
+    return rep.decode("utf-8", "replace").strip()
+
+
+def w_ha(base, cle):
+    """Ce qui merite un regard dans la maison : entites muettes et
+    automatisations desactivees."""
+    if not cle:
+        return None
+    rep = _gabarit_ha(base, cle,
+                      "{{ states | selectattr('state','in',['unavailable','unknown'])"
+                      " | list | count }}|"
+                      "{{ states.automation | selectattr('state','eq','off')"
+                      " | list | count }}")
+    if not rep or "|" not in rep:
+        return None
+    try:
+        muettes, arretees = (int(x) for x in rep.split("|", 1))
+    except ValueError:
+        return None
+    stats = []
+    if muettes:
+        stats.append({"lab": "INDISPO", "val": _n(muettes)})
+    if arretees:
+        stats.append({"lab": "AUTOM. OFF", "val": _n(arretees)})
+    return stats or None
+
+
+def maj_ha(base, cle):
+    """Nombre de mises a jour en attente selon Home Assistant."""
+    rep = _gabarit_ha(base, cle,
+                      "{{ states.update | selectattr('state','eq','on') | list | count }}")
+    try:
+        return int(rep)
+    except (TypeError, ValueError):
+        return None
+
+
 REGISTRE = {
     "plex": w_plex,
     "jellyfin": w_jellyfin,
@@ -250,6 +294,7 @@ REGISTRE = {
     "immich": w_immich,
     "paperless": w_paperless,
     "nextcloud": w_nextcloud,
+    "ha": w_ha,
 }
 
 
