@@ -27,6 +27,7 @@ import urllib.request
 
 import auth
 import conteneurs
+import reseau
 import services
 import supervision
 import systeme
@@ -45,24 +46,14 @@ SESSION_FILE = os.path.join(CONFIG_DIR, "sessions.json")
 SESSIONS = auth.Sessions(SESSION_FILE)
 LIMITEUR = auth.Limiteur()
 
-_DEFAULT_ALLOW = "192.168.,10.,172.16.,172.17.,172.18.,172.19.,172.20.,172.21.,172.22.,172.23.,172.24.,172.25.,172.26.,172.27.,172.28.,172.29.,172.30.,172.31.,127.,localhost,host.docker.internal,homeassistant"
-# Une variable definie mais vide (frequent avec les modeles de conteneurs, qui
-# exportent les champs laisses blancs) doit valoir « non renseignee », sinon la
-# liste d autorisation devient vide et le relais refuse toute destination.
-_allow = (os.environ.get("ATRIUM_ALLOW_NET") or "").strip() or _DEFAULT_ALLOW
-ALLOW_HOSTS = tuple(h.strip() for h in _allow.split(",") if h.strip())
-
 FORWARD_HEADERS = ("x-api-key", "authorization", "content-type", "accept", "x-plex-token")
+CORPS_MAX = 8 * 1024 * 1024      # au-dela, la requete est refusee
 
 
 def host_allowed(url):
-    """N'autorise le relais que vers le reseau local : le proxy ne doit pas
-    devenir un rebond vers l'exterieur."""
-    try:
-        host = urllib.parse.urlparse(url).hostname or ""
-    except ValueError:
-        return False
-    return any(host == h or host.startswith(h) for h in ALLOW_HOSTS)
+    """N'autorise le relais que vers le reseau local. La decision porte sur
+    l'adresse resolue : voir reseau.py."""
+    return reseau.autorise(url)
 
 
 def charger_config():
@@ -165,6 +156,22 @@ def demarrer_collecte():
     threading.Thread(target=boucle_collecte, daemon=True).start()
 
 
+class _SansRedirection(urllib.request.HTTPRedirectHandler):
+    """Un service local autorise pourrait renvoyer une redirection vers
+    l'exterieur : le relais l'y suivrait et redeviendrait un rebond. On les
+    refuse toutes."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_ctx_relais = ssl.create_default_context()
+_ctx_relais.check_hostname = False
+_ctx_relais.verify_mode = ssl.CERT_NONE
+OUVREUR = urllib.request.build_opener(
+    _SansRedirection, urllib.request.HTTPSHandler(context=_ctx_relais))
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=STATIC, **kwargs)
@@ -174,19 +181,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
     def end_headers(self):
+        """Entetes de securite communs a toutes les reponses, pages comme API.
+
+        Aucun en-tete CORS : l'interface et l'API partagent la meme origine, si
+        bien qu'aucune page tierce n'a besoin de lire ces reponses — et le
+        navigateur le lui refuse, ce qui ferme la lecture de /api/session depuis
+        n'importe quel site visite.
+        """
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "same-origin")
         # L'interface ne doit jamais rester en cache : sinon une mise a jour du
         # conteneur laisse tourner l'ancien code dans le navigateur.
-        if self.path.split("?")[0].rstrip("/") in ("", "/index.html") or self.path.endswith(".html"):
+        page = (self.path.split("?")[0].rstrip("/") in ("", "/index.html")
+                or self.path.endswith(".html"))
+        if page:
             self.send_header("Cache-Control", "no-store, must-revalidate")
+            # « connect-src * » est necessaire : l'interface appelle les services
+            # du reseau en direct. Le reste ferme le chargement de code externe.
+            self.send_header("Content-Security-Policy",
+                             "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                             "style-src 'self' 'unsafe-inline'; "
+                             "img-src 'self' data: http: https:; connect-src *; "
+                             "frame-ancestors 'self'; base-uri 'none'; form-action 'self'")
         super().end_headers()
 
     # ---------- utilitaires ----------
-    def cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-
     def reply(self, code, data, ctype="application/json; charset=utf-8", cookie=None):
         self.send_response(code)
-        self.cors()
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         if cookie:
@@ -196,7 +218,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def json_recu(self):
         length = int(self.headers.get("Content-Length") or 0)
-        if not length or length > 20 * 1024 * 1024:
+        if not length or length > CORPS_MAX:
             return None
         try:
             return json.loads(self.rfile.read(length).decode("utf-8"))
@@ -244,6 +266,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         m = c.get(auth.COOKIE)
         return SESSIONS.lire(m.value) if m else None
 
+    def https(self):
+        """Vrai si le navigateur a parle en HTTPS. Atrium sert du HTTP en clair ;
+        c'est le proxy en amont qui chiffre et l'annonce par cet en-tete. On ne
+        s'en sert que pour ajouter une protection, jamais pour en retirer."""
+        return (self.headers.get("X-Forwarded-Proto", "").split(",")[0].strip().lower()
+                == "https")
+
     def cookie_session(self, jeton, longue):
         parts = [
             "%s=%s" % (auth.COOKIE, jeton),
@@ -251,6 +280,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "HttpOnly",
             "SameSite=Strict",
         ]
+        if self.https():
+            parts.append("Secure")
         if longue:
             parts.append("Max-Age=%d" % auth.SESSION_TTL)
         return "; ".join(parts)
@@ -494,10 +525,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         cfg = self.lire_config()
         u = next((x for x in (cfg.get("users") or []) if x.get("nom") == nom), None)
 
-        # meme reponse et meme cout, que le compte existe ou non
-        ok = auth.verifier(mdp, u.get("pwd")) if u and u.get("pwd") else False
-        if u and not u.get("pwd"):
+        # Meme cout que le compte existe ou non : sans cette empreinte de
+        # comparaison, un compte inconnu repondrait instantanement quand un
+        # compte protege prend pres d'une seconde, ce qui revelerait lesquels
+        # existent.
+        if u and u.get("pwd"):
+            ok = auth.verifier(mdp, u.get("pwd"))
+        elif u:
+            auth.verifier(mdp, auth.EMPREINTE_LEURRE)
             ok = True  # profil sans mot de passe : acces libre, comme prevu
+        else:
+            auth.verifier(mdp, auth.EMPREINTE_LEURRE)
+            ok = False
         if not ok:
             LIMITEUR.echec(cle)
             self.reply(401, json.dumps({"error": "Nom d'utilisateur ou mot de passe incorrect."}, ensure_ascii=False).encode())
@@ -522,7 +561,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.reply(200, b'{"ok":true}', cookie=self.cookie_efface())
 
     def changer_mdp(self):
-        """Changement de mot de passe : l'ancien est exige."""
+        """Changement de son propre mot de passe, l'actuel a l'appui.
+
+        On ne peut changer que le sien. Tant qu'Atrium n'a pas de roles, rien ne
+        distingue un compte d'un autre : autoriser un profil a changer le mot de
+        passe d'un autre reviendrait a laisser n'importe lequel prendre la main
+        sur tous les autres, a plus forte raison depuis un profil sans mot de
+        passe, qui n'a rien a prouver."""
         courant = self.session_user()
         if not courant:
             self.reply(401, json.dumps({"error": "authentification requise"}).encode())
@@ -531,18 +576,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ancien = str(d.get("ancien", ""))
         nouveau = str(d.get("nouveau", ""))
         cible = str(d.get("cible", "")).strip() or courant
+        if cible != courant:
+            self.reply(403, json.dumps(
+                {"error": "On ne peut changer que son propre mot de passe."},
+                ensure_ascii=False).encode())
+            return
 
         cfg = self.lire_config()
         users = cfg.get("users") or []
-        moi = next((x for x in users if x.get("nom") == courant), None)
-        u = next((x for x in users if x.get("nom") == cible), None)
+        u = next((x for x in users if x.get("nom") == courant), None)
         if not u:
             self.reply(404, json.dumps({"error": "Profil introuvable."}, ensure_ascii=False).encode())
             return
 
-        # l'ancien mot de passe est celui du demandeur ; il n'est pas exige
-        # lorsqu'aucun mot de passe n'est encore defini sur son compte
-        if moi and moi.get("pwd") and not auth.verifier(ancien, moi.get("pwd")):
+        # l'actuel n'est pas exige tant qu'aucun n'a ete defini
+        if u.get("pwd") and not auth.verifier(ancien, u.get("pwd")):
             self.reply(403, json.dumps({"error": "Ancien mot de passe incorrect."}, ensure_ascii=False).encode())
             return
         if nouveau and len(nouveau) < 6:
@@ -555,11 +603,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except OSError as e:
             self.reply(500, json.dumps({"error": self.msg_ecriture(e)}, ensure_ascii=False).encode())
             return
-        SESSIONS.supprimer_utilisateur(cible)  # les autres sessions tombent
+        SESSIONS.supprimer_utilisateur(courant)  # les autres appareils tombent
         jeton = SESSIONS.creer(courant, False, self.headers.get("User-Agent", ""),
-                               self.client_address[0]) if cible == courant else None
+                               self.client_address[0])
         self.reply(200, json.dumps({"ok": True}).encode(),
-                   cookie=self.cookie_session(jeton, False) if jeton else None)
+                   cookie=self.cookie_session(jeton, False))
 
     def installer(self):
         """Creation du premier compte : refusee des qu'un compte existe.
@@ -580,7 +628,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         cfg["users"] = [{"nom": nom, "pwd": auth.hacher(mdp) if mdp else "", "photo": ""}]
         cfg.setdefault("apps", d.get("apps") or [])
-        cfg["lockReq"] = bool(mdp)
         try:
             self.ecrire_config(cfg)
         except OSError as e:
@@ -592,11 +639,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                    cookie=self.cookie_session(jeton, True))
 
     def do_OPTIONS(self):
+        # Aucune origine tierce n'est autorisee : on repond sans en-tete CORS.
         self.send_response(204)
-        self.cors()
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", ", ".join(FORWARD_HEADERS))
-        self.send_header("Access-Control-Max-Age", "3600")
+        self.send_header("Allow", "GET, POST, OPTIONS")
         self.end_headers()
 
     # ---------- configuration ----------
@@ -629,6 +674,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 ensure_ascii=False).encode())
             return
 
+        # Un profil protege ne peut etre supprime que par lui-meme : sans cela,
+        # n'importe quelle session — y compris celle d'un profil sans mot de
+        # passe — pourrait effacer le compte des autres.
+        courant = self.session_user()
+        restants = {u.get("nom") for u in (recu.get("users") or [])}
+        for u in users_actuels:
+            if u.get("pwd") and u.get("nom") not in restants and u.get("nom") != courant:
+                self.reply(403, json.dumps(
+                    {"error": "Refus : « %s » est protégé par un mot de passe et ne "
+                              "peut être supprimé que depuis son propre profil."
+                              % u.get("nom")}, ensure_ascii=False).encode())
+                return
+
         # Les empreintes de mots de passe restent l'affaire du serveur : le
         # navigateur ne peut ni les lire ni les remplacer via cette route.
         anciens = {u.get("nom"): u.get("pwd", "") for u in users_actuels}
@@ -655,9 +713,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         body = None
         if self.command == "POST":
             length = int(self.headers.get("Content-Length") or 0)
+            if length > CORPS_MAX:
+                self.reply(413, b"corps trop volumineux", "text/plain")
+                return
             body = self.rfile.read(length) if length else b""
 
-        req = urllib.request.Request(target, data=body, method=self.command)
+        # On vise l'adresse deja validee : entre la verification et la
+        # connexion, une reponse DNS ne peut plus designer une autre machine.
+        cible, hote = reseau.adresse_epinglee(target)
+        if not cible:
+            self.reply(502, b"cible non resolue", "text/plain")
+            return
+
+        req = urllib.request.Request(cible, data=body, method=self.command)
+        if hote:
+            req.add_header("Host", hote)
         for h in FORWARD_HEADERS:
             v = self.headers.get(h)
             if v:
@@ -667,14 +737,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE  # equipements locaux : certificats auto-signes
         try:
-            with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
-                data, code = r.read(), r.status
+            with OUVREUR.open(req, timeout=10) as r:
+                data, code = r.read(CORPS_MAX), r.status
                 ctype = r.headers.get("Content-Type", "application/json")
         except urllib.error.HTTPError as e:
-            data, code = e.read(), e.code
+            data, code = e.read(CORPS_MAX), e.code
             ctype = e.headers.get("Content-Type", "text/plain")
         except Exception as e:
-            data, code, ctype = str(e).encode(), 502, "text/plain"
+            data, code, ctype = str(e).encode()[:500], 502, "text/plain"
         self.reply(code, data, ctype)
 
 

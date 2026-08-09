@@ -48,6 +48,12 @@ def verifier(motdepasse, stocke):
         return False
 
 
+# Empreinte d'un mot de passe qui n'est celui de personne. La comparer coute
+# le meme temps qu'une vraie : c'est ce qui empeche de deviner, au chronometre,
+# quels comptes existent.
+EMPREINTE_LEURRE = hacher(secrets.token_urlsafe(32))
+
+
 class Sessions:
     """Sessions en memoire, persistees pour survivre a un redemarrage."""
 

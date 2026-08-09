@@ -14,6 +14,8 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
+import reseau
+
 NIVEAUX = {"info": 0, "surveillance": 1, "avertissement": 2, "critique": 3}
 
 # Seuils de remplissage, du plus calme au plus grave
@@ -40,6 +42,10 @@ def _sonder(url, delai=6):
     acceder."""
     if not url.startswith(("http://", "https://")):
         url = "http://" + url
+    # Les URL viennent de la configuration : rien ne garantit qu'elles visent
+    # le reseau local. Sonder au-dela ferait d'Atrium un scanner a distance.
+    if not reseau.autorise(url):
+        return False, None
     # perf_counter et non monotonic : sous Windows ce dernier est cadence a
     # 15,6 ms, ce qui ecraserait toutes les mesures locales a 0 ou 16 ms.
     debut = time.perf_counter()

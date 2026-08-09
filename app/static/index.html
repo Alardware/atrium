@@ -1878,8 +1878,6 @@ function loadUsers() {
   } catch (e) { return []; }
 }
 let USERS = loadUsers();
-let LOCK = store.get('lockHash', '');
-let LOCK_REQ = store.get('lockReq', '') === '1' || (!!LOCK && store.get('lockReq', '') === '');
 let ACTIVE = store.get('activeUser', '');
 
 function hashPwd(p) {
@@ -3815,15 +3813,13 @@ async function pushCfg() {
     await relayFetch('/cfg', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apps, users: USERS, lockHash: LOCK, lockReq: LOCK_REQ,
+      body: JSON.stringify({ apps, users: USERS,
                               widgets: WIDGETS, widgetsAuto: AUTO_W }),
     });
   } catch (e) { /* relais absent : la config reste locale */ }
 }
 function saveUsersLocal() {
   store.set('users', JSON.stringify(USERS));
-  store.set('lockHash', LOCK);
-  store.set('lockReq', LOCK_REQ ? '1' : '0');
 }
 /* Le serveur fait foi. Le navigateur ne pousse sa propre config que lorsqu'un
    utilisateur agit — jamais au chargement, sinon une nouvelle installation
@@ -3854,16 +3850,6 @@ async function pullCfg() {
     store.set('users', JSON.stringify(USERS));
     renderAvatar();
     renderUsers();
-  }
-  let secChanged = false;
-  const lh = typeof j.lockHash === 'string' ? j.lockHash : '';
-  const lr = typeof j.lockReq === 'boolean' ? j.lockReq : false;
-  if (lh !== LOCK) { LOCK = lh; secChanged = true; }
-  if (lr !== LOCK_REQ) { LOCK_REQ = lr; secChanged = true; }
-  if (secChanged) {
-    store.set('lockHash', LOCK);
-    store.set('lockReq', LOCK_REQ ? '1' : '0');
-    applyLock();
   }
   const wSrv = Array.isArray(j.widgets) ? j.widgets.filter((w) => REGISTRE_W[w]) : null;
   const aSrv = typeof j.widgetsAuto === 'boolean' ? j.widgetsAuto : null;
@@ -5637,7 +5623,7 @@ async function lireSession() {
     USERS = [];
     ACTIVE = '';
     try {
-      ['users', 'activeUser', 'lockHash', 'lockReq', 'apps', 'unlockDevice']
+      ['users', 'activeUser', 'apps']
         .forEach((k) => localStorage.removeItem('atrium.' + k));
       sessionStorage.removeItem('atrium.unlocked');
     } catch (e) {}
