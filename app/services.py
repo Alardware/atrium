@@ -568,9 +568,18 @@ NOMS_CONNUS = (
     ("sonarr", "sonarr"), ("radarr", "radarr"), ("lidarr", "lidarr"),
     ("readarr", "readarr"), ("whisparr", "whisparr"), ("prowlarr", "prowlarr"),
     ("bazarr", "bazarr"), ("sabnzbd", "sabnzbd"), ("qbittorrent", "qbittorrent"),
+    ("deluge", "deluge"), ("transmission", "transmission"), ("nzbget", "nzbget"),
+    ("jellyseerr", "jellyseerr"), ("overseerr", "overseerr"), ("seerr", "seerr"),
     ("adguard", "adguard"), ("pi-hole", "pihole"), ("pihole", "pihole"),
+    ("nginx proxy manager", "npm"), ("wg-easy", "wgeasy"),
     ("portainer", "portainer"), ("uptime kuma", "uptimekuma"),
+    ("glances", "glances"), ("netdata", "netdata"), ("grafana", "grafana"),
+    ("gitea", "gitea"), ("authentik", "authentik"), ("vaultwarden", "vaultwarden"),
+    ("proxmox", "proxmox"), ("truenas", "truenas"), ("openmediavault", "omv"),
+    ("casaos", "casaos"),
     ("immich", "immich"), ("paperless", "paperless"), ("nextcloud", "nextcloud"),
+    ("filebrowser", "filebrowser"), ("syncthing", "syncthing"),
+    ("frigate", "frigate"), ("zigbee2mqtt", "zigbee2mqtt"), ("esphome", "esphome"),
 )
 
 

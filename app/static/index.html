@@ -271,6 +271,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .apps-title{display:flex;align-items:baseline;gap:9px}
 .apps-title h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
 .apps-title .n{font:500 12px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+#btn-ranger{margin-left:auto}
+#btn-ranger[hidden]{display:none}
 .seg{display:flex;gap:6px;padding:3px;border-radius:9px;background:var(--track)}
 .seg button{padding:6px 12px;border-radius:7px;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .seg button.on{background:var(--surface);box-shadow:var(--sh-1);color:var(--text)}
@@ -728,6 +730,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <h2 data-i18n="apps.all">Toutes les applications</h2>
             <span class="n" id="apps-count"></span>
           </div>
+          <button class="btn-sm" id="btn-ranger" type="button" hidden data-i18n="apps.tidy">Ranger par catégorie</button>
           <div class="seg" id="seg-view">
             <button data-view="grid" class="on" data-i18n="apps.grid">Grille</button>
             <button data-view="list" data-i18n="apps.list">Liste</button>
@@ -769,6 +772,8 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 <option value="Média" data-i18n="cat.media">Média</option>
                 <option value="Maison" data-i18n="cat.home">Maison</option>
                 <option value="Fichiers & photos" data-i18n="cat.files">Fichiers &amp; photos</option>
+                <option value="Réseau" data-i18n="cat.net">Réseau</option>
+                <option value="Administration" data-i18n="cat.admin">Administration</option>
                 <option value="Serveur" data-i18n="cat.server">Serveur</option>
               </select>
             </div>
@@ -1290,8 +1295,34 @@ const CATEGORIES = [
   { nom: 'Média', cle: 'cat.media', icone: '▶' },
   { nom: 'Maison', cle: 'cat.home', icone: '⌂' },
   { nom: 'Fichiers & photos', cle: 'cat.files', icone: '❐' },
+  { nom: 'Réseau', cle: 'cat.net', icone: '⇄' },
+  { nom: 'Administration', cle: 'cat.admin', icone: '⚙' },
   { nom: 'Serveur', cle: 'cat.server', icone: '⛁' },
 ];
+
+/* Rangement déduit du service reconnu. Ce n'est pas une devinette sur le nom :
+   Atrium sait ce qu'est l'application avant de la classer. */
+const CAT_PAR_TYPE = {
+  plex: 'Média', jellyfin: 'Média', kodi: 'Média', navidrome: 'Média',
+  audiobookshelf: 'Média', tautulli: 'Média', jellyseerr: 'Média',
+  overseerr: 'Média', sonarr: 'Média', radarr: 'Média', lidarr: 'Média',
+  readarr: 'Média', whisparr: 'Média', prowlarr: 'Média', bazarr: 'Média',
+  mylar: 'Média', kapowarr: 'Média', qbittorrent: 'Média', sabnzbd: 'Média',
+  deluge: 'Média', transmission: 'Média', nzbget: 'Média', seerr: 'Média',
+  ha: 'Maison', openhab: 'Maison', domoticz: 'Maison', iobroker: 'Maison',
+  frigate: 'Maison', zigbee2mqtt: 'Maison', esphome: 'Maison',
+  nextcloud: 'Fichiers & photos', immich: 'Fichiers & photos',
+  paperless: 'Fichiers & photos', filebrowser: 'Fichiers & photos',
+  syncthing: 'Fichiers & photos',
+  unifi: 'Réseau', adguard: 'Réseau', pihole: 'Réseau', npm: 'Réseau',
+  wgeasy: 'Réseau',
+  unraid: 'Administration', truenas: 'Administration', omv: 'Administration',
+  proxmox: 'Administration', casaos: 'Administration', cosmos: 'Administration',
+  portainer: 'Administration', netdata: 'Administration',
+  glances: 'Administration', grafana: 'Administration',
+  uptimekuma: 'Administration', gitea: 'Administration',
+  vaultwarden: 'Administration', authentik: 'Administration',
+};
 
 const clone = (id) => document.getElementById(id).content.firstElementChild.cloneNode(true);
 const $ = (id) => document.getElementById(id);
@@ -1348,13 +1379,33 @@ const TYPES = {
   unraid: 'Unraid',
   unifi: 'UniFi',
 };
+/* Repli quand une fiche n'a pas de type enregistré, par exemple parce qu'elle
+   a été créée avant la détection automatique. Même liste que le serveur
+   (services.NOMS_CONNUS) : les deux doivent ranger pareil. */
+const NOMS_CONNUS = [
+  ['home assistant', 'ha'], ['hassio', 'ha'], ['hass', 'ha'],
+  ['unraid', 'unraid'], ['unifi', 'unifi'], ['plex', 'plex'],
+  ['jellyfin', 'jellyfin'], ['emby', 'jellyfin'], ['tautulli', 'tautulli'],
+  ['sonarr', 'sonarr'], ['radarr', 'radarr'], ['lidarr', 'lidarr'],
+  ['readarr', 'readarr'], ['whisparr', 'whisparr'], ['prowlarr', 'prowlarr'],
+  ['bazarr', 'bazarr'], ['sabnzbd', 'sabnzbd'], ['qbittorrent', 'qbittorrent'],
+  ['deluge', 'deluge'], ['transmission', 'transmission'], ['nzbget', 'nzbget'],
+  ['jellyseerr', 'jellyseerr'], ['overseerr', 'overseerr'], ['seerr', 'seerr'],
+  ['adguard', 'adguard'], ['pi-hole', 'pihole'], ['pihole', 'pihole'],
+  ['nginx proxy manager', 'npm'], ['wg-easy', 'wgeasy'],
+  ['portainer', 'portainer'], ['uptime kuma', 'uptimekuma'],
+  ['glances', 'glances'], ['netdata', 'netdata'], ['grafana', 'grafana'],
+  ['gitea', 'gitea'], ['authentik', 'authentik'], ['vaultwarden', 'vaultwarden'],
+  ['proxmox', 'proxmox'], ['truenas', 'truenas'], ['openmediavault', 'omv'],
+  ['casaos', 'casaos'],
+  ['immich', 'immich'], ['paperless', 'paperless'], ['nextcloud', 'nextcloud'],
+  ['filebrowser', 'filebrowser'], ['syncthing', 'syncthing'],
+  ['frigate', 'frigate'], ['zigbee2mqtt', 'zigbee2mqtt'], ['esphome', 'esphome'],
+];
 const devinerType = (nom) => {
   const n = normTxt(nom);
-  if (n.includes('home assistant') || n === 'hass' || n.includes('hassio')) return 'ha';
-  if (n.includes('unraid')) return 'unraid';
-  if (n.includes('unifi')) return 'unifi';
-  if (n.includes('plex')) return 'plex';
-  return '';
+  const trouve = NOMS_CONNUS.find(([motif]) => n.includes(motif));
+  return trouve ? trouve[1] : '';
 };
 const kindOfApp = (a) => (a && typeof a.type === 'string' && a.type !== '' ? a.type : devinerType(a ? a.nom : ''));
 const kindOf = (nom) => devinerType(nom);       // compat : appels par nom seul
@@ -1564,22 +1615,24 @@ setInterval(tickClock, 15000);
 function renderSidebar() {
   const nav = $('nav-cats');
   nav.querySelectorAll('[data-cat]:not([data-cat=""])').forEach((el) => el.remove());
-  /* Le compteur annonce d'abord ce qui va mal : le nombre d'applications, on
-     le voit déjà dans la grille. */
+  /* Le compteur ne dit que ce qui va mal. Le nombre d'applications se lit déjà
+     dans la grille ; un chiffre permanent noierait le seul qui compte. */
   const compteur = (el, liste) => {
     const pb = liste.filter((a) => alertesDe(a.nom).length).length;
     el.classList.toggle('pb', !!pb);
-    el.textContent = pb || liste.length;
+    el.textContent = pb || '';
     el.title = pb ? t(pb > 1 ? 'alert.many' : 'alert.one', { n: pb }) : '';
   };
   compteur($('count-all'), apps);
   CATEGORIES.forEach((cat) => {
+    const liste = apps.filter((a) => a.cat === cat.nom);
+    if (!liste.length && activeCat !== cat.nom) return;   // catégorie vide : inutile
     const b = clone('tpl-nav-cat');
     b.dataset.cat = cat.nom;
     if (activeCat === cat.nom) b.classList.add('active');
     b.querySelector('.ico').textContent = cat.icone;
     b.querySelector('.lab').textContent = cat.cle ? t(cat.cle) : cat.nom;
-    compteur(b.querySelector('.count'), apps.filter((a) => a.cat === cat.nom));
+    compteur(b.querySelector('.count'), liste);
     nav.appendChild(b);
   });
   nav.querySelector('[data-cat=""]').classList.toggle('active', activeCat === '');
@@ -2726,6 +2779,24 @@ function basculerFavori(index) {
   toast(t(a.fav ? 'fav.added' : 'fav.removed', { nom: a.nom }));
 }
 
+/* Applications qu'Atrium sait ranger ailleurs que là où elles sont. Le
+   classement vient du service reconnu, pas du nom de la tuile. */
+function aRanger() {
+  return apps.filter((a) => {
+    const c = CAT_PAR_TYPE[kindOfApp(a)];
+    return c && a.cat !== c;
+  });
+}
+function rangerApps() {
+  const bouge = aRanger();
+  if (!bouge.length) return;
+  bouge.forEach((a) => { a.cat = CAT_PAR_TYPE[kindOfApp(a)]; });
+  saveApps();
+  refresh();
+  toast(t(bouge.length > 1 ? 'apps.tidied.many' : 'apps.tidied.one', { n: bouge.length }));
+}
+$('btn-ranger').addEventListener('click', rangerApps);
+
 function renderApps() {
   const q = query.trim().toLowerCase();
   const shown = [];
@@ -2751,6 +2822,9 @@ function renderApps() {
   grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
+  const bouge = aRanger();
+  $('btn-ranger').hidden = !bouge.length;
+  $('btn-ranger').title = bouge.map((a) => a.nom + ' → ' + CAT_PAR_TYPE[kindOfApp(a)]).join('\n');
   shown.forEach(([app, i]) => grid.appendChild(appCard(app, i)));
   if (!shown.length) {
     const d = clone('tpl-empty');
@@ -2840,6 +2914,9 @@ async function detecterEtTester() {
 
   $('m-type').value = d.type;
   syncKind();
+  /* Nouvelle application seulement : sur une fiche existante, la catégorie est
+     un choix de l'utilisateur, la détection n'a pas à la défaire. */
+  if (editIndex === null && CAT_PAR_TYPE[d.type]) $('m-cat').value = CAT_PAR_TYPE[d.type];
   if (d.cle_libelle) $('m-key-label').textContent = d.cle_libelle;
 
   const nom = d.nom + (d.version ? ' ' + d.version : '');
