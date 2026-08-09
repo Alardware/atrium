@@ -280,6 +280,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/supervision":
             if self.exiger_session():
                 self.supervision_get()
+        elif route == "/api/conteneurs":
+            if self.exiger_session():
+                self.reply(200, json.dumps({"docker": conteneurs.disponible(),
+                                            "liste": conteneurs.noms()},
+                                           ensure_ascii=False).encode())
         elif route == "/api/serveur":
             if self.exiger_session():
                 self.reply(200, json.dumps({
@@ -315,6 +320,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if self.exiger_session():
                 supervision.marquer_lues()
                 self.reply(200, b'{"ok":true}')
+        elif route == "/api/sonder":
+            if self.exiger_session():
+                self.sonder_maintenant()
+        elif route == "/api/conteneur/redemarrer":
+            if self.exiger_session():
+                self.redemarrer_conteneur()
         else:
             self.send_error(404)
 
@@ -330,6 +341,44 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.reply(403, json.dumps({"error": "Adresse hors du réseau privé"}, ensure_ascii=False).encode())
             return
         self.reply(200, json.dumps(services.identifier(url, cle), ensure_ascii=False).encode())
+
+    def _app_nommee(self, nom):
+        return next((a for a in (charger_config().get("apps") or [])
+                     if a.get("nom") == nom), None)
+
+    def sonder_maintenant(self):
+        """Resonde une application a la demande, sans attendre le cycle."""
+        nom = str((self.json_recu() or {}).get("nom", "")).strip()
+        app = self._app_nommee(nom)
+        if not app:
+            self.reply(404, json.dumps({"error": "Application inconnue."}, ensure_ascii=False).encode())
+            return
+        etat = supervision.sonder_un(app)
+        tuiles = dict(_releve["widgets"])
+        type_service = app.get("type") or services.deviner_type(nom)
+        url = app.get("url") or ""
+        if type_service in widgets.REGISTRE and url and host_allowed(url):
+            cle = (app.get("token") or app.get("apiKey")) if type_service == "ha" \
+                else (app.get("apiKey") or app.get("token"))
+            stats = widgets.mesurer(type_service, url, cle or "")
+            if stats:
+                tuiles[nom] = stats
+                _deja_lu.add(nom)
+                _echecs_widget.pop(nom, None)
+                _releve["widgets"] = tuiles
+        self.reply(200, json.dumps({"etat": etat, "stats": tuiles.get(nom)},
+                                   ensure_ascii=False).encode())
+
+    def redemarrer_conteneur(self):
+        """Redemarrage explicite d'un conteneur, demande depuis une tuile."""
+        nom = str((self.json_recu() or {}).get("nom", "")).strip()
+        if not nom:
+            self.reply(400, json.dumps({"error": "Nom requis."}, ensure_ascii=False).encode())
+            return
+        ok, msg = conteneurs.redemarrer(nom)
+        _conteneurs["a"] = 0          # le tableau doit repartir d'une lecture fraiche
+        code = 200 if ok else (503 if "socket" in msg else 502)
+        self.reply(code, json.dumps({"ok": ok, "error": msg}, ensure_ascii=False).encode())
 
     def supervision_get(self):
         """Dernier releve complet : etat et temps de reponse de chaque service,

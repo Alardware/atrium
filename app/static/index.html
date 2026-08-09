@@ -343,6 +343,33 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-card:hover .act-btn,.app-actions:focus-within .act-btn{opacity:1}
 .act-btn:hover{color:var(--accent);border-color:var(--accent)}
 .act-btn.danger:hover{color:var(--bad);border-color:var(--bad)}
+
+/* ---- menu d'actions rapides ---- */
+.qmenu{position:fixed;min-width:196px;padding:6px;border-radius:11px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-modal);z-index:70}
+.qmenu[hidden]{display:none}
+.qmenu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:7px;color:var(--text-2);font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .12s,color .12s}
+.qmenu button:hover{background:var(--subtle);color:var(--text)}
+.qmenu button .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
+.qmenu button[disabled]{opacity:.45;pointer-events:none}
+.qmenu .sep{height:1px;margin:5px 6px;background:var(--divider)}
+.qmenu .grp{padding:9px 10px 4px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.qmenu button.chaud:hover{color:var(--warn-text);background:var(--warn-soft)}
+
+/* ---- fiche de statut ---- */
+.st-head{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.st-head .n{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
+.st-head .r{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.st-rows{display:flex;flex-direction:column}
+.st-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.st-row:first-child{border-top:0}
+.st-row b{font:600 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text);text-align:right}
+.st-row b.mono{font-family:'IBM Plex Mono',monospace}
+.st-row b.ok{color:var(--ok-text)}
+.st-row b.bad{color:var(--bad-text)}
+.st-row b.warn{color:var(--warn-text)}
+.st-vide{padding:16px 0;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted);text-align:center}
+.st-liste{max-height:min(52vh,420px);overflow-y:auto}
+
 .act-btn.star.on{opacity:1;color:var(--warn);border-color:var(--warn-border)}
 .act-btn.star.on:hover{color:var(--warn-text);border-color:var(--warn)}
 /* l'étoile permanente ne doit pas recouvrir les pastilles du haut de tuile */
@@ -882,7 +909,39 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   </div>
 </div>
 
+<!-- confirmation générique, pour les actions qui coupent un service -->
+<div class="overlay" id="ov-confirm" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="c-title">?</h3>
+    <div class="modal-sub" id="c-sub"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="c-cancel" data-i18n="btn.cancel">Annuler</button>
+      <button class="btn-danger" id="c-ok" data-i18n="btn.confirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <!-- page réglages -->
+<!-- menu d'actions rapides, unique et repositionné à chaque ouverture -->
+<div class="qmenu" id="qmenu" hidden></div>
+
+<!-- fiche de statut / listes d'entités -->
+<div class="overlay" id="ov-statut" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="st-head">
+      <span class="logo-chip s40" id="st-chip"><span class="cl">?</span></span>
+      <span>
+        <span class="n" id="st-nom"></span><br>
+        <span class="r" id="st-role"></span>
+      </span>
+    </div>
+    <div id="st-corps"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="st-close" data-i18n="btn.close">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- page Serveurs -->
 <div class="spage" id="srvpage" hidden>
   <div class="spage-head">
@@ -1236,6 +1295,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-ha-row">
   <div class="ha-row"><span class="hr-label"></span><b class="hr-val"></b></div>
 </template>
+<template id="tpl-qitem">
+  <button type="button"><span class="ic"></span><span class="lb"></span></button>
+</template>
+<template id="tpl-st-row">
+  <div class="st-row"><span class="l"></span><b class="v"></b></div>
+</template>
 <template id="tpl-srv-bloc">
   <section class="srv-bloc">
     <div class="srv-bloc-h">
@@ -1303,6 +1368,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   <a href="#" class="card app-card">
     <div class="app-actions">
       <button class="act-btn star" data-act="fav" title="Mettre en favori">☆</button>
+      <button class="act-btn" data-act="menu" title="Actions">⋮</button>
       <button class="act-btn" data-act="edit" title="Modifier">✎</button>
       <button class="act-btn danger" data-act="del" title="Supprimer">✕</button>
     </div>
@@ -2271,6 +2337,268 @@ function renderLive() {
   renderAlertes();
 }
 
+/* ---------- confirmation générique ---------- */
+let CONFIRM_ACTION = null;
+function openConfirm(titre, sous, libelle, action) {
+  $('c-title').textContent = titre;
+  $('c-sub').textContent = sous;
+  $('c-ok').textContent = libelle;
+  CONFIRM_ACTION = action;
+  $('ov-confirm').hidden = false;
+}
+function closeConfirm() { $('ov-confirm').hidden = true; CONFIRM_ACTION = null; }
+$('c-cancel').addEventListener('click', closeConfirm);
+$('ov-confirm').addEventListener('click', (e) => { if (e.target === $('ov-confirm')) closeConfirm(); });
+$('c-ok').addEventListener('click', () => {
+  const a = CONFIRM_ACTION;
+  closeConfirm();
+  if (a) a();
+});
+
+/* ---------- actions rapides ---------- */
+/* Les conteneurs sont demandés à l'ouverture d'un menu, pas en continu, et le
+   résultat sert une minute : c'est un appel au démon Docker. */
+const DOCKER = { a: 0, noms: [], actif: false };
+const clefConteneur = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+async function chargerConteneurs() {
+  if (Date.now() - DOCKER.a < 60000) return DOCKER;
+  try {
+    const r = await relayFetch('/api/conteneurs', { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      DOCKER.actif = !!j.docker;
+      DOCKER.noms = j.liste || [];
+      DOCKER.a = Date.now();
+    }
+  } catch (e) { /* menu sans redémarrage, simplement */ }
+  return DOCKER;
+}
+const conteneurDe = (app) => DOCKER.noms.find((c) => clefConteneur(c.nom) === clefConteneur(app.nom));
+
+function fermerQMenu() { $('qmenu').hidden = true; }
+
+function qitem(menu, icone, libelle, action, options) {
+  const o = options || {};
+  const b = clone('tpl-qitem');
+  b.querySelector('.ic').textContent = icone;
+  b.querySelector('.lb').textContent = libelle;
+  if (o.chaud) b.classList.add('chaud');
+  if (o.inactif) b.disabled = true;
+  b.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fermerQMenu();
+    action();
+  });
+  menu.appendChild(b);
+  return b;
+}
+function qsep(menu) {
+  const s = document.createElement('div');
+  s.className = 'sep';
+  menu.appendChild(s);
+}
+
+async function ouvrirQMenu(bouton, index) {
+  const app = apps[index];
+  if (!app) return;
+  const menu = $('qmenu');
+  menu.textContent = '';
+
+  qitem(menu, '↗', t('qm.open'), () => {
+    if (app.url) window.open(app.url, '_blank', 'noopener');
+  }, { inactif: !app.url });
+  qitem(menu, '⟳', t('qm.refresh'), () => sonderMaintenant(app));
+  qitem(menu, '⧉', t('qm.copy'), () => copier(app.url), { inactif: !app.url });
+  qitem(menu, '◉', t('qm.status'), () => ouvrirStatut(app));
+
+  if (kindOfApp(app) === 'ha') {
+    qsep(menu);
+    qitem(menu, '💡', t('qm.lights'), () => ouvrirEntites('lumieres'));
+    qitem(menu, '🌡', t('qm.temps'), () => ouvrirEntites('temperatures'));
+    qitem(menu, '🔔', t('qm.autos'), () => ouvrirEntites('automatisations'));
+  }
+
+  /* placement avant l'appel réseau : le menu ne doit pas sauter */
+  const r = bouton.getBoundingClientRect();
+  menu.hidden = false;
+  const l = menu.getBoundingClientRect();
+  menu.style.top = Math.min(r.bottom + 6, window.innerHeight - l.height - 8) + 'px';
+  menu.style.left = Math.max(8, Math.min(r.right - l.width, window.innerWidth - l.width - 8)) + 'px';
+
+  const d = await chargerConteneurs();
+  if (menu.hidden) return;                       // refermé entre-temps
+  const c = d.actif ? conteneurDe(app) : null;
+  if (c) {
+    qsep(menu);
+    qitem(menu, '⏻', t('qm.restart'), () => demanderRedemarrage(app, c), { chaud: true });
+  }
+}
+document.addEventListener('click', fermerQMenu);
+window.addEventListener('resize', fermerQMenu);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerQMenu(); });
+
+async function copier(texte) {
+  try {
+    await navigator.clipboard.writeText(texte);
+    toast(t('qm.copied'));
+  } catch (e) {
+    toast(t('qm.copy.fail'));
+  }
+}
+
+async function sonderMaintenant(app) {
+  toast(t('qm.refreshing', { nom: app.nom }));
+  try {
+    const r = await relayFetch('/api/sonder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nom: app.nom }),
+    });
+    if (!r.ok) { toast(t('qm.refresh.fail')); return; }
+    const j = await r.json();
+    if (j.etat) SUPER.etats[app.nom] = j.etat;
+    if (j.stats) STATS[app.nom] = j.stats;
+    statusByName[app.nom] = j.etat ? j.etat.en_ligne : statusByName[app.nom];
+    renderApps();
+    toast(j.etat && j.etat.en_ligne
+      ? t('qm.refresh.up', { nom: app.nom, ms: j.etat.latence_ms })
+      : t('qm.refresh.down', { nom: app.nom }));
+  } catch (e) { toast(t('qm.refresh.fail')); }
+}
+
+function demanderRedemarrage(app, conteneur) {
+  /* redémarrer coupe le service : on demande confirmation, jamais au premier clic */
+  openConfirm(t('qm.restart.title', { nom: conteneur.nom }),
+              t('qm.restart.sub'), t('qm.restart.go'), async () => {
+    toast(t('qm.restarting', { nom: conteneur.nom }));
+    try {
+      const r = await relayFetch('/api/conteneur/redemarrer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom: conteneur.nom }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        toast(t('qm.restarted', { nom: conteneur.nom }));
+        DOCKER.a = 0;
+        setTimeout(() => sonderMaintenant(app), 4000);
+      } else {
+        toast(j.error || t('qm.restart.fail'));
+      }
+    } catch (e) { toast(t('qm.restart.fail')); }
+  });
+}
+
+/* ---------- fiche de statut ---------- */
+function stRow(zone, libelle, valeur, classe) {
+  const r = clone('tpl-st-row');
+  r.querySelector('.l').textContent = libelle;
+  const v = r.querySelector('.v');
+  v.textContent = valeur;
+  if (classe) v.className = 'v ' + classe;
+  zone.appendChild(r);
+  return r;
+}
+
+function ouvrirStatut(app) {
+  $('st-nom').textContent = app.nom;
+  $('st-role').textContent = [app.role, app.cat].filter(Boolean).join(' · ');
+  $('st-chip').querySelector('.cl').textContent = (app.nom[0] || '?').toUpperCase();
+  mountLogo($('st-chip'), logoDe(app));
+
+  const corps = $('st-corps');
+  corps.textContent = '';
+  const zone = document.createElement('div');
+  zone.className = 'st-rows';
+  corps.appendChild(zone);
+
+  const e = SUPER.etats[app.nom];
+  if (!app.url) {
+    stRow(zone, t('st.state'), t('app.nourl'));
+  } else if (!e) {
+    stRow(zone, t('st.state'), t('app.checking'));
+  } else {
+    stRow(zone, t('st.state'), t(e.en_ligne ? 'app.online' : 'app.offline'),
+          e.en_ligne ? 'ok' : 'bad');
+    if (e.latence_ms != null) stRow(zone, t('st.latency'), e.latence_ms + ' ms', 'mono');
+    if (e.latence_moy != null) stRow(zone, t('st.latency.avg'), e.latence_moy + ' ms', 'mono');
+    if (e.vu_a) stRow(zone, t('app.seen.t'), age(e.vu_a), 'mono');
+    if (e.depuis) stRow(zone, t(e.en_ligne ? 'st.up.since' : 'st.down.since'), age(e.depuis), 'mono');
+  }
+  if (app.url) stRow(zone, 'URL', app.url, 'mono');
+  const type = kindOfApp(app);
+  if (type) stRow(zone, t('st.integration'), TYPES[type] || type);
+
+  (STATS[app.nom] || []).forEach((s) => stRow(zone, s.lab, s.val, 'mono'));
+
+  const soucis = alertesDe(app.nom);
+  soucis.forEach((a) => stRow(zone, t('st.alert'), texteAlerte(a),
+                              a.niveau === 'critique' ? 'bad' : 'warn'));
+
+  const c = DOCKER.actif ? conteneurDe(app) : null;
+  if (c) stRow(zone, t('st.container'), c.nom + ' · ' + c.etat, 'mono');
+
+  $('ov-statut').hidden = false;
+}
+$('st-close').addEventListener('click', () => { $('ov-statut').hidden = true; });
+$('ov-statut').addEventListener('click', (e) => {
+  if (e.target === $('ov-statut')) $('ov-statut').hidden = true;
+});
+
+/* ---------- listes d'entités Home Assistant ---------- */
+const ATTR = (s) => s.attributes || {};
+const nomEntite = (s) => ATTR(s).friendly_name || s.entity_id;
+
+function entitesDe(genre) {
+  if (genre === 'lumieres') {
+    return STATES.filter((s) => s.entity_id.startsWith('light.'))
+      .sort((a, b) => (b.state === 'on') - (a.state === 'on') || nomEntite(a).localeCompare(nomEntite(b)))
+      .map((s) => ({ nom: nomEntite(s), val: t(s.state === 'on' ? 'ent.on' : 'ent.off'),
+                     classe: s.state === 'on' ? 'warn' : '' }));
+  }
+  if (genre === 'temperatures') {
+    return STATES.filter((s) => s.entity_id.startsWith('sensor.') &&
+        ATTR(s).device_class === 'temperature' && !isNaN(parseFloat(s.state)))
+      .sort((a, b) => parseFloat(b.state) - parseFloat(a.state))
+      .map((s) => ({ nom: nomEntite(s),
+                     val: Math.round(parseFloat(s.state) * 10) / 10 + ' ' + (ATTR(s).unit_of_measurement || '°'),
+                     classe: 'mono' }));
+  }
+  /* Comme pour les lumières, l'inhabituel passe en tête : une lampe allumée,
+     une automatisation désactivée. C'est ce qu'on ouvre la liste pour voir. */
+  return STATES.filter((s) => s.entity_id.startsWith('automation.'))
+    .sort((a, b) => (a.state === 'on') - (b.state === 'on') || nomEntite(a).localeCompare(nomEntite(b)))
+    .map((s) => ({ nom: nomEntite(s), val: t(s.state === 'on' ? 'ent.active' : 'ent.paused'),
+                   classe: s.state === 'on' ? 'ok' : '' }));
+}
+
+function ouvrirEntites(genre) {
+  const titres = { lumieres: 'qm.lights', temperatures: 'qm.temps', automatisations: 'qm.autos' };
+  const ha = appByKind('ha');
+  $('st-nom').textContent = t(titres[genre]);
+  $('st-role').textContent = ha ? ha.nom : 'Home Assistant';
+  $('st-chip').querySelector('.cl').textContent = 'H';
+  mountLogo($('st-chip'), ha ? logoDe(ha) : '');
+
+  const corps = $('st-corps');
+  corps.textContent = '';
+  const lignes = CONN === 'ok' ? entitesDe(genre) : [];
+  if (!lignes.length) {
+    const v = document.createElement('div');
+    v.className = 'st-vide';
+    v.textContent = CONN === 'ok' ? t('ent.none') : t('ent.noconn');
+    corps.appendChild(v);
+  } else {
+    const zone = document.createElement('div');
+    zone.className = 'st-rows st-liste';
+    lignes.forEach((l) => stRow(zone, l.nom, l.val, l.classe));
+    corps.appendChild(zone);
+  }
+  $('ov-statut').hidden = false;
+}
+
 /* ---------- page Serveurs ---------- */
 let SRV_TIMER = null;
 
@@ -3039,6 +3367,7 @@ function appCard(app, index) {
       e.preventDefault();
       e.stopPropagation();
       if (act.dataset.act === 'fav') basculerFavori(index);
+      else if (act.dataset.act === 'menu') ouvrirQMenu(act, index);
       else if (act.dataset.act === 'edit') openAppModal(index);
       else openDelModal(index);
       return;

@@ -89,6 +89,30 @@ def sonder_apps(apps):
         return {k: dict(v) for k, v in _etats.items()}
 
 
+def sonder_un(app):
+    """Resonde une seule application, sans attendre le cycle suivant."""
+    nom, url = app.get("nom"), (app.get("url") or "").strip()
+    if not nom or not url:
+        return None
+    joignable, latence = _sonder(url)
+    maintenant = time.time()
+    with _lock:
+        ancien = _etats.get(nom) or {}
+        if latence is not None:
+            _historique[nom].append((maintenant, latence))
+        lat = [v for _, v in _historique[nom]]
+        _etats[nom] = {
+            "en_ligne": joignable,
+            "latence_ms": latence,
+            "latence_moy": round(sum(lat) / len(lat)) if lat else None,
+            "vu_a": maintenant,
+            "depuis": maintenant if ancien.get("en_ligne") != joignable
+                      else ancien.get("depuis", maintenant),
+            "echecs": 0 if joignable else ancien.get("echecs", 0) + 1,
+        }
+        return dict(_etats[nom])
+
+
 def etats():
     with _lock:
         return {k: dict(v) for k, v in _etats.items()}
