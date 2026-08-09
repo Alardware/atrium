@@ -25,6 +25,7 @@ import urllib.parse
 import urllib.request
 
 import auth
+import conteneurs
 import services
 import supervision
 import systeme
@@ -79,6 +80,22 @@ CYCLE = 30
 ECHECS_AVANT_DOUTE = 3   # avant de mettre en cause une cle d'API
 
 _releve = {"widgets": {}, "hote": {"disponible": False}, "maj": 0, "a": 0}
+
+# Les conteneurs ne sont lus que lorsqu'on regarde la page Serveurs : mesurer
+# la consommation de chacun coute un appel par conteneur, inutile en continu.
+AGE_CONTENEURS = 15
+_conteneurs = {"a": 0, "liste": []}
+_verrou_conteneurs = threading.Lock()
+
+
+def conteneurs_recents():
+    with _verrou_conteneurs:
+        if time.time() - _conteneurs["a"] > AGE_CONTENEURS:
+            _conteneurs["liste"] = conteneurs.liste()
+            _conteneurs["a"] = time.time()
+        return _conteneurs["liste"]
+
+
 _echecs_widget = {}
 _deja_lu = set()   # services ayant deja livre leurs donnees au moins une fois
 
@@ -88,6 +105,7 @@ def _collecter():
     apps = cfg.get("apps") or []
     supervision.sonder_apps(apps)
     hote = systeme.mesures(CONFIG_DIR)
+    systeme.enregistrer(hote)
     etats = supervision.etats()
 
     tuiles, erreurs, maj = {}, {}, 0
@@ -262,6 +280,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/supervision":
             if self.exiger_session():
                 self.supervision_get()
+        elif route == "/api/serveur":
+            if self.exiger_session():
+                self.reply(200, json.dumps({
+                    "hote": _releve["hote"],
+                    "historique": systeme.historique(),
+                    "docker": conteneurs.disponible(),
+                    "conteneurs": conteneurs_recents(),
+                    "releve": _releve["a"],
+                }, ensure_ascii=False).encode())
         else:
             super().do_GET()
 

@@ -24,6 +24,10 @@
           Description="Stockage de la configuration (applications, profils, clés API)"
           Type="Path" Display="always" Required="true">/mnt/user/appdata/atrium</Config>
 
+  <Config Name="Conteneurs Docker" Target="/var/run/docker.sock" Default="" Mode="ro"
+          Description="Facultatif — affiche les conteneurs et leur consommation sur la page Serveurs. Atrium n'y fait que des lectures, mais monter cette socket donne accès au démon Docker, soit l'équivalent de root sur la machine. Renseignez /var/run/docker.sock seulement si vous voulez cette vue."
+          Type="Path" Display="advanced" Required="false"></Config>
+
   <Config Name="Fuseau horaire" Target="TZ" Default="Europe/Paris"
           Description="Fuseau horaire du conteneur" Type="Variable" Display="advanced" Required="false">Europe/Paris</Config>
 

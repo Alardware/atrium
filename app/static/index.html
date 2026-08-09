@@ -434,6 +434,47 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-nav button.on{background:var(--accent-soft);color:var(--accent-strong)}
 .spage-nav button .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
 .spage-content{overflow-y:auto;padding:0}
+
+/* ---- page Serveurs ---- */
+.srvpage-body{flex:1;overflow-y:auto;padding:24px 26px 40px}
+.srv-bloc{max-width:1100px;margin:0 auto 26px}
+.srv-bloc-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.srv-bloc-h .logo-chip{flex:none}
+.srv-bloc-h .n{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
+.srv-bloc-h .s{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.srv-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:16px}
+.srv-tuile{padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.srv-tuile .l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3);margin-bottom:8px}
+.srv-tuile .v{font:700 24px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.srv-tuile .d{margin-top:6px;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.srv-tuile.s2 .v{color:var(--warn-text)}
+.srv-tuile.s3 .v{color:var(--warn-text)}
+.srv-tuile.s3{border-color:var(--warn-border);background:var(--warn-soft)}
+.srv-tuile.s4 .v{color:var(--bad-text)}
+.srv-tuile.s4{border-color:var(--bad);background:var(--bad-soft)}
+.srv-graphs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px}
+.srv-graph{padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.srv-graph-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.srv-graph-h .l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.srv-graph-h .m{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.srv-graph svg{display:block;width:100%;height:64px;overflow:visible}
+.srv-graph .trace{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.srv-graph .aire{fill:var(--accent-soft);stroke:none}
+.srv-graph .rep{stroke:var(--divider);stroke-width:1;vector-effect:non-scaling-stroke}
+.srv-graph .vide{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted);padding:18px 0;text-align:center}
+.srv-tab{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.srv-tab th{text-align:left;padding:10px 14px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-3);border-bottom:1px solid var(--border);white-space:nowrap}
+.srv-tab td{padding:10px 14px;font:500 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text-2);border-top:1px solid var(--divider);white-space:nowrap}
+.srv-tab td.nom{font-weight:600;color:var(--text);width:100%;white-space:normal}
+.srv-tab td.num{font-family:'IBM Plex Mono',monospace;text-align:right}
+.srv-tab tr.off td{color:var(--muted-2)}
+.srv-tab .dot{display:inline-block;margin-right:8px;vertical-align:middle}
+.srv-tab .dot.off{background:var(--muted-2)}
+.srv-wrap{overflow-x:auto;border-radius:12px}
+.srv-note{margin-top:10px;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.srv-note code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:2px 5px;border-radius:4px}
+.health-head{cursor:pointer}
+.health-head:hover{color:var(--accent)}
 .sp-inner{max-width:680px;padding:30px 34px 60px}
 .sp-title{font:700 21px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
 .sp-lead{margin-top:6px;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
@@ -575,6 +616,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <div class="nav">
       <div class="nav-title" data-i18n="nav.manage">Gérer</div>
       <button class="nav-link" id="side-add"><span class="ico">+</span><span data-i18n="nav.add">Ajouter une app</span></button>
+      <button class="nav-link" id="side-servers"><span class="ico">⛁</span><span data-i18n="servers">Serveurs</span></button>
       <button class="nav-link" id="side-settings"><span class="ico">⚙</span><span data-i18n="nav.settings">Réglages</span></button>
     </div>
 
@@ -841,6 +883,15 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 </div>
 
 <!-- page réglages -->
+<!-- page Serveurs -->
+<div class="spage" id="srvpage" hidden>
+  <div class="spage-head">
+    <button class="btn-ghost" id="srv-back" data-i18n="btn.back">← Retour</button>
+    <h2 data-i18n="servers">Serveurs</h2>
+  </div>
+  <div class="srvpage-body" id="srvpage-body"></div>
+</div>
+
 <div class="spage" id="spage" hidden>
   <div class="spage-head">
     <button class="btn-ghost" id="sp-back" data-i18n="btn.back">← Retour</button>
@@ -1184,6 +1235,50 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 </template>
 <template id="tpl-ha-row">
   <div class="ha-row"><span class="hr-label"></span><b class="hr-val"></b></div>
+</template>
+<template id="tpl-srv-bloc">
+  <section class="srv-bloc">
+    <div class="srv-bloc-h">
+      <span class="logo-chip s26"><span class="cl">▪</span></span>
+      <span class="n"></span>
+      <span class="s"></span>
+    </div>
+    <div class="srv-tuiles"></div>
+    <div class="srv-graphs" hidden></div>
+    <div class="srv-docker" hidden></div>
+  </section>
+</template>
+<template id="tpl-srv-tuile">
+  <div class="srv-tuile"><div class="l"></div><div class="v"></div><div class="d"></div></div>
+</template>
+<template id="tpl-srv-graph">
+  <div class="srv-graph">
+    <div class="srv-graph-h"><span class="l"></span><span class="m"></span></div>
+    <svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true">
+      <line class="rep" x1="0" y1="50" x2="300" y2="50"></line>
+      <path class="aire"></path>
+      <path class="trace"></path>
+    </svg>
+  </div>
+</template>
+<template id="tpl-srv-tab">
+  <div>
+    <div class="srv-graph-h"><span class="l"></span><span class="m"></span></div>
+    <div class="srv-wrap">
+      <table class="srv-tab">
+        <thead><tr><th class="nom"></th><th></th><th></th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</template>
+<template id="tpl-srv-ligne">
+  <tr>
+    <td class="nom"><span class="dot"></span><span class="t"></span></td>
+    <td class="etat"></td>
+    <td class="num cpu"></td>
+    <td class="num mem"></td>
+  </tr>
 </template>
 <template id="tpl-cock-jauge">
   <div class="cock-row">
@@ -1559,6 +1654,7 @@ let HOTE = null;            // mesures de la machine qui héberge Atrium
 let STATS = {};             // chiffres remontés par service, par nom d'app
 let SUPER = { etats: {}, alertes: { total: 0, non_lues: 0, problemes: 0, niveau: '', alertes: [] } };
 let COCK_HOTE = null;       // machine hôte telle qu'affichée, mesures fusionnées
+let COCK_SRV = [];          // les autres serveurs connus, hors machine hôte
 
 /* ---------- logos (lettre en secours) ---------- */
 function mountLogo(chip, logoUrl) {
@@ -2098,6 +2194,7 @@ function renderLive() {
     dNet = dNet.filter((r) => r.label !== t('net.clients'));
     dNet.push({ label: t('net.clients'), valeur: String(DIRECT.clients) });
   }
+  COCK_SRV = dSrv;
   const health = $('health');
   if (dSrv.length || dNet.length) {
     health.style.display = '';
@@ -2173,6 +2270,189 @@ function renderLive() {
   renderMajPop();
   renderAlertes();
 }
+
+/* ---------- page Serveurs ---------- */
+let SRV_TIMER = null;
+
+const octets = (o) => {
+  if (o == null) return '—';
+  const u = ['o', 'Ko', 'Mo', 'Go', 'To'];
+  let i = 0;
+  while (o >= 1024 && i < u.length - 1) { o /= 1024; i++; }
+  return (i >= 3 ? o.toFixed(1) : Math.round(o)) + ' ' + u[i];
+};
+const duree = (sec) => {
+  const j = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
+  if (j) return t('srv.dur.jh', { j, h });
+  const m = Math.floor((sec % 3600) / 60);
+  return h ? t('srv.dur.hm', { h, m }) : t('srv.dur.m', { m });
+};
+
+/* Courbe d'une série de points {t, v} en pourcentage, tracée dans un repère
+   0-100 que le SVG étire à la largeur disponible. */
+function tracer(graph, points) {
+  const svg = graph.querySelector('svg');
+  const trace = graph.querySelector('.trace');
+  const aire = graph.querySelector('.aire');
+  if (points.length < 2) {
+    svg.hidden = true;
+    const v = document.createElement('div');
+    v.className = 'vide';
+    v.textContent = t('srv.graph.wait');
+    graph.appendChild(v);
+    return;
+  }
+  svg.hidden = false;
+  const n = points.length;
+  const x = (i) => (i / (n - 1)) * 300;
+  const y = (v) => 100 - Math.max(0, Math.min(100, v));
+  const d = points.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+  trace.setAttribute('d', d);
+  aire.setAttribute('d', d + ' L300 100 L0 100 Z');
+}
+
+function tuile(zone, libelle, valeur, detail, niveau) {
+  const e = clone('tpl-srv-tuile');
+  e.querySelector('.l').textContent = libelle;
+  e.querySelector('.v').textContent = valeur;
+  const d = e.querySelector('.d');
+  if (detail) d.textContent = detail; else d.remove();
+  if (niveau) e.classList.add(niveau);
+  zone.appendChild(e);
+  return e;
+}
+
+function blocServeur(corps, titre, sous, kind) {
+  const b = clone('tpl-srv-bloc');
+  b.querySelector('.n').textContent = titre;
+  b.querySelector('.s').textContent = sous || '';
+  const app = kind ? appByKind(kind) : null;
+  b.querySelector('.cl').textContent = app ? (app.nom[0] || '▪').toUpperCase() : '▪';
+  if (app) mountLogo(b.querySelector('.logo-chip'), logoDe(app));
+  corps.appendChild(b);
+  return b;
+}
+
+function tableauDocker(bloc, liste, actif) {
+  const zone = bloc.querySelector('.srv-docker');
+  zone.hidden = false;
+  if (!actif) {
+    const n = document.createElement('div');
+    n.className = 'srv-note';
+    n.textContent = t('srv.docker.off');
+    const c = document.createElement('code');
+    c.textContent = '/var/run/docker.sock:/var/run/docker.sock';
+    n.appendChild(document.createTextNode(' '));
+    n.appendChild(c);
+    zone.appendChild(n);
+    return;
+  }
+  const tab = clone('tpl-srv-tab');
+  tab.querySelector('.l').textContent = 'Docker';
+  const actifs = liste.filter((c) => c.etat === 'running').length;
+  tab.querySelector('.m').textContent = t('srv.docker.count', { n: actifs, total: liste.length });
+  const th = tab.querySelectorAll('th');
+  [t('srv.col.name'), t('srv.col.state'), 'CPU', t('srv.col.mem')]
+    .forEach((s, i) => { th[i].textContent = s; });
+  const tbody = tab.querySelector('tbody');
+  liste.forEach((c) => {
+    const tr = clone('tpl-srv-ligne');
+    const enMarche = c.etat === 'running';
+    if (!enMarche) tr.classList.add('off');
+    tr.querySelector('.dot').classList.toggle('off', !enMarche);
+    tr.querySelector('.t').textContent = c.nom;
+    tr.querySelector('.t').title = c.image || '';
+    tr.querySelector('.etat').textContent = c.statut || c.etat;
+    tr.querySelector('.cpu').textContent = c.cpu == null ? '—' : c.cpu.toFixed(1) + ' %';
+    tr.querySelector('.mem').textContent = octets(c.memoire);
+    tbody.appendChild(tr);
+  });
+  zone.appendChild(tab);
+}
+
+async function renderServeurs() {
+  const corps = $('srvpage-body');
+  let d = null;
+  try {
+    const r = await relayFetch('/api/serveur', { cache: 'no-store' });
+    if (r.ok) d = await r.json();
+  } catch (e) { /* affiché comme indisponible ci-dessous */ }
+  corps.textContent = '';
+
+  const h = d && d.hote && d.hote.disponible ? d.hote : null;
+  if (h) {
+    const bloc = blocServeur(corps, h.nom || t('host.self'), h.os || '',
+                             COCK_HOTE ? COCK_HOTE.kind : '');
+    const zone = bloc.querySelector('.srv-tuiles');
+    /* on reprend les lignes déjà fusionnées du cockpit : la grappe du NAS
+       prime sur le volume local quand l'intégration la connaît */
+    const lignes = COCK_HOTE ? COCK_HOTE.rows : [];
+    const par = (lab) => lignes.find((r) => r.label === lab);
+    const pct = (r) => (r && r.v != null ? r.v : null);
+
+    const cpu = pct(par('CPU')) != null ? pct(par('CPU')) : h.cpu;
+    if (cpu != null) tuile(zone, 'CPU', cpu + ' %', '', NIV_JAUGE(cpu));
+    if (h.memoire) {
+      tuile(zone, 'RAM', h.memoire.pourcent + ' %',
+            h.memoire.utilise_go + ' / ' + h.memoire.total_go + ' Go',
+            NIV_JAUGE(h.memoire.pourcent));
+    }
+    const dsk = par('Disque');
+    if (dsk && dsk.v != null) {
+      tuile(zone, t('srv.storage'), dsk.v + ' %', dsk.detail || '', NIV_JAUGE(dsk.v));
+    }
+    if (h.temperature != null) {
+      tuile(zone, t('srv.temp'), h.temperature + ' °C', '',
+            h.temperature >= 85 ? 's4' : h.temperature >= 75 ? 's3' : '');
+    }
+    if (h.demarrage) tuile(zone, t('srv.uptime'), duree(h.demarrage.secondes), '');
+
+    const gz = bloc.querySelector('.srv-graphs');
+    const histo = (d.historique || {});
+    [['cpu', 'CPU'], ['memoire', 'RAM']].forEach(([cle, lab]) => {
+      const pts = histo[cle] || [];
+      const g = clone('tpl-srv-graph');
+      g.querySelector('.l').textContent = lab;
+      g.querySelector('.m').textContent = pts.length > 1
+        ? t('srv.graph.span', { n: Math.round((pts[pts.length - 1].t - pts[0].t) / 60) }) : '';
+      gz.appendChild(g);
+      tracer(g, pts);
+    });
+    gz.hidden = false;
+
+    tableauDocker(bloc, d.conteneurs || [], d.docker);
+  }
+
+  /* les autres serveurs n'exposent que des valeurs instantanées */
+  (COCK_SRV || []).forEach((g) => {
+    const bloc = blocServeur(corps, g.titre, g.sous || '', g.kind);
+    const zone = bloc.querySelector('.srv-tuiles');
+    g.rows.forEach((r) => {
+      if (r.v != null) tuile(zone, r.label, r.v + ' %', r.detail || '', NIV_JAUGE(r.v));
+      else tuile(zone, r.label, r.txt, '');
+    });
+  });
+
+  if (!corps.childElementCount) {
+    const v = clone('tpl-empty');
+    v.textContent = t('srv.none');
+    corps.appendChild(v);
+  }
+}
+
+function ouvrirServeurs() {
+  $('srvpage').hidden = false;
+  renderServeurs();
+  SRV_TIMER = setInterval(renderServeurs, 15000);
+}
+function fermerServeurs() {
+  $('srvpage').hidden = true;
+  clearInterval(SRV_TIMER);
+  SRV_TIMER = null;
+}
+$('side-servers').addEventListener('click', ouvrirServeurs);
+$('srv-back').addEventListener('click', fermerServeurs);
+document.querySelector('.health-head').addEventListener('click', ouvrirServeurs);
 
 /* ---------- cockpit : tuiles qui n'apparaissent qu'en ayant de quoi dire ---- */
 const NIV_JAUGE = (v) => 's' + (v >= 95 ? 4 : v >= 85 ? 3 : v >= 70 ? 2 : 1);

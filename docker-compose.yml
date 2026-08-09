@@ -9,6 +9,11 @@ services:
       - "8420:8420"
     volumes:
       - ./data:/config
+      # Facultatif : affiche les conteneurs et leur consommation sur la page
+      # Serveurs. Atrium n'y fait que des lectures, mais monter cette socket
+      # donne accès au démon Docker, soit l'équivalent de root sur la machine.
+      # Ne l'ajoutez que si vous voulez cette vue.
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       TZ: Europe/Paris
       # Réseaux que le relais a le droit de joindre (préfixes, séparés par des virgules).
