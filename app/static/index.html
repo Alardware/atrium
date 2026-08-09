@@ -100,8 +100,6 @@ template{display:none}
 .bar > i.s4{background:var(--bad)}
 .health-foot{margin-top:12px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .srv-box{padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:9px}
-.srv-box.hote{border-color:var(--accent-border);background:var(--accent-soft)}
-.srv-box.hote .srv-name{color:var(--accent-strong)}
 .srv-sub{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);margin-top:-4px}
 .srv-head{display:flex;align-items:center;gap:7px}
 .srv-name{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
@@ -1988,10 +1986,12 @@ function renderLive() {
   if (DIRECT.unraid) dSrv.push({ titre: 'Unraid', rows: DIRECT.unraid, kind: 'unraid', src: 'direct' });
   if (DIRECT.unifi) dSrv.push({ titre: 'UniFi', rows: DIRECT.unifi, kind: 'unifi', src: 'direct' });
 
-  /* La machine qui héberge Atrium passe en tête. Si une intégration décrit
-     cette même machine (Atrium installé sur le NAS), les deux cartes n'en font
-     qu'une : mesures locales pour le processeur et la mémoire, données de
-     l'intégration pour ce qu'elle seule connaît (la grappe, par exemple). */
+  /* La machine qui héberge Atrium a sa tuile dans le cockpit : elle ne se
+     répète pas dans le panneau latéral, qui ne montre que les serveurs vus
+     autrement. Si une intégration décrit cette même machine (Atrium installé
+     sur le NAS), les deux n'en font qu'une : mesures locales pour le
+     processeur et la mémoire, données de l'intégration pour ce qu'elle seule
+     connaît, la grappe par exemple. */
   COCK_HOTE = null;
   if (HOTE) {
     const rows = [];
@@ -2017,10 +2017,8 @@ function renderLive() {
         const j = Math.floor(HOTE.demarrage.secondes / 86400);
         sous += (sous ? ' · ' : '') + (j >= 1 ? t('host.up.days', { n: j }) : t('host.up.less'));
       }
-      dSrv.unshift({ titre: HOTE.nom || t('host.self'), rows, hote: true, sous, kind: self ? self.kind : '' });
-      /* le cockpit réutilise exactement ces lignes : mesures locales complétées
-         par ce que seule l'intégration connaît, comme la grappe du NAS */
-      COCK_HOTE = { titre: HOTE.nom || t('host.self'), sous, rows };
+      COCK_HOTE = { titre: HOTE.nom || t('host.self'), sous, rows,
+                    kind: self ? self.kind : '' };
     }
   }
   let dNet = baseNet.slice();
@@ -2033,17 +2031,16 @@ function renderLive() {
     health.style.display = '';
     const hr = $('health-rows');
     hr.textContent = '';
-    const srvBox = (titre, kind, src, opts) => {
-      const o = opts || {};
+    const srvBox = (titre, kind, sous) => {
       const box = document.createElement('div');
-      box.className = 'srv-box' + (o.hote ? ' hote' : '');
+      box.className = 'srv-box';
       const head = document.createElement('div');
       head.className = 'srv-head';
       const chip = document.createElement('span');
       chip.className = 'logo-chip s18';
       const cl = document.createElement('span');
       cl.className = 'cl';
-      cl.textContent = o.hote ? '▪' : (titre[0] || '?').toUpperCase();
+      cl.textContent = (titre[0] || '?').toUpperCase();
       chip.appendChild(cl);
       const app = kind ? appByKind(kind) : null;
       if (app) mountLogo(chip, logoDe(app));
@@ -2053,17 +2050,17 @@ function renderLive() {
       head.appendChild(chip);
       head.appendChild(name);
       box.appendChild(head);
-      if (o.sous) {
+      if (sous) {
         const s = document.createElement('div');
         s.className = 'srv-sub';
-        s.textContent = o.sous;
+        s.textContent = sous;
         box.appendChild(s);
       }
       hr.appendChild(box);
       return box;
     };
     dSrv.forEach((g) => {
-      const box = srvBox(g.titre, g.kind, g.src, { hote: g.hote, sous: g.sous });
+      const box = srvBox(g.titre, g.kind, g.sous);
       g.rows.forEach((r) => {
         const row = clone('tpl-health-row');
         row.querySelector('.hl-label').textContent = r.label;
@@ -2114,6 +2111,11 @@ function renderCockpit() {
   if (COCK_HOTE) {
     $('srv-name').textContent = COCK_HOTE.titre;
     $('srv-sub').textContent = COCK_HOTE.sous || '';
+    /* logo de l'intégration qui décrit cette machine, quand il y en a une */
+    const self = COCK_HOTE.kind ? appByKind(COCK_HOTE.kind) : null;
+    $('srv-chip').querySelector('.cl').textContent = self
+      ? (self.nom[0] || '▪').toUpperCase() : '▪';
+    mountLogo($('srv-chip'), self ? logoDe(self) : '');
     const zone = $('srv-rows');
     zone.textContent = '';
     COCK_HOTE.rows.forEach((r) => {
