@@ -23,6 +23,11 @@
     'net.down': 'coupé',
     'net.clients': 'Appareils connectés',
     'net.reseau': 'Réseau',
+    'host.self': 'Cette machine',
+    'cock.play': 'lecture en cours',
+    'cock.plays': 'lectures en cours',
+    'cock.users': 'Utilisateurs',
+    'cock.rate': 'Débit total',
     'host.up.days': 'allumé depuis {n} j',
     'host.up.less': 'allumé depuis moins d\'un jour',
 
@@ -266,6 +271,11 @@
     'net.down': 'down',
     'net.clients': 'Connected devices',
     'net.reseau': 'Network',
+    'host.self': 'This machine',
+    'cock.play': 'stream running',
+    'cock.plays': 'streams running',
+    'cock.users': 'Users',
+    'cock.rate': 'Total bandwidth',
     'host.up.days': 'up for {n} d',
     'host.up.less': 'up for less than a day',
 

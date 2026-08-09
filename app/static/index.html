@@ -206,8 +206,23 @@ template{display:none}
 .rise-1{animation:rise .45s cubic-bezier(.2,.7,.3,1) both}
 .rise-2{animation:rise .5s .06s cubic-bezier(.2,.7,.3,1) both}
 
-.featured{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
-.featured.solo{grid-template-columns:1fr}
+/* Le cockpit n'a pas de composition fixe : chaque tuile n'apparaît que si elle
+   a quelque chose à dire, et les autres se répartissent la place. */
+.featured{display:flex;flex-wrap:wrap;gap:16px;align-items:stretch}
+.featured > *{min-width:0}
+.featured > .now-playing{flex:3 1 400px}
+.featured > .cock{flex:1 1 246px;max-width:360px}
+.cock{display:flex;flex-direction:column;gap:13px;padding:18px}
+.cock[hidden]{display:none}
+.cock-big{display:flex;align-items:baseline;gap:10px}
+.cock-n{font:700 34px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em}
+.cock-u{font:500 11.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.cock-rows{display:flex;flex-direction:column;margin-top:auto}
+.cock-row{padding:9px 0;border-top:1px solid var(--divider)}
+.cock-lab{display:flex;align-items:center;justify-content:space-between;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3);margin-bottom:6px}
+.cock-lab b{font:600 12px/1 'IBM Plex Mono',monospace;color:var(--text)}
+.cock-row.plain{display:flex;align-items:center;justify-content:space-between;font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.cock-row.plain b{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .card{border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-1);color:inherit;transition:box-shadow .2s,transform .2s,border-color .2s}
 a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transform:translateY(-2px);color:inherit}
 .now-playing{display:flex;gap:18px;padding:18px}
@@ -513,7 +528,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   .main{height:auto;overflow:visible}
   .sidebar{flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--border);overflow:visible}
   .health{display:none !important}
-  .featured{grid-template-columns:1fr}
+  .featured > .cock{max-width:none}
   .clock{display:none}
 }
 </style>
@@ -667,6 +682,27 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             </div>
             <div class="ha-rows" id="ha-rows"></div>
             <div class="ha-open" data-i18n="open">Ouvrir ↗</div>
+          </a>
+
+          <div class="card cock" id="srv-card" hidden>
+            <div class="chip-row">
+              <span class="logo-chip s26" id="srv-chip"><span class="cl">▪</span></span>
+              <span class="chip-name" id="srv-name">Serveur</span>
+            </div>
+            <div class="cock-u" id="srv-sub"></div>
+            <div class="cock-rows" id="srv-rows"></div>
+          </div>
+
+          <a href="#" class="card cock" id="px-card" hidden>
+            <div class="chip-row">
+              <span class="logo-chip s26" id="px-chip"><span class="cl">▶</span></span>
+              <span class="chip-name" id="px-name">Plex</span>
+            </div>
+            <div class="cock-big">
+              <span class="cock-n" id="px-n">0</span>
+              <span class="cock-u" id="px-u"></span>
+            </div>
+            <div class="cock-rows" id="px-rows"></div>
           </a>
         </div>
       </section>
@@ -1129,6 +1165,15 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-ha-row">
   <div class="ha-row"><span class="hr-label"></span><b class="hr-val"></b></div>
 </template>
+<template id="tpl-cock-jauge">
+  <div class="cock-row">
+    <div class="cock-lab"><span class="cl-l"></span><b class="cl-v"></b></div>
+    <div class="bar"><i></i></div>
+  </div>
+</template>
+<template id="tpl-cock-row">
+  <div class="cock-row plain"><span class="cr-l"></span><b class="cr-v"></b></div>
+</template>
 <template id="tpl-al-row">
   <div class="al-row">
     <span class="dot"></span>
@@ -1445,6 +1490,7 @@ let DIRECT = { unraid: null, unifi: null, clients: null };   // connexions direc
 let HOTE = null;            // mesures de la machine qui héberge Atrium
 let STATS = {};             // chiffres remontés par service, par nom d'app
 let SUPER = { etats: {}, alertes: { total: 0, non_lues: 0, problemes: 0, niveau: '', alertes: [] } };
+let COCK_HOTE = null;       // machine hôte telle qu'affichée, mesures fusionnées
 
 /* ---------- logos (lettre en secours) ---------- */
 function mountLogo(chip, logoUrl) {
@@ -1789,7 +1835,6 @@ function renderLive() {
   /* pastille mises à jour */
   $('pill-maj').style.display = (CONN === 'ok' && N_MAJ) ? '' : 'none';
   if (N_MAJ) $('maj-label').textContent = t(N_MAJ > 1 ? 'update.many' : 'update.one', { n: N_MAJ });
-  $('featured').classList.toggle('solo', !(CONN === 'ok'));
 
   /* carte lecture */
   const npCard = $('np-card');
@@ -1850,10 +1895,10 @@ function renderLive() {
         im.src = logoDe(m2);
         chip.appendChild(im);
       }
-      const t = document.createElement('span');
-      t.className = 'mr-t';
-      t.textContent = m.titre;
-      t.title = m.titre;
+      const titre = document.createElement('span');
+      titre.className = 'mr-t';
+      titre.textContent = m.titre;
+      titre.title = m.titre;
       const d = document.createElement('span');
       d.className = 'mr-d';
       d.textContent = m.ligne2.join(' · ');
@@ -1861,7 +1906,7 @@ function renderLive() {
       st2.className = 'mr-s' + (m.etat === 'paused' ? ' pause' : '');
       st2.textContent = t(m.etat === 'paused' ? 'now.paused' : 'now.playing');
       row.appendChild(chip);
-      row.appendChild(t);
+      row.appendChild(titre);
       row.appendChild(d);
       row.appendChild(st2);
       row.addEventListener('click', (e) => {
@@ -1935,7 +1980,6 @@ function renderLive() {
       addRow(t('home.vacuum'), VAC_FR[VACUUM.state] || VACUUM.state);
     }
   }
-  $('featured').classList.toggle('solo', !home);
 
   /* santé serveurs + réseau — HA + connexions directes (le direct prime) */
   const baseSrv = CONN === 'ok' ? SRV : [];
@@ -1948,6 +1992,7 @@ function renderLive() {
      cette même machine (Atrium installé sur le NAS), les deux cartes n'en font
      qu'une : mesures locales pour le processeur et la mémoire, données de
      l'intégration pour ce qu'elle seule connaît (la grappe, par exemple). */
+  COCK_HOTE = null;
   if (HOTE) {
     const rows = [];
     if (HOTE.cpu != null) rows.push({ label: 'CPU', v: HOTE.cpu });
@@ -1972,7 +2017,10 @@ function renderLive() {
         const j = Math.floor(HOTE.demarrage.secondes / 86400);
         sous += (sous ? ' · ' : '') + (j >= 1 ? t('host.up.days', { n: j }) : t('host.up.less'));
       }
-      dSrv.unshift({ titre: HOTE.nom || 'Cette machine', rows, hote: true, sous, kind: self ? self.kind : '' });
+      dSrv.unshift({ titre: HOTE.nom || t('host.self'), rows, hote: true, sous, kind: self ? self.kind : '' });
+      /* le cockpit réutilise exactement ces lignes : mesures locales complétées
+         par ce que seule l'intégration connaît, comme la grappe du NAS */
+      COCK_HOTE = { titre: HOTE.nom || t('host.self'), sous, rows };
     }
   }
   let dNet = baseNet.slice();
@@ -2049,11 +2097,70 @@ function renderLive() {
     } else $('health-foot').style.display = 'none';
   } else health.style.display = 'none';
 
+  renderCockpit();
   tickClock();
   renderSetStatus();
   renderModalStatus();
   renderMajPop();
   renderAlertes();
+}
+
+/* ---------- cockpit : tuiles qui n'apparaissent qu'en ayant de quoi dire ---- */
+const NIV_JAUGE = (v) => 's' + (v >= 95 ? 4 : v >= 85 ? 3 : v >= 70 ? 2 : 1);
+
+function renderCockpit() {
+  const srv = $('srv-card');
+  srv.hidden = !COCK_HOTE;
+  if (COCK_HOTE) {
+    $('srv-name').textContent = COCK_HOTE.titre;
+    $('srv-sub').textContent = COCK_HOTE.sous || '';
+    const zone = $('srv-rows');
+    zone.textContent = '';
+    COCK_HOTE.rows.forEach((r) => {
+      if (r.v == null) {
+        const p = clone('tpl-cock-row');
+        p.querySelector('.cr-l').textContent = r.label;
+        p.querySelector('.cr-v').textContent = r.txt;
+        zone.appendChild(p);
+        return;
+      }
+      const g = clone('tpl-cock-jauge');
+      g.querySelector('.cl-l').textContent = r.label;
+      g.querySelector('.cl-v').textContent = r.v + ' %';
+      const barre = g.querySelector('.bar > i');
+      barre.style.width = Math.min(100, r.v) + '%';
+      barre.className = NIV_JAUGE(r.v);
+      if (r.detail) g.title = r.detail;
+      zone.appendChild(g);
+    });
+  }
+
+  /* serveur média : utile dès qu'il se passe quelque chose dessus */
+  const pxApp = appByKind('plex');
+  const n = DIRECT.plexSessions || 0;
+  const px = $('px-card');
+  px.hidden = !(pxApp && n > 0);
+  if (!px.hidden) {
+    $('px-name').textContent = pxApp.nom;
+    $('px-chip').querySelector('.cl').textContent = (pxApp.nom[0] || '▶').toUpperCase();
+    mountLogo($('px-chip'), logoDe(pxApp));
+    $('px-n').textContent = String(n);
+    $('px-u').textContent = t(n > 1 ? 'cock.plays' : 'cock.play');
+    const zone = $('px-rows');
+    zone.textContent = '';
+    const ligne = (lab, val) => {
+      const p = clone('tpl-cock-row');
+      p.querySelector('.cr-l').textContent = lab;
+      p.querySelector('.cr-v').textContent = val;
+      zone.appendChild(p);
+    };
+    if (DIRECT.plexUsers) ligne(t('cock.users'), String(DIRECT.plexUsers));
+    /* le débit total n'est connu que si Tautulli est branché */
+    const tt = appByKind('tautulli');
+    const deb = tt && (STATS[tt.nom] || []).find((s) => s.lab === 'DÉBIT');
+    if (deb) ligne(t('cock.rate'), deb.val);
+    setCardLink(px, pxApp.url);
+  }
 }
 
 /* ---------- supervision ----------
@@ -2396,12 +2503,21 @@ async function pollDirect() {
       });
       DIRECT.plexOk = true;
       DIRECT.err.plex = '';
+      DIRECT.plexSessions = md.length;
+      DIRECT.plexUsers = new Set(md.map((m) => m.User && m.User.title).filter(Boolean)).size;
     } catch (e) {
       PLEX_MEDIAS = [];
+      DIRECT.plexSessions = 0;
+      DIRECT.plexUsers = 0;
       DIRECT.err.plex = String(e.message || e);
       console.warn('Plex direct:', e);
     }
-  } else { PLEX_MEDIAS = []; DIRECT.err.plex = (pxApp ? 'URL ou token manquant' : ''); }
+  } else {
+    PLEX_MEDIAS = [];
+    DIRECT.plexSessions = 0;
+    DIRECT.plexUsers = 0;
+    DIRECT.err.plex = (pxApp ? 'URL ou token manquant' : '');
+  }
   combineMedias();
 
   /* Unraid — GraphQL avec clé API (fiche de l'app Unraid) */
