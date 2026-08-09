@@ -334,11 +334,18 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .add-lab{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif}
 
 /* actions modifier / supprimer */
-.app-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;opacity:0;transition:opacity .15s;z-index:2}
-.app-card:hover .app-actions,.app-actions:focus-within{opacity:1}
-.act-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:var(--sh-1)}
+/* Les commandes n'apparaissent qu'au survol — sauf l'étoile d'un favori, qui
+   est un état de la tuile et doit rester lisible en permanence. */
+.app-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:2}
+.act-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:var(--sh-1);opacity:0;transition:opacity .15s,color .15s,border-color .15s}
+.app-card:hover .act-btn,.app-actions:focus-within .act-btn{opacity:1}
 .act-btn:hover{color:var(--accent);border-color:var(--accent)}
 .act-btn.danger:hover{color:var(--bad);border-color:var(--bad)}
+.act-btn.star.on{opacity:1;color:var(--warn);border-color:var(--warn-border)}
+.act-btn.star.on:hover{color:var(--warn-text);border-color:var(--warn)}
+/* l'étoile permanente ne doit pas recouvrir les pastilles du haut de tuile */
+.app-card.fav .app-top{padding-right:32px}
+.grid.list .app-card.fav .app-top{padding-right:0}
 
 /* list view */
 .grid.list{flex-direction:column;gap:8px}
@@ -703,6 +710,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <div class="cock-rows" id="px-rows"></div>
           </a>
         </div>
+      </section>
+
+      <section class="rise-2" id="sec-fav" hidden>
+        <div class="apps-head">
+          <div class="apps-title">
+            <h2 data-i18n="apps.mine">Mes applications</h2>
+            <span class="n" id="fav-count"></span>
+          </div>
+        </div>
+        <div class="grid" id="fav-grid"></div>
       </section>
 
       <section class="rise-2">
@@ -1185,6 +1202,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-app-card">
   <a href="#" class="card app-card">
     <div class="app-actions">
+      <button class="act-btn star" data-act="fav" title="Mettre en favori">☆</button>
       <button class="act-btn" data-act="edit" title="Modifier">✎</button>
       <button class="act-btn danger" data-act="del" title="Supprimer">✕</button>
     </div>
@@ -1224,7 +1242,7 @@ const SLUGS = { 'Paperless': 'paperless-ngx' };
 const icone = (nom) => 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/' +
   (SLUGS[nom] || nom.toLowerCase().replace(/\s+/g, '-')) + '.svg';
 
-const A = (nom, role, cat) => ({ nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' });
+const A = (nom, role, cat) => ({ nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '', fav: false });
 
 /* Catalogue proposé au premier lancement. Rien n'est imposé : l'utilisateur
    coche ce qu'il possède, et peut repartir d'une liste vide. */
@@ -1307,6 +1325,7 @@ function loadApps() {
       nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
       url: a.url || '', logoUrl: a.logoUrl || '',
       token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
+      type: a.type || '', fav: !!a.fav,
     }));
   } catch (e) { return DEFAUTS.map((a) => ({ ...a })); }
 }
@@ -2344,6 +2363,7 @@ const normApp = (a) => ({
   url: a.url || '', logoUrl: a.logoUrl || '',
   token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
   type: a.type || '',      // intégration choisie explicitement ('' = aucune)
+  fav: !!a.fav,            // épinglée dans « Mes applications »
 });
 const normUser = (u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' });
 
@@ -2614,6 +2634,14 @@ function appCard(app, index) {
   a.querySelector('.app-role').textContent = app.role;
   if (majByName[app.nom]) a.querySelector('.badge-maj').hidden = false;
 
+  const etoile = a.querySelector('.act-btn.star');
+  if (app.fav) {
+    a.classList.add('fav');
+    etoile.classList.add('on');
+    etoile.textContent = '★';
+  }
+  etoile.title = t(app.fav ? 'fav.remove' : 'fav.add');
+
   /* « hors ligne » est déjà dit par le bas de la tuile : le bandeau d'alerte
      ne sert qu'à signaler ce que l'on ne verrait pas autrement. */
   const souci = alertesDe(app.nom).filter((x) => x.code !== 'hors_ligne');
@@ -2677,7 +2705,8 @@ function appCard(app, index) {
     if (act) {
       e.preventDefault();
       e.stopPropagation();
-      if (act.dataset.act === 'edit') openAppModal(index);
+      if (act.dataset.act === 'fav') basculerFavori(index);
+      else if (act.dataset.act === 'edit') openAppModal(index);
       else openDelModal(index);
       return;
     }
@@ -2686,10 +2715,18 @@ function appCard(app, index) {
   return a;
 }
 
+/* Le favori est une propriété de l'application, comme sa catégorie : il suit
+   la configuration partagée, donc tous les appareils voient la même sélection. */
+function basculerFavori(index) {
+  const a = apps[index];
+  if (!a) return;
+  a.fav = !a.fav;
+  saveApps();
+  renderApps();
+  toast(t(a.fav ? 'fav.added' : 'fav.removed', { nom: a.nom }));
+}
+
 function renderApps() {
-  const grid = $('apps-grid');
-  grid.className = 'grid' + (view === 'list' ? ' list' : '');
-  grid.textContent = '';
   const q = query.trim().toLowerCase();
   const shown = [];
   apps.forEach((a, i) => {
@@ -2698,6 +2735,20 @@ function renderApps() {
       shown.push([a, i]);
     }
   });
+
+  /* mes applications : les favoris, filtrés comme le reste */
+  const favs = shown.filter(([a]) => a.fav);
+  const secFav = $('sec-fav');
+  const fgrid = $('fav-grid');
+  secFav.hidden = !favs.length;
+  fgrid.className = 'grid' + (view === 'list' ? ' list' : '');
+  fgrid.textContent = '';
+  $('fav-count').textContent = favs.length;
+  favs.forEach(([app, i]) => fgrid.appendChild(appCard(app, i)));
+
+  const grid = $('apps-grid');
+  grid.className = 'grid' + (view === 'list' ? ' list' : '');
+  grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
   shown.forEach(([app, i]) => grid.appendChild(appCard(app, i)));
@@ -2867,6 +2918,7 @@ $('m-save').addEventListener('click', () => {
     token: prev.token || '',
     apiKey: prev.apiKey || '',
     tempEntity: prev.tempEntity || '',
+    fav: !!prev.fav,
   };
   /* kindOfApp et non app.type : une fiche ancienne, sans type enregistré,
      perdrait sa clé à l'enregistrement. */
