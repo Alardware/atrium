@@ -601,12 +601,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     # ---------- configuration ----------
     def cfg_get(self):
-        try:
-            with open(CONFIG_FILE, "rb") as f:
-                data = f.read()
-        except OSError:
-            data = b"{}"
-        self.reply(200, data)
+        """La configuration, empreintes de mots de passe retirees.
+
+        L'interface a seulement besoin de savoir si un profil est protege, pas
+        de son empreinte. Les envoyer permettrait a n'importe quelle session
+        d'emporter celle des autres comptes et de l'attaquer hors ligne."""
+        cfg = charger_config()
+        for u in (cfg.get("users") or []):
+            u["pwd"] = "1" if u.get("pwd") else ""
+        self.reply(200, json.dumps(cfg, ensure_ascii=False).encode())
 
     def cfg_post(self):
         recu = self.json_recu()

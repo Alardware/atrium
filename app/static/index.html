@@ -103,7 +103,6 @@ template{display:none}
 .srv-sub{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);margin-top:-4px}
 .srv-head{display:flex;align-items:center;gap:7px}
 .srv-name{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
-.srv-src{margin-left:auto;font:500 9px/1 'IBM Plex Mono',monospace;color:var(--muted-2);padding:2.5px 6px;border:1px solid var(--border);border-radius:99px}
 .logo-chip.s18{width:18px;height:18px;border-radius:5px;font-size:8px}
 .logo-chip.s18 img{width:12px;height:12px}
 
@@ -201,8 +200,6 @@ template{display:none}
 
 /* ---- content ---- */
 .content{padding:26px 28px 40px;display:flex;flex-direction:column;gap:26px}
-.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
-.section-head h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
 .rise-1{animation:rise .45s cubic-bezier(.2,.7,.3,1) both}
 .rise-2{animation:rise .5s .06s cubic-bezier(.2,.7,.3,1) both}
 
@@ -442,8 +439,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .field input:focus,.field select:focus{border-color:var(--accent)}
 .field input.err{border-color:var(--bad)}
 .field .hint{font:500 11px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted);letter-spacing:0;text-transform:none}
-.name-row{display:flex;gap:10px;align-items:flex-end}
-.name-row .field{flex:1}
 
 /* fiche application : blocs uniformes pour toutes les intégrations */
 .mblock{border:1px solid var(--border);border-radius:11px;background:var(--surface-2);overflow:hidden}
@@ -625,7 +620,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .conn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .conn-row .cr-nom{flex:1;min-width:0;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .conn-row .cr-st{font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
-.sfoot{display:flex;justify-content:flex-end;gap:9px}
 .about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .sec-l{display:flex;gap:11px;align-items:flex-start}
 .sec-l + .sec-l{padding-top:14px;border-top:1px solid var(--divider)}
@@ -755,7 +749,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <span class="kbd">⌘K</span>
       </label>
       <div class="top-right">
-        <div class="pill-warn" id="pill-maj" style="display:none" title="Voir les mises à jour">
+        <div class="pill-warn" id="pill-maj" style="display:none" data-i18n-title="ti.updates" title="Voir les mises à jour">
           <span class="dot"></span><span id="maj-label"></span>
           <div class="maj-pop" id="maj-pop" hidden></div>
         </div>
@@ -771,13 +765,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <div id="al-list"></div>
           </div>
         </div>
-        <button class="theme-btn" id="theme-btn" title="Basculer le thème"><span class="ti" id="theme-ico"></span><span id="theme-lab"></span></button>
+        <button class="theme-btn" id="theme-btn" data-i18n-title="ti.theme" title="Basculer le thème"><span class="ti" id="theme-ico"></span><span id="theme-lab"></span></button>
         <div class="clock">
           <div class="clock-time" id="clock-time">–:–</div>
           <div class="clock-sub" id="clock-sub"></div>
         </div>
         <div class="av-wrap" id="av-wrap">
-          <button class="avatar" id="avatar" title="Compte">A</button>
+          <button class="avatar" id="avatar" data-i18n-title="ti.account" title="Compte">A</button>
           <div class="av-menu" id="av-menu" hidden>
             <div class="av-head">
               <span class="u-avatar" id="avm-av">A</span>
@@ -966,7 +960,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <label for="m-key" id="m-key-label" data-i18n="f.key">Clé API ou jeton</label>
             <span class="pwd-wrap">
               <input id="m-key" type="password" data-i18n-ph="f.key.ph" placeholder="facultatif" autocomplete="off">
-              <button class="pwd-eye" id="m-key-eye" type="button">👁</button>
+              <button class="pwd-eye" id="m-key-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher le mot de passe">👁</button>
             </span>
           </div>
           <div class="field" id="f-temp" hidden>
@@ -1149,14 +1143,14 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 <label for="p-anc" data-i18n="pwd.current">Mot de passe actuel</label>
                 <span class="pwd-wrap">
                   <input id="p-anc" type="password" autocomplete="current-password">
-                  <button class="pwd-eye" id="p-anc-eye" type="button" title="Afficher">👁</button>
+                  <button class="pwd-eye" id="p-anc-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
                 </span>
               </div>
               <div class="field">
                 <label for="p-pwd" data-i18n="pwd.new">Nouveau mot de passe</label>
                 <span class="pwd-wrap">
                   <input id="p-pwd" type="password" autocomplete="new-password">
-                  <button class="pwd-eye" id="p-pwd-eye" type="button" title="Afficher">👁</button>
+                  <button class="pwd-eye" id="p-pwd-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
                 </span>
                 <div class="pwd-meter" id="p-meter" hidden>
                   <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
@@ -1167,7 +1161,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 <label for="p-pwd2" data-i18n="pwd.confirm">Confirmer le nouveau mot de passe</label>
                 <span class="pwd-wrap">
                   <input id="p-pwd2" type="password" autocomplete="new-password">
-                  <button class="pwd-eye" id="p-pwd2-eye" type="button" title="Afficher">👁</button>
+                  <button class="pwd-eye" id="p-pwd2-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
                 </span>
               </div>
             </div>
@@ -1362,14 +1356,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               </span>
             </div>
             <div class="opt-row">
-              <span class="opt-tx"><b data-i18n="look.anim">Animations</b>
+              <span class="opt-tx"><b id="lb-anim" data-i18n="look.anim">Animations</b>
                 <span data-i18n="look.anim.d">Transitions et apparitions.</span></span>
-              <button class="bouton-bascule" id="look-anim" type="button" role="switch"></button>
+              <button class="bouton-bascule" id="look-anim" type="button" role="switch"
+                      aria-labelledby="lb-anim"></button>
             </div>
             <div class="opt-row">
-              <span class="opt-tx"><b data-i18n="look.stats">Chiffres sur les tuiles</b>
+              <span class="opt-tx"><b id="lb-stats" data-i18n="look.stats">Chiffres sur les tuiles</b>
                 <span data-i18n="look.stats.d">Lectures, files d'attente, charge… remontés par chaque service.</span></span>
-              <button class="bouton-bascule" id="look-stats" type="button" role="switch"></button>
+              <button class="bouton-bascule" id="look-stats" type="button" role="switch"
+                      aria-labelledby="lb-stats"></button>
             </div>
           </div>
         </div>
@@ -1407,7 +1403,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <section class="spanel sp-inner" id="sp-about" hidden>
         <div class="sp-head">
           <div class="sp-title" data-i18n="set.about">À propos</div>
-          <div class="sp-lead" id="about-lead">Atrium <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.</div>
+          <div class="sp-lead" id="about-lead"></div>
         </div>
         <div class="scard">
           <h4 data-i18n="about.checks">Vérifications</h4>
@@ -1464,7 +1460,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <label for="su-pwd" data-i18n="setup.pwd">Mot de passe</label>
         <span class="pwd-wrap">
           <input id="su-pwd" type="password" data-i18n-ph="setup.pwd.ph" placeholder="au moins 6 caractères" autocomplete="new-password">
-          <button class="pwd-eye" id="su-pwd-eye" type="button">👁</button>
+          <button class="pwd-eye" id="su-pwd-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher le mot de passe">👁</button>
         </span>
         <div class="pwd-meter" id="su-meter" hidden>
           <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
@@ -1560,10 +1556,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 </template>
 <template id="tpl-wbar">
   <div class="wbar">
-    <button class="poignee" data-w="glisser" title="Déplacer">⠿</button>
-    <button data-w="gauche" title="Vers la gauche">◄</button>
-    <button data-w="droite" title="Vers la droite">►</button>
-    <button class="ret" data-w="retirer" title="Retirer">✕</button>
+    <button class="poignee" data-w="glisser" data-i18n-title="ti.move" title="Déplacer">⠿</button>
+    <button data-w="gauche" data-i18n-title="ti.left" title="Vers la gauche">◄</button>
+    <button data-w="droite" data-i18n-title="ti.right" title="Vers la droite">►</button>
+    <button class="ret" data-w="retirer" data-i18n-title="btn.remove" title="Retirer">✕</button>
   </div>
 </template>
 <template id="tpl-qitem">
@@ -1638,10 +1634,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-app-card">
   <a href="#" class="card app-card">
     <div class="app-actions">
-      <button class="act-btn star" data-act="fav" title="Mettre en favori">☆</button>
-      <button class="act-btn" data-act="menu" title="Actions">⋮</button>
-      <button class="act-btn" data-act="edit" title="Modifier">✎</button>
-      <button class="act-btn danger" data-act="del" title="Supprimer">✕</button>
+      <button class="act-btn star" data-act="fav" data-i18n-title="fav.add" title="Mettre en favori">☆</button>
+      <button class="act-btn" data-act="menu" data-i18n-title="ti.actions" title="Actions">⋮</button>
+      <button class="act-btn" data-act="edit" data-i18n-title="ti.edit" title="Modifier">✎</button>
+      <button class="act-btn danger" data-act="del" data-i18n-title="btn.delete" title="Supprimer">✕</button>
     </div>
     <div class="app-top">
       <span class="logo-chip s40"><span class="cl"></span></span>
@@ -1951,17 +1947,19 @@ function lirePhoto(file) {
 
 let toastTimer = null;
 function toast(msg) {
-  let t = $('toast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'toast';
-    t.className = 'toast';
-    document.body.appendChild(t);
+  /* ne jamais nommer une variable « t » ici : elle masquerait la fonction de
+     traduction du même nom, et l'erreur ne se voit qu'à l'exécution */
+  let el = $('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    document.body.appendChild(el);
   }
-  t.textContent = msg;
-  t.hidden = false;
+  el.textContent = msg;
+  el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2600);
 }
 
 let theme = store.get('theme', 'light');   // dark | light | auto
@@ -2083,9 +2081,9 @@ function tickClock() {
   $('clock-time').textContent = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   let sub = now.toLocaleDateString('fr-FR', { weekday: 'long' });
   if (WEATHER) {
-    const t = (WEATHER.attributes || {}).temperature;
+    const deg = (WEATHER.attributes || {}).temperature;
     const lbl = WX_FR[WEATHER.state] || WEATHER.state;
-    if (t != null) sub += ' · ' + Math.round(t) + '° ' + lbl;
+    if (deg != null) sub += ' · ' + Math.round(deg) + '° ' + lbl;
   }
   $('clock-sub').textContent = sub;
 }
@@ -2214,13 +2212,14 @@ function derive() {
 
   const haApp = appByKind('ha');
   const tset = haApp ? haApp.tempEntity.trim() : '';
-  let t = tset ? S.find((s) => s.entity_id === tset) : null;
-  if (!t) {
+  let capteur = tset ? S.find((s) => s.entity_id === tset) : null;
+  if (!capteur) {
     const temps = S.filter((s) => s.entity_id.startsWith('sensor.') &&
       attr(s).device_class === 'temperature' && !isNaN(parseFloat(s.state)));
-    t = temps.find((s) => (s.entity_id + (attr(s).friendly_name || '')).toLowerCase().includes('salon')) || temps[0] || null;
+    capteur = temps.find((s) => (s.entity_id + (attr(s).friendly_name || '')).toLowerCase().includes('salon')) || temps[0] || null;
   }
-  TEMP_IN = t && !isNaN(parseFloat(t.state)) ? { v: Math.round(parseFloat(t.state)), nom: attr(t).friendly_name || 'intérieur' } : null;
+  TEMP_IN = capteur && !isNaN(parseFloat(capteur.state))
+    ? { v: Math.round(parseFloat(capteur.state)), nom: attr(capteur).friendly_name || 'intérieur' } : null;
   WEATHER = S.find((s) => s.entity_id.startsWith('weather.') && s.state !== 'unavailable') || null;
 
   /* santé multi-serveurs : Home Assistant + Unraid (auto-détection d'entités) */
@@ -2439,7 +2438,7 @@ function renderLive() {
     MEDIAS.slice(1, 5).forEach((m) => {
       const row = document.createElement('div');
       row.className = 'np-mrow';
-      row.title = 'Afficher en grand';
+      row.title = t('now.pin');
       /* miniature : pochette du flux > logo de l'app > glyphe par type */
       const chip = document.createElement('span');
       chip.className = 'pchip';
@@ -2528,7 +2527,7 @@ function renderLive() {
     $('ha-loc').appendChild(l1);
     if (wt != null) {
       const l2 = document.createElement('div');
-      l2.textContent = 'dehors ' + Math.round(wt) + '°';
+      l2.textContent = t('home.outside', { t: Math.round(wt) });
       $('ha-loc').appendChild(l2);
     }
   }
@@ -2661,7 +2660,8 @@ function renderLive() {
     if (BOOT && CONN === 'ok') {
       const days = Math.floor((Date.now() - Date.parse(BOOT.state)) / 86400000);
       $('health-foot').style.display = '';
-      $('health-foot').textContent = 'Allumé depuis ' + (days < 1 ? "moins d'un jour" : days + ' jour' + (days > 1 ? 's' : ''));
+      $('health-foot').textContent = days >= 1
+        ? t('host.up.days', { n: days }) : t('host.up.less');
     } else $('health-foot').style.display = 'none';
   } else health.style.display = 'none';
 
@@ -4464,18 +4464,6 @@ $('d-confirm').addEventListener('click', () => {
 });
 
 /* ---------- modale réglages ---------- */
-function haStatusInto(el) {
-  if (CONN === 'ok') {
-    el.className = 'conn-status ok';
-    el.querySelector('.lbl').textContent = 'Home Assistant connecté — ' + STATES.length + ' entités';
-  } else if (CONN === 'error') {
-    el.className = 'conn-status bad';
-    el.querySelector('.lbl').textContent = 'Erreur HA : ' + CONN_ERR;
-  } else {
-    el.className = 'conn-status na';
-    el.querySelector('.lbl').textContent = 'HA non connecté — token manquant';
-  }
-}
 function renderSetStatus() { renderConnPanel(); }
 /* le statut de la fiche reflète le dernier test lancé par l'utilisateur :
    il n'est plus écrasé par les relevés périodiques */
@@ -4672,13 +4660,23 @@ async function renderAPropos() {
     const r = await relayFetch('/api/diagnostic', { cache: 'no-store' });
     if (r.ok) d = await r.json();
   } catch (e) { /* rien : on l'annonce ci-dessous */ }
+  /* l'entête ne dépend pas du diagnostic : sans lui, la page garde son titre */
+  const tete = $('about-lead');
+  tete.textContent = '';
+  const av = document.createElement('span');
+  av.id = 'about-ver';
+  av.textContent = d ? d.version : '—';
+  const parts = t('about.lead').split('{v}');
+  tete.appendChild(document.createTextNode(parts[0]));
+  tete.appendChild(av);
+  tete.appendChild(document.createTextNode(parts[1] || ''));
+
   if (!d) {
     const v = clone('tpl-empty');
     v.textContent = t('about.fail');
     checks.appendChild(v);
     return;
   }
-  $('about-ver').textContent = d.version;
   const ligne = (cle, ok, detail) => {
     const r = document.createElement('div');
     r.className = 'etat-row';
