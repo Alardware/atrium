@@ -136,7 +136,44 @@ def _seuil(valeur, table):
     return None
 
 
-def evaluer(apps, hote, maj, erreurs_integration):
+# Pastilles exprimees en pourcentage qui meritent les memes seuils que l hote :
+# la grappe d un NAS remplie a 95 % doit alerter, meme si Atrium tourne sur un
+# autre volume. La charge processeur en est exclue : un pic est normal.
+LABELS_SURVEILLES = {
+    "DISQUE": ("disque", SEUILS_DISQUE),
+    "STOCKAGE": ("disque", SEUILS_DISQUE),
+    "RAM": ("ram", SEUILS_CHARGE),
+    "MÉMOIRE": ("ram", SEUILS_CHARGE),
+}
+
+
+def _evaluer_tuiles(tuiles):
+    vus = set()
+    for service, pastilles in (tuiles or {}).items():
+        for p in pastilles:
+            surveille = LABELS_SURVEILLES.get((p.get("lab") or "").upper())
+            val = (p.get("val") or "").strip()
+            if not surveille or not val.endswith("%"):
+                continue
+            try:
+                pc = int(float(val[:-1].strip().replace(",", ".")))
+            except ValueError:
+                continue
+            code, table = surveille
+            cle = "pct:%s:%s" % (service, code)
+            vus.add(cle)
+            niveau = _seuil(pc, table)
+            if niveau:
+                _poser(cle, niveau, service, code,
+                       "%s à %d %%" % (p.get("lab"), pc), {"pc": pc})
+            else:
+                _lever(cle)
+    for cle in [c for c in list(_alertes) if c.startswith("pct:")]:
+        if cle not in vus:
+            _lever(cle)
+
+
+def evaluer(apps, hote, maj, erreurs_integration, tuiles=None):
     """Recalcule l ensemble des alertes a partir de ce que le serveur sait."""
     noms = {a.get("nom") for a in apps if a.get("nom")}
 
@@ -182,6 +219,8 @@ def evaluer(apps, hote, maj, erreurs_integration):
                {"n": maj})
     else:
         _lever("maj")
+
+    _evaluer_tuiles(tuiles)
     return alertes()
 
 

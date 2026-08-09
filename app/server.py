@@ -92,10 +92,16 @@ def _collecter():
 
     tuiles, erreurs, maj = {}, {}, 0
     for a in apps:
-        nom, type_service, url = a.get("nom"), a.get("type") or "", a.get("url") or ""
+        nom, url = a.get("nom"), a.get("url") or ""
+        # Les fiches creees avant la detection automatique n'ont pas de type :
+        # leur nom sert alors d'indice, faute de quoi elles resteraient muettes.
+        type_service = a.get("type") or services.deviner_type(nom)
         if not nom or not url or not host_allowed(url):
             continue
-        cle = a.get("token") if type_service == "ha" else a.get("apiKey")
+        # Home Assistant range son jeton dans « token », les autres dans
+        # « apiKey » ; les fiches anciennes melangent les deux.
+        cle = (a.get("token") or a.get("apiKey")) if type_service == "ha" \
+            else (a.get("apiKey") or a.get("token"))
         if type_service == "ha" and cle:
             n = widgets.maj_ha(url, cle)
             if n:
@@ -122,7 +128,7 @@ def _collecter():
                 erreurs[nom] = "Service joignable, données refusées : vérifiez la clé d'API"
 
     _releve.update(widgets=tuiles, hote=hote, maj=maj, a=time.time())
-    supervision.evaluer(apps, hote, maj, erreurs)
+    supervision.evaluer(apps, hote, maj, erreurs, tuiles)
 
 
 def boucle_collecte():

@@ -5,9 +5,12 @@ d oeil, pas un tableau de bord miniature. Chaque fonction renvoie une liste
 [{"lab": "MOVIES", "val": "634"}] ou None.
 """
 import json
+import re
 import urllib.parse
 
 from services import _chemin, _http, _json
+
+_PASSERELLE = re.compile(r"udm|uxg|ucg|usg|gateway|dream", re.I)
 
 
 def _n(v):
@@ -241,19 +244,22 @@ def _gabarit_ha(base, cle, gabarit):
 
 
 def w_ha(base, cle):
-    """Ce qui merite un regard dans la maison : entites muettes et
-    automatisations desactivees."""
+    """Etat de la maison : appareils presents, entites muettes, automatisations
+    desactivees. Les deux dernieres ne s affichent que si elles ne sont pas
+    nulles — une maison qui va bien n a pas besoin de deux zeros."""
     if not cle:
         return None
     rep = _gabarit_ha(base, cle,
+                      "{{ states.device_tracker | selectattr('state','eq','home')"
+                      " | list | count }}|"
                       "{{ states | selectattr('state','in',['unavailable','unknown'])"
                       " | list | count }}|"
                       "{{ states.automation | selectattr('state','eq','off')"
                       " | list | count }}")
-    if not rep or "|" not in rep:
+    if not rep or rep.count("|") != 2:
         return None
     try:
-        muettes, arretees = (int(x) for x in rep.split("|", 1))
+        presents, muettes, arretees = (int(x) for x in rep.split("|"))
     except ValueError:
         return None
     stats = []
@@ -261,6 +267,93 @@ def w_ha(base, cle):
         stats.append({"lab": "INDISPO", "val": _n(muettes)})
     if arretees:
         stats.append({"lab": "AUTOM. OFF", "val": _n(arretees)})
+    if presents:
+        stats.append({"lab": "PRÉSENTS", "val": _n(presents)})
+    return stats or None
+
+
+def w_unraid(base, cle):
+    """Charge du NAS, lue par l API GraphQL d Unraid."""
+    if not cle:
+        return None
+    corps = json.dumps({"query": "{ metrics { cpu { percentTotal } "
+                                 "memory { percentTotal } } "
+                                 "array { capacity { kilobytes { used total } } } }"}).encode()
+    code, rep, _ = _http(base + "/graphql",
+                         {"x-api-key": cle, "Content-Type": "application/json"},
+                         "POST", corps)
+    d = _chemin(_json(rep), "data")
+    if code != 200 or not isinstance(d, dict):
+        return None
+    stats = []
+    cpu = _chemin(d, "metrics", "cpu", "percentTotal")
+    if cpu is not None:
+        stats.append({"lab": "CPU", "val": "%d %%" % round(float(cpu))})
+    mem = _chemin(d, "metrics", "memory", "percentTotal")
+    if mem is not None:
+        stats.append({"lab": "RAM", "val": "%d %%" % round(float(mem))})
+    cap = _chemin(d, "array", "capacity", "kilobytes") or {}
+    try:
+        total = float(cap.get("total") or 0)
+        if total > 0:
+            stats.append({"lab": "DISQUE",
+                          "val": "%d %%" % round(float(cap.get("used") or 0) * 100 / total)})
+    except (TypeError, ValueError):
+        pass
+    return stats or None
+
+
+# La racine de l API et l identifiant du site ne changent pas : les retenir
+# evite deux appels par cycle.
+_UNIFI = {}
+
+
+def _unifi_api(base, entetes):
+    memo = _UNIFI.get(base)
+    if memo:
+        return memo
+    for racine in (base + "/proxy/network/integration/v1", base + "/integration/v1"):
+        code, rep, _ = _http(racine + "/sites", entetes)
+        if code != 200:
+            continue
+        sites = (_json(rep) or {}).get("data") or []
+        if sites and sites[0].get("id"):
+            _UNIFI[base] = (racine, sites[0]["id"])
+            return _UNIFI[base]
+    return None
+
+
+def w_unifi(base, cle):
+    """Reseau : clients connectes et charge de la passerelle."""
+    if not cle:
+        return None
+    entetes = {"X-API-KEY": cle, "Accept": "application/json"}
+    api = _unifi_api(base, entetes)
+    if not api:
+        return None
+    racine, site = api
+    stats = []
+    code, rep, _ = _http("%s/sites/%s/clients?limit=1" % (racine, site), entetes)
+    if code == 401 or code == 403:
+        _UNIFI.pop(base, None)     # cle changee : on refera la decouverte
+        return None
+    n = (_json(rep) or {}).get("totalCount") if code == 200 else None
+    if n is not None:
+        stats.append({"lab": "CLIENTS", "val": _n(n)})
+
+    code, rep, _ = _http("%s/sites/%s/devices?limit=200" % (racine, site), entetes)
+    liste = (_json(rep) or {}).get("data") or [] if code == 200 else []
+    passerelle = next((d for d in liste if _PASSERELLE.search(
+        (d.get("model") or "") + " " + (d.get("name") or ""))), None) or (liste[0] if liste else None)
+    if passerelle and passerelle.get("id"):
+        code, rep, _ = _http("%s/sites/%s/devices/%s/statistics/latest"
+                             % (racine, site, passerelle["id"]), entetes)
+        st = _json(rep) if code == 200 else None
+        if isinstance(st, dict):
+            if st.get("cpuUtilizationPct") is not None:
+                stats.append({"lab": "CPU", "val": "%d %%" % round(float(st["cpuUtilizationPct"]))})
+            if st.get("memoryUtilizationPct") is not None:
+                stats.append({"lab": "RAM", "val": "%d %%" % round(float(st["memoryUtilizationPct"]))})
     return stats or None
 
 
@@ -295,6 +388,8 @@ REGISTRE = {
     "paperless": w_paperless,
     "nextcloud": w_nextcloud,
     "ha": w_ha,
+    "unraid": w_unraid,
+    "unifi": w_unifi,
 }
 
 

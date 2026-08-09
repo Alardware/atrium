@@ -558,6 +558,30 @@ def joignable(base):
     return 0
 
 
+# Repli quand une fiche n a pas de type enregistre (application ajoutee avant
+# la detection automatique) : le nom donne une piste. Une devinette fausse ne
+# coute rien, l appel echoue et la tuile reste simplement sans chiffres.
+NOMS_CONNUS = (
+    ("home assistant", "ha"), ("hassio", "ha"), ("hass", "ha"),
+    ("unraid", "unraid"), ("unifi", "unifi"), ("plex", "plex"),
+    ("jellyfin", "jellyfin"), ("emby", "jellyfin"), ("tautulli", "tautulli"),
+    ("sonarr", "sonarr"), ("radarr", "radarr"), ("lidarr", "lidarr"),
+    ("readarr", "readarr"), ("whisparr", "whisparr"), ("prowlarr", "prowlarr"),
+    ("bazarr", "bazarr"), ("sabnzbd", "sabnzbd"), ("qbittorrent", "qbittorrent"),
+    ("adguard", "adguard"), ("pi-hole", "pihole"), ("pihole", "pihole"),
+    ("portainer", "portainer"), ("uptime kuma", "uptimekuma"),
+    ("immich", "immich"), ("paperless", "paperless"), ("nextcloud", "nextcloud"),
+)
+
+
+def deviner_type(nom):
+    n = (nom or "").strip().lower()
+    for motif, ident in NOMS_CONNUS:
+        if motif in n:
+            return ident
+    return ""
+
+
 def identifier(url, cle=""):
     """Sonde l URL et renvoie le service reconnu."""
     base = (url or "").strip().rstrip("/")

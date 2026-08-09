@@ -310,6 +310,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-on[hidden],.badge-off[hidden],.badge-na[hidden]{display:none}
 .badge-on .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--ok-text);opacity:.7}
 .badge-on .lat:empty{display:none}
+.app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+.app-foot{flex-wrap:wrap;row-gap:7px}
+.app-seen:empty{display:none}
 .badge-alert{margin-left:auto;padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
 .add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
@@ -1156,6 +1159,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <span class="badge-on" hidden><span class="dot"></span><span data-i18n="app.online">en ligne</span><span class="lat"></span></span>
       <span class="badge-off" hidden><span class="dot"></span><span data-i18n="app.offline">hors ligne</span></span>
       <span class="badge-na" hidden><span class="dot"></span><span class="lbl">vérification…</span></span>
+      <span class="app-seen"></span>
     </div>
   </a>
 </template>
@@ -2099,6 +2103,26 @@ function age(depuis) {
   return t('age.day', { n: Math.floor(s / 86400) });
 }
 
+/* Forme courte, pour la place étroite du pied de tuile : « 12 s », « 4 min ». */
+function ageCourt(depuis) {
+  const s = Math.max(0, Math.round(Date.now() / 1000 - depuis));
+  if (s < 90) return s + ' s';
+  if (s < 5400) return Math.round(s / 60) + ' min';
+  return Math.round(s / 3600) + ' h';
+}
+
+/* Les durées affichées vieillissent entre deux relevés : on les rafraîchit
+   seules, sans reconstruire la grille. */
+function majAges() {
+  document.querySelectorAll('[data-vu]').forEach((el) => {
+    el.textContent = t('app.seen', { q: ageCourt(Number(el.dataset.vu)) });
+  });
+  document.querySelectorAll('.al-age[data-depuis]').forEach((el) => {
+    el.textContent = age(Number(el.dataset.depuis));
+  });
+}
+setInterval(majAges, 10000);
+
 function renderAlertes() {
   const res = SUPER.alertes;
   const rang = { info: 0, surveillance: 1, avertissement: 2, critique: 3 };
@@ -2123,7 +2147,9 @@ function renderAlertes() {
     row.className = 'al-row ' + a.niveau + (a.lue ? '' : ' neuf');
     row.querySelector('.al-srv').textContent = a.service;
     row.querySelector('.al-msg').textContent = texteAlerte(a);
-    row.querySelector('.al-age').textContent = age(a.depuis);
+    const vieux = row.querySelector('.al-age');
+    vieux.dataset.depuis = a.depuis;
+    vieux.textContent = age(a.depuis);
     liste.appendChild(row);
   });
 
@@ -2481,12 +2507,18 @@ function appCard(app, index) {
 
   const etat = SUPER.etats[app.nom];
   const st = statusByName[app.nom];
+  if (etat && etat.vu_a) {
+    const vu = a.querySelector('.app-seen');
+    vu.dataset.vu = etat.vu_a;
+    vu.title = t('app.seen.t');
+    vu.textContent = t('app.seen', { q: ageCourt(etat.vu_a) });
+  }
   if (st === true) {
     const on = a.querySelector('.badge-on');
     on.hidden = false;
     if (etat && etat.latence_ms != null) {
       on.querySelector('.lat').textContent = etat.latence_ms + ' ms';
-      on.title = t('app.checked', { q: age(etat.vu_a) });
+      on.title = t('app.moy', { n: etat.latence_moy });
     }
   } else if (st === false) {
     const off = a.querySelector('.badge-off');
@@ -2718,7 +2750,9 @@ $('m-save').addEventListener('click', () => {
     apiKey: prev.apiKey || '',
     tempEntity: prev.tempEntity || '',
   };
-  const kind = app.type;
+  /* kindOfApp et non app.type : une fiche ancienne, sans type enregistré,
+     perdrait sa clé à l'enregistrement. */
+  const kind = kindOfApp(app);
   const key = $('m-key').value.trim();
   if (kind === 'ha') {
     app.token = key;
