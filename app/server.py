@@ -11,6 +11,7 @@ Variables d'environnement :
   ATRIUM_ALLOW_NET   prefixes reseau autorises pour le relais, separes par des
                      virgules (defaut : reseaux prives RFC1918 + loopback)
 """
+import hashlib
 import http.cookies
 import http.server
 import json
@@ -31,6 +32,7 @@ import supervision
 import systeme
 import widgets
 
+VERSION = "1.0.0"
 PORT = int(os.environ.get("ATRIUM_PORT", "8420"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
@@ -220,6 +222,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except OSError:
             pass
 
+    def jeton_courant(self):
+        brut = self.headers.get("Cookie")
+        if not brut:
+            return None
+        try:
+            c = http.cookies.SimpleCookie(brut)
+        except http.cookies.CookieError:
+            return None
+        m = c.get(auth.COOKIE)
+        return m.value if m else None
+
     def session_user(self):
         brut = self.headers.get("Cookie")
         if not brut:
@@ -280,6 +293,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/supervision":
             if self.exiger_session():
                 self.supervision_get()
+        elif route == "/api/sessions":
+            if self.exiger_session():
+                self.sessions_get()
+        elif route == "/api/diagnostic":
+            if self.exiger_session():
+                self.diagnostic_get()
         elif route == "/api/conteneurs":
             if self.exiger_session():
                 self.reply(200, json.dumps({"docker": conteneurs.disponible(),
@@ -320,6 +339,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if self.exiger_session():
                 supervision.marquer_lues()
                 self.reply(200, b'{"ok":true}')
+        elif route == "/api/sessions/revoquer":
+            if self.exiger_session():
+                self.sessions_revoquer()
         elif route == "/api/sonder":
             if self.exiger_session():
                 self.sonder_maintenant()
@@ -380,6 +402,56 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         code = 200 if ok else (503 if "socket" in msg else 502)
         self.reply(code, json.dumps({"ok": ok, "error": msg}, ensure_ascii=False).encode())
 
+    def sessions_get(self):
+        """Sessions ouvertes du compte courant. Le jeton n'est jamais renvoye :
+        seule une empreinte courte, qui suffit a distinguer les lignes."""
+        courant = self.session_user()
+        actuel = self.jeton_courant()
+        sortie = []
+        for s in SESSIONS.lister(courant):
+            sortie.append({
+                "id": hashlib.sha256(s["jeton"].encode()).hexdigest()[:12],
+                "actuelle": s["jeton"] == actuel,
+                "agent": s.get("agent", ""),
+                "ip": s.get("ip", ""),
+                "cree": s.get("cree", 0),
+                "vue": s.get("vue", 0),
+                "exp": s.get("exp", 0),
+            })
+        self.reply(200, json.dumps({"utilisateur": courant, "sessions": sortie},
+                                   ensure_ascii=False).encode())
+
+    def sessions_revoquer(self):
+        n = SESSIONS.revoquer_autres(self.jeton_courant(), self.session_user())
+        self.reply(200, json.dumps({"ok": True, "fermees": n}).encode())
+
+    def diagnostic_get(self):
+        """Verifications de bon fonctionnement, telles qu'Atrium les constate."""
+        cfg = charger_config()
+        inscriptible = False
+        try:
+            sonde = os.path.join(CONFIG_DIR, ".ecriture")
+            with open(sonde, "w") as f:
+                f.write("ok")
+            os.remove(sonde)
+            inscriptible = True
+        except OSError:
+            pass
+        apps = cfg.get("apps") or []
+        etats = supervision.etats()
+        joignables = sum(1 for a in apps if (etats.get(a.get("nom")) or {}).get("en_ligne"))
+        avec_url = sum(1 for a in apps if (a.get("url") or "").strip())
+        self.reply(200, json.dumps({
+            "version": VERSION,
+            "config": {"ok": inscriptible, "chemin": CONFIG_FILE},
+            "mesures": {"ok": _releve["hote"].get("disponible", False)},
+            "docker": {"ok": conteneurs.disponible()},
+            "services": {"ok": avec_url == 0 or joignables > 0,
+                         "joignables": joignables, "total": avec_url},
+            "releve": _releve["a"],
+            "cycle": CYCLE,
+        }, ensure_ascii=False).encode())
+
     def supervision_get(self):
         """Dernier releve complet : etat et temps de reponse de chaque service,
         mesures de l'hote, tuiles, alertes. Les identifiants restent au serveur,
@@ -432,7 +504,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         LIMITEUR.reussite(cle)
-        jeton = SESSIONS.creer(nom, longue)
+        jeton = SESSIONS.creer(nom, longue, self.headers.get("User-Agent", ""),
+                               self.client_address[0])
         self.reply(200, json.dumps({"ok": True, "utilisateur": nom}, ensure_ascii=False).encode(),
                    cookie=self.cookie_session(jeton, longue))
 
@@ -483,7 +556,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.reply(500, json.dumps({"error": self.msg_ecriture(e)}, ensure_ascii=False).encode())
             return
         SESSIONS.supprimer_utilisateur(cible)  # les autres sessions tombent
-        jeton = SESSIONS.creer(courant, False) if cible == courant else None
+        jeton = SESSIONS.creer(courant, False, self.headers.get("User-Agent", ""),
+                               self.client_address[0]) if cible == courant else None
         self.reply(200, json.dumps({"ok": True}).encode(),
                    cookie=self.cookie_session(jeton, False) if jeton else None)
 
@@ -512,7 +586,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except OSError as e:
             self.reply(500, json.dumps({"error": self.msg_ecriture(e)}, ensure_ascii=False).encode())
             return
-        jeton = SESSIONS.creer(nom, True)
+        jeton = SESSIONS.creer(nom, True, self.headers.get("User-Agent", ""),
+                               self.client_address[0])
         self.reply(200, json.dumps({"ok": True, "utilisateur": nom}, ensure_ascii=False).encode(),
                    cookie=self.cookie_session(jeton, True))
 

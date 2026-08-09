@@ -79,12 +79,17 @@ class Sessions:
         except OSError:
             pass
 
-    def creer(self, utilisateur, longue=False):
+    def creer(self, utilisateur, longue=False, agent="", ip=""):
         jeton = secrets.token_urlsafe(32)
+        maintenant = time.time()
         with self.lock:
             self.data[jeton] = {
                 "user": utilisateur,
-                "exp": time.time() + (SESSION_TTL if longue else SESSION_TTL_COURT),
+                "exp": maintenant + (SESSION_TTL if longue else SESSION_TTL_COURT),
+                "cree": maintenant,
+                "vue": maintenant,
+                "agent": (agent or "")[:200],
+                "ip": ip or "",
             }
             self._purger()
             self._sauver()
@@ -97,16 +102,42 @@ class Sessions:
             s = self.data.get(jeton)
             if not s:
                 return None
-            if s["exp"] < time.time():
+            maintenant = time.time()
+            if s["exp"] < maintenant:
                 self.data.pop(jeton, None)
                 self._sauver()
                 return None
+            # « derniere activite » : on n'ecrit pas a chaque requete, la page
+            # en emet plusieurs par minute
+            if maintenant - s.get("vue", 0) > 60:
+                s["vue"] = maintenant
+                self._sauver()
             return s["user"]
 
     def supprimer(self, jeton):
         with self.lock:
             if self.data.pop(jeton, None) is not None:
                 self._sauver()
+
+    def lister(self, utilisateur):
+        """Sessions ouvertes d'un utilisateur, la plus recente d'abord."""
+        with self.lock:
+            self._purger()
+            liste = [dict(v, jeton=k) for k, v in self.data.items()
+                     if v.get("user") == utilisateur]
+        liste.sort(key=lambda s: s.get("vue", 0), reverse=True)
+        return liste
+
+    def revoquer_autres(self, jeton_garde, utilisateur):
+        """Ferme toutes les sessions de l'utilisateur sauf celle en cours."""
+        with self.lock:
+            avant = len(self.data)
+            self.data = {k: v for k, v in self.data.items()
+                         if k == jeton_garde or v.get("user") != utilisateur}
+            n = avant - len(self.data)
+            if n:
+                self._sauver()
+        return n
 
     def supprimer_utilisateur(self, nom):
         """Revoque toutes les sessions d'un utilisateur (suppression, changement

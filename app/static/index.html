@@ -500,6 +500,60 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-nav button .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
 .spage-content{overflow-y:auto;padding:0}
 
+/* ---- réglages : lignes d'état et d'option, denses comme le tableau de bord ---- */
+.etat-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--divider)}
+.etat-row:first-child{border-top:0;padding-top:0}
+.etat-p{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted-2)}
+.etat-p.ok{background:var(--ok)}
+.etat-p.warn{background:var(--warn)}
+.etat-p.bad{background:var(--bad)}
+.etat-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.etat-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.etat-tx span{font:500 11.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.opt-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--divider)}
+.opt-row:first-child{border-top:0;padding-top:0}
+.opt-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.opt-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.opt-tx span{font:500 11.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.sdetails{margin-top:10px}
+.sdetails.plein{margin-top:22px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.sdetails summary{cursor:pointer;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--accent);list-style:none}
+.sdetails summary::-webkit-details-marker{display:none}
+.sdetails summary::before{content:'▸ ';font-size:10px}
+.sdetails[open] summary::before{content:'▾ '}
+.sdetails[open] summary{margin-bottom:10px}
+.p-ident{display:flex;align-items:center;gap:14px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--divider)}
+.p-ident-tx{display:flex;flex-direction:column;gap:3px}
+.p-ident-tx b{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
+.p-ident-tx span{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+.bouton-bascule{width:42px;height:24px;border-radius:99px;background:var(--track);border:1px solid var(--border-2);position:relative;flex:none;transition:background .15s,border-color .15s}
+.bouton-bascule::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:var(--sh-1);transition:transform .15s}
+.bouton-bascule.on{background:var(--accent);border-color:var(--accent)}
+.bouton-bascule.on::after{transform:translateX(18px)}
+.palette{display:flex;gap:8px;flex-wrap:wrap}
+.palette button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;box-shadow:inset 0 0 0 1px var(--border-2)}
+.palette button.on{border-color:var(--text);box-shadow:none}
+.sess-row{display:flex;align-items:center;gap:13px;padding:13px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:9px}
+.sess-row.actuelle{border-color:var(--accent-border);background:var(--accent-soft)}
+.sess-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.sess-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.sess-tx span{font:500 11px/1.45 'IBM Plex Mono',monospace;color:var(--muted)}
+.sess-eti{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.about-l{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.about-l:first-child{border-top:0;padding-top:0}
+.about-l b{font:600 12.5px/1.35 'IBM Plex Mono',monospace;color:var(--text)}
+
+/* densité et animations, choisies dans Apparence */
+:root[data-densite="compact"]{--densite:.82}
+:root[data-densite="large"]{--densite:1.16}
+:root[data-densite="compact"] .app-card{padding:11px}
+:root[data-densite="compact"] .app-card .app-foot{padding-top:8px}
+:root[data-densite="compact"] .grid{gap:10px}
+:root[data-densite="large"] .app-card{padding:20px}
+:root[data-densite="large"] .grid{gap:18px}
+:root[data-anim="0"] *,:root[data-anim="0"] *::before,:root[data-anim="0"] *::after{
+  animation-duration:.001s !important;animation-delay:0s !important;transition-duration:.001s !important}
+
 /* ---- page Serveurs ---- */
 .srvpage-body{flex:1;overflow-y:auto;padding:24px 26px 40px}
 .srv-bloc{max-width:1100px;margin:0 auto 26px}
@@ -1013,9 +1067,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <div class="grp" data-i18n="set.grp.account">Compte</div>
       <button data-p="profil" class="on"><span class="ic">👤</span><span data-i18n="set.profile">Mon profil</span></button>
       <button data-p="users"><span class="ic">👥</span><span data-i18n="set.users">Utilisateurs</span></button>
-      <button data-p="security"><span class="ic">🛡</span><span data-i18n="set.security">Sécurité</span></button>
+      <button data-p="security"><span class="ic">🔐</span><span data-i18n="set.security">Sécurité</span></button>
+      <button data-p="sessions"><span class="ic">💻</span><span data-i18n="set.sessions">Sessions</span></button>
       <div class="grp" data-i18n="set.grp.app">Application</div>
-      <button data-p="conn"><span class="ic">⇄</span><span data-i18n="set.conn">Connexions</span></button>
+      <button data-p="look"><span class="ic">🎨</span><span data-i18n="set.look">Apparence</span></button>
+      <button data-p="conn"><span class="ic">🔗</span><span data-i18n="set.conn">Connexions</span></button>
       <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span></button>
       <button data-p="about"><span class="ic">ℹ</span><span data-i18n="set.about">À propos</span></button>
     </nav>
@@ -1036,6 +1092,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="scard">
             <h4 data-i18n="profile.identity">Identité</h4>
             <div class="scard-body">
+              <div class="p-ident">
+                <span class="av-big" id="p-av-vue">?</span>
+                <span class="p-ident-tx">
+                  <b id="p-ident-nom">—</b>
+                  <span id="p-ident-role">—</span>
+                </span>
+              </div>
               <div class="av-edit">
                 <span class="av-big" id="p-av">?</span>
                 <div class="av-edit-actions">
@@ -1053,6 +1116,28 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             </div>
             <div class="scard-foot">
               <button class="btn-primary" id="p-save" data-i18n="btn.save">Enregistrer</button>
+            </div>
+          </div>
+
+          <div class="scard" style="margin-top:22px">
+            <h4 data-i18n="profile.prefs">Préférences</h4>
+            <div class="scard-body">
+              <div class="opt-row">
+                <span class="opt-tx"><b data-i18n="profile.view">Vue des applications</b>
+                  <span data-i18n="profile.view.d">Disposition par défaut de la grille.</span></span>
+                <span class="seg" id="pref-vue">
+                  <button data-v="grid" data-i18n="apps.grid">Grille</button>
+                  <button data-v="list" data-i18n="apps.list">Liste</button>
+                </span>
+              </div>
+              <div class="opt-row">
+                <span class="opt-tx"><b data-i18n="profile.start">Écran d'ouverture</b>
+                  <span data-i18n="profile.start.d">Ce qu'Atrium affiche au chargement.</span></span>
+                <span class="seg" id="pref-depart">
+                  <button data-v="dash" data-i18n="profile.start.dash">Tableau de bord</button>
+                  <button data-v="last" data-i18n="profile.start.last">Dernière catégorie</button>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1164,31 +1249,128 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <section class="spanel sp-inner" id="sp-security" hidden>
         <div class="sp-head">
           <div class="sp-title" data-i18n="set.security">Sécurité</div>
-          <div class="sp-lead" data-i18n="sec.lead">Contrôle l'accès à Atrium au chargement de la page.</div>
+          <div class="sp-lead" data-i18n="sec.lead">L'état de la protection de votre installation.</div>
         </div>
+
         <div class="scard">
-          <h4 data-i18n="sec.protect">Protection du compte</h4>
+          <h4 data-i18n="sec.account">Protection du compte</h4>
           <div class="scard-body">
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.hash">Mots de passe hachés</b><span data-i18n="sec.hash.d">PBKDF2-SHA256, 240 000 itérations, sel unique. Le mot de passe n'est jamais enregistré en clair.</span></div></div>
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.session">Session vérifiée par le serveur</b><span data-i18n="sec.session.d">Cookie HttpOnly illisible par JavaScript. Sans session valide, la configuration et les clés API sont refusées.</span></div></div>
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.rate">Tentatives limitées</b><span data-i18n="sec.rate.d">Au-delà de 8 essais en 5 minutes, les connexions sont bloquées temporairement.</span></div></div>
-            <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.relay">Relais restreint</b><span data-i18n="sec.relay.d">Le serveur ne relaie que vers le réseau privé : il ne peut pas servir de rebond vers Internet.</span></div></div>
+            <div class="etat-row" id="sec-pwd">
+              <span class="etat-p"></span>
+              <span class="etat-tx"><b></b><span></span></span>
+              <button class="btn-sm" id="sec-pwd-go" type="button" data-i18n="pwd.change">Changer le mot de passe</button>
+            </div>
+            <div class="etat-row" id="sec-auth">
+              <span class="etat-p"></span>
+              <span class="etat-tx"><b data-i18n="sec.auth">Authentification</b><span></span></span>
+            </div>
           </div>
         </div>
+
         <div class="scard" style="margin-top:22px">
-          <h4 data-i18n="sec.sessions">Sessions</h4>
+          <h4 data-i18n="sec.attacks">Protection contre les attaques</h4>
           <div class="scard-body">
-            <div class="field">
-              <label data-i18n="sec.current">Connexion en cours</label>
-              <div class="conn-row"><span class="dot" style="background:var(--ok)"></span><span class="cr-nom" id="sec-user">—</span><button class="btn-sm danger" id="sec-logout-all" type="button" data-i18n="sec.logoutall">Fermer les autres sessions</button></div>
-              <span class="hint" data-i18n="sec.logoutall.hint">Utile si vous avez laissé Atrium ouvert sur un appareil que vous n'avez plus.</span>
+            <div class="etat-row">
+              <span class="etat-p ok"></span>
+              <span class="etat-tx"><b data-i18n="sec.rate">Limitation des tentatives</b>
+                <span data-i18n="sec.rate.court">Les connexions répétées sont temporairement bloquées.</span></span>
+            </div>
+            <div class="etat-row">
+              <span class="etat-p ok"></span>
+              <span class="etat-tx"><b data-i18n="sec.relay">Relais restreint au réseau local</b>
+                <span data-i18n="sec.relay.court">Atrium ne peut pas servir de rebond vers Internet.</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="scard" style="margin-top:22px">
+          <h4 data-i18n="sec.access">Accès externe</h4>
+          <div class="scard-body">
+            <div class="etat-row" id="sec-expo">
+              <span class="etat-p"></span>
+              <span class="etat-tx"><b></b><span></span></span>
+            </div>
+            <details class="sdetails">
+              <summary data-i18n="sec.expose">Avant d'exposer Atrium sur Internet</summary>
+              <span class="hint" data-i18n="sec.expose.d">L'authentification ci-dessus protège l'accès depuis votre réseau. Pour une exposition publique, ajoutez du HTTPS et de préférence un portail d'authentification en amont (Authelia, Authentik, Cloudflare Access).</span>
+            </details>
+          </div>
+        </div>
+
+        <details class="sdetails plein">
+          <summary data-i18n="sec.tech">Voir les détails techniques</summary>
+          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.hash">Mots de passe hachés</b><span data-i18n="sec.hash.d">PBKDF2-SHA256, 240 000 itérations, sel unique. Le mot de passe n'est jamais enregistré en clair.</span></div></div>
+          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.session">Session vérifiée par le serveur</b><span data-i18n="sec.session.d">Cookie HttpOnly illisible par JavaScript. Sans session valide, la configuration et les clés API sont refusées.</span></div></div>
+          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.rate">Tentatives limitées</b><span data-i18n="sec.rate.d">Au-delà de 8 essais en 5 minutes, les connexions sont bloquées temporairement.</span></div></div>
+          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.relay">Relais restreint</b><span data-i18n="sec.relay.d">Le serveur ne relaie que vers le réseau privé : il ne peut pas servir de rebond vers Internet.</span></div></div>
+        </details>
+      </section>
+
+      <!-- SESSIONS -->
+      <section class="spanel sp-inner" id="sp-sessions" hidden>
+        <div class="sp-head">
+          <div class="sp-title" data-i18n="set.sessions">Sessions</div>
+          <div class="sp-lead" id="sess-lead" data-i18n="sess.lead">Les appareils actuellement connectés à votre compte.</div>
+        </div>
+        <div id="sess-liste"></div>
+        <div class="scard" style="margin-top:22px" id="sess-fermer-carte" hidden>
+          <h4 data-i18n="sess.closeall">Fermer les autres sessions</h4>
+          <div class="scard-body">
+            <span class="hint" data-i18n="sess.closeall.d">Déconnecte tous les autres appareils. Celui-ci reste connecté.</span>
+          </div>
+          <div class="scard-foot">
+            <button class="btn-sm danger" id="sess-fermer" type="button" data-i18n="sess.closeall.btn">Déconnecter les autres appareils</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- APPARENCE -->
+      <section class="spanel sp-inner" id="sp-look" hidden>
+        <div class="sp-head">
+          <div class="sp-title" data-i18n="set.look">Apparence</div>
+          <div class="sp-lead" data-i18n="look.lead">Réglages visuels, propres à cet appareil.</div>
+        </div>
+        <div class="scard">
+          <h4 data-i18n="look.theme">Thème</h4>
+          <div class="scard-body">
+            <div class="opt-row">
+              <span class="opt-tx"><b data-i18n="look.mode">Mode</b>
+                <span data-i18n="look.mode.d">« Système » suit le réglage de votre appareil.</span></span>
+              <span class="seg" id="look-mode">
+                <button data-v="dark" data-i18n="look.dark">Sombre</button>
+                <button data-v="light" data-i18n="look.light">Clair</button>
+                <button data-v="auto" data-i18n="look.auto">Système</button>
+              </span>
+            </div>
+            <div class="opt-row">
+              <span class="opt-tx"><b data-i18n="look.accent">Couleur d'accent</b>
+                <span data-i18n="look.accent.d">Teinte des éléments actifs et des jauges.</span></span>
+              <span class="palette" id="look-palette"></span>
             </div>
           </div>
         </div>
         <div class="scard" style="margin-top:22px">
-          <h4 data-i18n="sec.expose">Avant d'exposer Atrium sur Internet</h4>
+          <h4 data-i18n="look.interface">Interface</h4>
           <div class="scard-body">
-            <span class="hint" data-i18n="sec.expose.d">L'authentification ci-dessus protège l'accès depuis votre réseau. Pour une exposition publique, ajoutez du HTTPS et de préférence un portail d'authentification en amont (Authelia, Authentik, Cloudflare Access).</span>
+            <div class="opt-row">
+              <span class="opt-tx"><b data-i18n="look.density">Densité</b>
+                <span data-i18n="look.density.d">Hauteur des tuiles et espacement.</span></span>
+              <span class="seg" id="look-densite">
+                <button data-v="compact" data-i18n="look.compact">Compacte</button>
+                <button data-v="normal" data-i18n="look.normal">Standard</button>
+                <button data-v="large" data-i18n="look.large">Confortable</button>
+              </span>
+            </div>
+            <div class="opt-row">
+              <span class="opt-tx"><b data-i18n="look.anim">Animations</b>
+                <span data-i18n="look.anim.d">Transitions et apparitions.</span></span>
+              <button class="bouton-bascule" id="look-anim" type="button" role="switch"></button>
+            </div>
+            <div class="opt-row">
+              <span class="opt-tx"><b data-i18n="look.stats">Chiffres sur les tuiles</b>
+                <span data-i18n="look.stats.d">Lectures, files d'attente, charge… remontés par chaque service.</span></span>
+              <button class="bouton-bascule" id="look-stats" type="button" role="switch"></button>
+            </div>
           </div>
         </div>
       </section>
@@ -1228,19 +1410,26 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="sp-lead" id="about-lead">Atrium <span id="about-ver">1.0.0</span> — tableau de bord auto-hébergé.</div>
         </div>
         <div class="scard">
+          <h4 data-i18n="about.checks">Vérifications</h4>
+          <div class="scard-body" id="about-checks"></div>
+        </div>
+        <div class="scard" style="margin-top:22px">
+          <h4 data-i18n="about.system">Système</h4>
+          <div class="scard-body" id="about-sys"></div>
+        </div>
+        <div class="scard" style="margin-top:22px">
           <h4 data-i18n="about.how">Fonctionnement</h4>
           <div class="scard-body">
             <div class="about-txt">
               Application autonome : un conteneur sert l'interface, stocke la configuration et relaie les appels vers les API de vos services.<br><br>
               <b>Intégrations disponibles</b><br>
               Plex (sessions en cours) · Unraid (CPU, RAM, grappe) · UniFi (routeur, clients) · Home Assistant (domotique, lecteurs, mises à jour) · sonde HTTP pour l'état en ligne de n'importe quelle application.<br><br>
-              Configuration : <code>/config/atrium.json</code><br>
-              Dépôt : <a href="https://github.com/Alardware/atrium" target="_blank" rel="noopener">github.com/Alardware/atrium</a>
+              Dépôt : <a href="https://github.com/Alardware/atrium" target="_blank" rel="noopener">github.com/Alardware/atrium</a> ·
+              <a href="https://github.com/Alardware/atrium/issues" target="_blank" rel="noopener" data-i18n="about.issue">Signaler un problème</a>
             </div>
           </div>
         </div>
       </section>
-
     </div>
   </div>
 </div>
@@ -1346,6 +1535,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 </template>
 <template id="tpl-ha-row">
   <div class="ha-row"><span class="hr-label"></span><b class="hr-val"></b></div>
+</template>
+<template id="tpl-sess">
+  <div class="sess-row">
+    <span class="etat-p"></span>
+    <span class="sess-tx"><b></b><span></span></span>
+    <span class="sess-eti"></span>
+  </div>
 </template>
 <template id="tpl-w-carte">
   <div class="card cock">
@@ -1768,9 +1964,10 @@ function toast(msg) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
 }
 
-let theme = store.get('theme', 'light');
+let theme = store.get('theme', 'light');   // dark | light | auto
 let view = store.get('view', 'grid');
-let activeCat = '';
+let depart = store.get('depart', 'dash');
+let activeCat = depart === 'last' ? store.get('derniereCat', '') : '';
 let query = '';
 let editIndex = null;
 let delIndex = null;
@@ -1815,15 +2012,62 @@ const logoDe = (app) => app.logoUrl || icone(app.nom);
 const findApp = (nom) => apps.find((a) => a.nom.toLowerCase() === nom.toLowerCase());
 
 /* ---------- thème ---------- */
+/* « auto » suit le réglage du système ; les deux autres l'imposent. */
+const sombreSysteme = () => window.matchMedia
+  && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const themeEffectif = () => (theme === 'auto' ? (sombreSysteme() ? 'dark' : 'light') : theme);
+
+/* Teintes proposées dans Apparence. « strong » sert aux libellés actifs,
+   « soft » aux fonds, et diffère selon le mode pour rester lisible. */
+const ACCENTS = {
+  bleu: { c: '#2f6fed', f: '#5b8cff', s: '#1d55c9', sf: '#88abff' },
+  cyan: { c: '#0891b2', f: '#22d3ee', s: '#0e7490', sf: '#67e8f9' },
+  violet: { c: '#7c3aed', f: '#a78bfa', s: '#6d28d9', sf: '#c4b5fd' },
+  vert: { c: '#15803d', f: '#4ade80', s: '#166534', sf: '#86efac' },
+  ambre: { c: '#c2620a', f: '#fbbf24', s: '#9a4b06', sf: '#fcd34d' },
+  rouge: { c: '#dc2626', f: '#f87171', s: '#b91c1c', sf: '#fca5a5' },
+};
+let accent = store.get('accent', 'bleu');
+let densite = store.get('densite', 'normal');
+let animations = store.get('anim', '1') !== '0';
+let voirStats = store.get('stats', '1') !== '0';
+
+function appliquerAccent() {
+  const a = ACCENTS[accent] || ACCENTS.bleu;
+  const sombre = themeEffectif() === 'dark';
+  const r = document.documentElement.style;
+  if (accent === 'bleu') {
+    /* teinte d'origine : on laisse la feuille de style décider */
+    ['--accent', '--accent-strong', '--accent-soft', '--accent-border']
+      .forEach((v) => r.removeProperty(v));
+    return;
+  }
+  r.setProperty('--accent', sombre ? a.f : a.c);
+  r.setProperty('--accent-strong', sombre ? a.sf : a.s);
+  r.setProperty('--accent-soft', (sombre ? a.c : a.f) + (sombre ? '33' : '22'));
+  r.setProperty('--accent-border', (sombre ? a.f : a.c) + '55');
+}
+
 function applyTheme() {
-  document.documentElement.setAttribute('data-theme', theme);
-  $('theme-ico').textContent = theme === 'dark' ? '☀' : '☾';
-  $('theme-lab').textContent = theme === 'dark' ? 'Clair' : 'Sombre';
+  const eff = themeEffectif();
+  document.documentElement.setAttribute('data-theme', eff);
+  document.documentElement.setAttribute('data-densite', densite);
+  document.documentElement.setAttribute('data-anim', animations ? '1' : '0');
+  appliquerAccent();
+  $('theme-ico').textContent = eff === 'dark' ? '☀' : '☾';
+  $('theme-lab').textContent = eff === 'dark' ? 'Clair' : 'Sombre';
+}
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => { if (theme === 'auto') applyTheme(); });
 }
 $('theme-btn').addEventListener('click', () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
+  /* la bascule rapide n'alterne que clair et sombre ; « Système » se choisit
+     dans Apparence, et un clic ici en sort volontairement */
+  theme = themeEffectif() === 'dark' ? 'light' : 'dark';
   store.set('theme', theme);
   applyTheme();
+  if (!$('spage').hidden) renderApparence();
 });
 
 /* ---------- horloge + météo ---------- */
@@ -1878,6 +2122,7 @@ $('nav-cats').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-cat]');
   if (!btn) return;
   activeCat = btn.dataset.cat;
+  store.set('derniereCat', activeCat);
   renderSidebar();
   renderApps();
 });
@@ -3912,7 +4157,7 @@ function appCard(app, index) {
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
 
   /* chiffres du service, quand il en fournit */
-  const chiffres = STATS[app.nom];
+  const chiffres = voirStats ? STATS[app.nom] : null;
   const zone = a.querySelector('.app-stats');
   if (chiffres && chiffres.length) {
     zone.hidden = false;
@@ -4243,7 +4488,8 @@ function openSettings(section) {
 function closeSettings() { $('spage').hidden = true; }
 function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
-  ['profil', 'users', 'security', 'conn', 'lang', 'about'].forEach((k) => { $('sp-' + k).hidden = k !== p; });
+  ['profil', 'users', 'security', 'sessions', 'look', 'conn', 'lang', 'about']
+    .forEach((k) => { $('sp-' + k).hidden = k !== p; });
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
   if (p === 'profil') {
@@ -4251,7 +4497,13 @@ function spNav(p) {
   } else if (p === 'users') {
     renderUsersPage();
   } else if (p === 'security') {
-    $('sec-user').textContent = SESSION_USER || ACTIVE || '—';
+    renderSecurite();
+  } else if (p === 'sessions') {
+    renderSessions();
+  } else if (p === 'look') {
+    renderApparence();
+  } else if (p === 'about') {
+    renderAPropos();
   } else if (p === 'lang') {
     renderLangues();
   } else if (p === 'conn') {
@@ -4264,6 +4516,211 @@ $('sp-nav').addEventListener('click', (e) => {
 });
 $('sp-back').addEventListener('click', closeSettings);
 $('side-settings').addEventListener('click', () => openSettings('profil'));
+
+/* ---------- Apparence ---------- */
+function segChoisi(id, valeur, action) {
+  const z = $(id);
+  z.querySelectorAll('button').forEach((b) => {
+    b.classList.toggle('on', b.dataset.v === valeur);
+    if (b.dataset.pret) return;
+    b.dataset.pret = '1';
+    b.addEventListener('click', () => action(b.dataset.v));
+  });
+}
+function bascule(id, actif, action) {
+  const b = $(id);
+  b.classList.toggle('on', actif);
+  b.setAttribute('aria-checked', actif ? 'true' : 'false');
+  if (!b.dataset.pret) {
+    b.dataset.pret = '1';
+    b.addEventListener('click', () => action(!b.classList.contains('on')));
+  }
+}
+function renderApparence() {
+  segChoisi('look-mode', theme, (v) => {
+    theme = v;
+    store.set('theme', theme);
+    applyTheme();
+    renderApparence();
+  });
+  segChoisi('look-densite', densite, (v) => {
+    densite = v;
+    store.set('densite', densite);
+    applyTheme();
+    renderApparence();
+  });
+  bascule('look-anim', animations, (v) => {
+    animations = v;
+    store.set('anim', v ? '1' : '0');
+    applyTheme();
+    renderApparence();
+  });
+  bascule('look-stats', voirStats, (v) => {
+    voirStats = v;
+    store.set('stats', v ? '1' : '0');
+    renderApps();
+    renderApparence();
+  });
+  const pal = $('look-palette');
+  pal.textContent = '';
+  Object.keys(ACCENTS).forEach((nom) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.title = t('look.accent.' + nom);
+    b.style.background = themeEffectif() === 'dark' ? ACCENTS[nom].f : ACCENTS[nom].c;
+    b.classList.toggle('on', nom === accent);
+    b.addEventListener('click', () => {
+      accent = nom;
+      store.set('accent', accent);
+      applyTheme();
+      renderApparence();
+    });
+    pal.appendChild(b);
+  });
+}
+
+/* ---------- Sécurité ---------- */
+function etatLigne(id, niveau, titre, detail) {
+  const r = $(id);
+  r.querySelector('.etat-p').className = 'etat-p ' + niveau;
+  const b = r.querySelector('.etat-tx b');
+  if (titre) b.textContent = titre;
+  r.querySelector('.etat-tx span').textContent = detail;
+}
+function renderSecurite() {
+  const moi = (USERS || []).find((u) => u.nom === (SESSION_USER || ACTIVE));
+  const protege = !!(moi && moi.pwd);
+  etatLigne('sec-pwd', protege ? 'ok' : 'warn',
+            t(protege ? 'sec.pwd.ok' : 'sec.pwd.no'),
+            t(protege ? 'sec.pwd.ok.d' : 'sec.pwd.no.d'));
+  etatLigne('sec-auth', protege ? 'ok' : 'warn', null,
+            t(protege ? 'sec.auth.pwd' : 'sec.auth.none'));
+  /* « exposé » se déduit de l'adresse par laquelle on consulte Atrium :
+     c'est la seule chose que le navigateur puisse constater honnêtement. */
+  const h = location.hostname;
+  /* sans nom d'hôte (page ouverte depuis un fichier), on ne peut rien
+     constater : on ne va pas annoncer une exposition qu'on ignore */
+  const local = !h || /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/.test(h)
+    || h.endsWith('.local');
+  etatLigne('sec-expo', local ? 'ok' : 'warn',
+            t(local ? 'sec.expo.local' : 'sec.expo.pub'),
+            t(local ? 'sec.expo.local.d' : 'sec.expo.pub.d', { h }));
+}
+$('sec-pwd-go').addEventListener('click', () => spNav('profil'));
+
+/* ---------- Sessions ---------- */
+/* L'agent utilisateur n'est pas fiable, mais c'est ce que le navigateur a
+   envoyé : on en tire un libellé lisible sans prétendre à l'exactitude. */
+function decrireAgent(ua) {
+  if (!ua) return t('sess.unknown');
+  const nav = [['Edg/', 'Edge'], ['OPR/', 'Opera'], ['Firefox/', 'Firefox'],
+               ['Chrome/', 'Chrome'], ['Safari/', 'Safari']].find(([m]) => ua.includes(m));
+  const os = [['Windows', 'Windows'], ['Android', 'Android'], ['iPhone', 'iPhone'],
+              ['iPad', 'iPad'], ['Mac OS X', 'macOS'], ['Linux', 'Linux']]
+    .find(([m]) => ua.includes(m));
+  const bout = [nav && nav[1], os && os[1]].filter(Boolean);
+  return bout.length ? bout.join(' · ') : t('sess.unknown');
+}
+async function renderSessions() {
+  const zone = $('sess-liste');
+  zone.textContent = '';
+  let d = null;
+  try {
+    const r = await relayFetch('/api/sessions', { cache: 'no-store' });
+    if (r.ok) d = await r.json();
+  } catch (e) { /* affiché comme indisponible */ }
+  if (!d) {
+    const v = clone('tpl-empty');
+    v.textContent = t('sess.fail');
+    zone.appendChild(v);
+    $('sess-fermer-carte').hidden = true;
+    return;
+  }
+  const n = d.sessions.length;
+  $('sess-lead').textContent = t(n > 1 ? 'sess.count.n' : 'sess.count.1', { n });
+  d.sessions.forEach((x) => {
+    const row = clone('tpl-sess');
+    row.classList.toggle('actuelle', x.actuelle);
+    row.querySelector('.etat-p').className = 'etat-p ' + (x.actuelle ? 'ok' : '');
+    row.querySelector('b').textContent = decrireAgent(x.agent);
+    row.querySelector('.sess-tx span').textContent =
+      [x.ip, x.actuelle ? t('sess.now') : age(x.vue)].filter(Boolean).join(' · ');
+    row.querySelector('.sess-eti').textContent = x.actuelle ? t('sess.this') : '';
+    zone.appendChild(row);
+  });
+  $('sess-fermer-carte').hidden = n < 2;
+}
+$('sess-fermer').addEventListener('click', () => {
+  openConfirm(t('sess.closeall'), t('sess.closeall.d'), t('sess.closeall.btn'), async () => {
+    try {
+      const r = await relayFetch('/api/sessions/revoquer', { method: 'POST' });
+      const j = await r.json().catch(() => ({}));
+      toast(t('sess.closed', { n: j.fermees || 0 }));
+    } catch (e) { toast(t('sess.fail')); }
+    renderSessions();
+  });
+});
+
+/* ---------- À propos ---------- */
+async function renderAPropos() {
+  const checks = $('about-checks');
+  const sys = $('about-sys');
+  checks.textContent = '';
+  sys.textContent = '';
+  let d = null;
+  try {
+    const r = await relayFetch('/api/diagnostic', { cache: 'no-store' });
+    if (r.ok) d = await r.json();
+  } catch (e) { /* rien : on l'annonce ci-dessous */ }
+  if (!d) {
+    const v = clone('tpl-empty');
+    v.textContent = t('about.fail');
+    checks.appendChild(v);
+    return;
+  }
+  $('about-ver').textContent = d.version;
+  const ligne = (cle, ok, detail) => {
+    const r = document.createElement('div');
+    r.className = 'etat-row';
+    const p = document.createElement('span');
+    p.className = 'etat-p ' + (ok ? 'ok' : 'warn');
+    const tx = document.createElement('span');
+    tx.className = 'etat-tx';
+    const b = document.createElement('b');
+    b.textContent = t(cle);
+    const sp = document.createElement('span');
+    sp.textContent = detail;
+    tx.appendChild(b);
+    tx.appendChild(sp);
+    r.appendChild(p);
+    r.appendChild(tx);
+    checks.appendChild(r);
+  };
+  ligne('about.cfg', d.config.ok,
+        d.config.ok ? d.config.chemin : t('about.cfg.ko'));
+  ligne('about.mesures', d.mesures.ok,
+        t(d.mesures.ok ? 'about.mesures.ok' : 'about.mesures.ko'));
+  ligne('about.services', d.services.ok,
+        t('about.services.d', { n: d.services.joignables, total: d.services.total }));
+  ligne('about.docker', d.docker.ok,
+        t(d.docker.ok ? 'about.docker.ok' : 'about.docker.ko'));
+
+  const info = (lab, val) => {
+    const r = document.createElement('div');
+    r.className = 'about-l';
+    const l = document.createElement('span');
+    l.textContent = lab;
+    const b = document.createElement('b');
+    b.textContent = val;
+    r.appendChild(l);
+    r.appendChild(b);
+    sys.appendChild(r);
+  };
+  info(t('about.version'), d.version);
+  info(t('about.storage'), t('about.storage.d'));
+  info(t('about.cycle'), t('about.cycle.d', { n: d.cycle }));
+  info(t('about.last'), d.releve ? age(d.releve) : '—');
+}
 
 /* ---------- langue ---------- */
 const LANGUES = [
@@ -4550,6 +5007,22 @@ const syncUserPwd = bindPwd('spu-pwd', 'spu-pwd-eye', 'spu-meter', 'spu-meter-la
 const syncProfilPwd = bindPwd('p-pwd', 'p-pwd-eye', 'p-meter', 'p-meter-lab');
 
 /* ---------- page « Mon profil » ---------- */
+function renderPrefs() {
+  segChoisi('pref-vue', view, (v) => {
+    view = v;
+    store.set('view', view);
+    document.querySelectorAll('#seg-view button')
+      .forEach((b) => b.classList.toggle('on', b.dataset.view === view));
+    renderApps();
+    renderPrefs();
+  });
+  segChoisi('pref-depart', depart, (v) => {
+    depart = v;
+    store.set('depart', depart);
+    renderPrefs();
+  });
+}
+
 function renderProfil() {
   const u = userActif();
   $('p-vide').hidden = !!u;
@@ -4557,6 +5030,13 @@ function renderProfil() {
   if (!u) return;
   $('p-av').style.overflow = 'hidden';
   peindreAvatar($('p-av'), u);
+  $('p-av-vue').style.overflow = 'hidden';
+  peindreAvatar($('p-av-vue'), u);
+  $('p-ident-nom').textContent = u.nom;
+  /* Atrium n'a pas encore de rôles : annoncer « Administrateur » ici serait
+     décrire un droit qui n'existe pas. On dit ce qui est vrai. */
+  $('p-ident-role').textContent = t(u.pwd ? 'profile.protected' : 'profile.open');
+  renderPrefs();
   $('p-av-del').disabled = !u.photo;
   $('p-av-del').style.opacity = u.photo ? '1' : '.45';
   $('p-nom').value = u.nom;
@@ -4789,15 +5269,8 @@ $('spu-del').addEventListener('click', () => {
   renderAvatar();
 });
 
-/* ---------- sécurité ---------- */
-$('sec-logout-all').addEventListener('click', async () => {
-  /* changer de mot de passe révoque les sessions ; ici on ferme simplement
-     celle-ci, les autres expireront ou seront coupées au prochain changement */
-  try {
-    await relayFetch('/api/logout', { method: 'POST' });
-  } catch (e) {}
-  location.reload();
-});
+/* Fermer les autres sessions vit maintenant dans la page Sessions, qui les
+   révoque réellement côté serveur au lieu de se déconnecter soi-même. */
 
 /* ---------- connexion (session vérifiée par le serveur) ---------- */
 let PROFILS = [];        // profils publics renvoyés par /api/session
