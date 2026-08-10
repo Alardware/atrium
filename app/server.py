@@ -75,18 +75,38 @@ ECHECS_AVANT_DOUTE = 3   # avant de mettre en cause une cle d'API
 _releve = {"widgets": {}, "hote": {"disponible": False}, "maj": 0, "a": 0}
 
 # Les conteneurs ne sont lus que lorsqu'on regarde la page Serveurs : mesurer
-# la consommation de chacun coute un appel par conteneur, inutile en continu.
-AGE_CONTENEURS = 15
-_conteneurs = {"a": 0, "liste": []}
+# la consommation de chacun coute un appel au demon, et celui-ci met une
+# seconde a repondre. Vingt conteneurs, meme interroges par paquets de huit,
+# font donc trois secondes — bien trop pour faire patienter une page.
+AGE_CONTENEURS = 20
+_conteneurs = {"a": 0, "liste": [], "encours": False}
 _verrou_conteneurs = threading.Lock()
 
 
-def conteneurs_recents():
-    with _verrou_conteneurs:
-        if time.time() - _conteneurs["a"] > AGE_CONTENEURS:
-            _conteneurs["liste"] = conteneurs.liste()
+def _rafraichir_conteneurs():
+    try:
+        liste = conteneurs.liste()
+        with _verrou_conteneurs:
+            _conteneurs["liste"] = liste
             _conteneurs["a"] = time.time()
-        return _conteneurs["liste"]
+    finally:
+        with _verrou_conteneurs:
+            _conteneurs["encours"] = False
+
+
+def conteneurs_recents():
+    """Dernier releve connu, rendu immediatement.
+
+    Si la mesure a vieilli, on en relance une en fond et on repond quand meme :
+    la page affiche aussitot ce qu'on sait, et recoit la mise a jour au
+    rafraichissement suivant. Elle n'attend jamais le demon.
+    """
+    with _verrou_conteneurs:
+        vieux = time.time() - _conteneurs["a"] > AGE_CONTENEURS
+        if vieux and not _conteneurs["encours"] and conteneurs.disponible():
+            _conteneurs["encours"] = True
+            threading.Thread(target=_rafraichir_conteneurs, daemon=True).start()
+        return list(_conteneurs["liste"]), _conteneurs["a"]
 
 
 _echecs_widget = {}
@@ -337,11 +357,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                                            ensure_ascii=False).encode())
         elif route == "/api/serveur":
             if self.exiger_session():
+                liste, mesure_a = conteneurs_recents()
                 self.reply(200, json.dumps({
                     "hote": _releve["hote"],
                     "historique": systeme.historique(),
                     "docker": conteneurs.disponible(),
-                    "conteneurs": conteneurs_recents(),
+                    "conteneurs": liste,
+                    # 0 tant qu'aucune mesure n'a abouti : l'interface le dit
+                    # au lieu d'afficher un tableau vide qui semblerait faux
+                    "conteneurs_a": mesure_a,
                     "releve": _releve["a"],
                 }, ensure_ascii=False).encode())
         else:

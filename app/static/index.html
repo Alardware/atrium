@@ -2944,6 +2944,7 @@ function ouvrirEntites(genre) {
 
 /* ---------- page Serveurs ---------- */
 let SRV_TIMER = null;
+let SRV_RETOUR = null;
 
 const octets = (o) => {
   if (o == null) return '—';
@@ -3004,9 +3005,18 @@ function blocServeur(corps, titre, sous, kind) {
   return b;
 }
 
-function tableauDocker(bloc, liste, actif) {
+function tableauDocker(bloc, liste, actif, mesure) {
   const zone = bloc.querySelector('.srv-docker');
   zone.hidden = false;
+  if (actif && !mesure) {
+    /* socket montée mais aucune mesure encore aboutie : le dire, plutôt que
+       de montrer un tableau vide qui passerait pour un serveur sans conteneur */
+    const n = document.createElement('div');
+    n.className = 'srv-note';
+    n.textContent = t('srv.docker.wait');
+    zone.appendChild(n);
+    return;
+  }
   if (!actif) {
     const n = document.createElement('div');
     n.className = 'srv-note';
@@ -3041,14 +3051,29 @@ function tableauDocker(bloc, liste, actif) {
   zone.appendChild(tab);
 }
 
+/* Dernier relevé connu : rouvrir la page le réaffiche immédiatement, au lieu
+   de laisser un écran vide le temps d'un aller-retour. */
+let SRV_DATA = null;
+
 async function renderServeurs() {
-  const corps = $('srvpage-body');
   let d = null;
   try {
     const r = await relayFetch('/api/serveur', { cache: 'no-store' });
-    if (r.ok) d = await r.json();
+    if (r.ok) { d = await r.json(); SRV_DATA = d; }
   } catch (e) { /* affiché comme indisponible ci-dessous */ }
-  corps.textContent = '';
+  peindreServeurs(d);
+  /* La mesure des conteneurs coûte une seconde par paquet de huit : le serveur
+     la lance en fond et répond sans attendre. On revient la chercher. */
+  if (d && d.docker && !d.conteneurs_a && $('srvpage') && !$('srvpage').hidden) {
+    clearTimeout(SRV_RETOUR);
+    SRV_RETOUR = setTimeout(renderServeurs, 2500);
+  }
+}
+
+function peindreServeurs(d) {
+  /* On construit hors écran et on remplace d'un seul coup : vider d'abord
+     ferait clignoter la page à chaque rafraîchissement. */
+  const corps = document.createDocumentFragment();
 
   const h = d && d.hote && d.hote.disponible ? d.hote : null;
   if (h) {
@@ -3082,6 +3107,8 @@ async function renderServeurs() {
     const histo = (d.historique || {});
     [['cpu', 'CPU'], ['memoire', 'RAM']].forEach(([cle, lab]) => {
       const pts = histo[cle] || [];
+      /* le tracé se recalcule en entier à chaque fois : c'est bon marché sur
+         120 points, et cela évite de gérer un état partiel */
       const g = clone('tpl-srv-graph');
       g.querySelector('.l').textContent = lab;
       g.querySelector('.m').textContent = pts.length > 1
@@ -3091,7 +3118,7 @@ async function renderServeurs() {
     });
     gz.hidden = false;
 
-    tableauDocker(bloc, d.conteneurs || [], d.docker);
+    tableauDocker(bloc, d.conteneurs || [], d.docker, d.conteneurs_a);
   }
 
   /* les autres serveurs n'exposent que des valeurs instantanées */
@@ -3106,19 +3133,29 @@ async function renderServeurs() {
 
   if (!corps.childElementCount) {
     const v = clone('tpl-empty');
-    v.textContent = t('srv.none');
+    v.textContent = t(d ? 'srv.none' : 'srv.fail');
     corps.appendChild(v);
   }
+  const zone = $('srvpage-body');
+  const defile = zone.scrollTop;
+  zone.textContent = '';
+  zone.appendChild(corps);
+  zone.scrollTop = defile;          // un rafraîchissement ne doit pas remonter
 }
 
 function ouvrirServeurs() {
   $('srvpage').hidden = false;
+  /* le dernier relevé s'affiche immédiatement, la requête ne fait que le
+     rafraîchir : rouvrir la page ne laisse jamais d'écran vide. Au tout
+     premier passage il n'y a rien à montrer, on laisse la requête peindre. */
+  if (SRV_DATA) peindreServeurs(SRV_DATA);
   renderServeurs();
   SRV_TIMER = setInterval(renderServeurs, 15000);
 }
 function fermerServeurs() {
   $('srvpage').hidden = true;
   clearInterval(SRV_TIMER);
+  clearTimeout(SRV_RETOUR);
   SRV_TIMER = null;
 }
 $('side-servers').addEventListener('click', ouvrirServeurs);
