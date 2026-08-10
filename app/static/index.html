@@ -320,8 +320,16 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid:not(.list) > *{flex:1 1 214px;min-width:0;max-width:268px}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
 .app-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+/* Pastilles et étoile forment un seul groupe, calé en haut à droite de la
+   tuile : dispersés, l'un contre le logo et l'autre au coin, ils donnaient
+   l'impression de ne pas appartenir à la même carte. */
+.app-tags{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
 .badge-maj{padding:4px 8px;border-radius:6px;background:var(--warn-soft);border:1px solid var(--warn-border);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text)}
 .badge-maj[hidden]{display:none}
+.app-tags .star{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;line-height:1;color:var(--muted-3);opacity:0;transition:opacity .15s,color .15s}
+.app-card:hover .app-tags .star,.app-tags .star:focus-visible{opacity:1}
+.app-tags .star:hover{color:var(--warn)}
+.app-tags .star.on{opacity:1;color:var(--warn)}
 .app-name{font:700 14.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-role{margin-top:3px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .app-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--divider)}
@@ -352,18 +360,18 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
   .grid:not(.list) .app-card.wide .app-mid{min-width:0;max-width:none}
   .grid:not(.list) .app-card.wide .app-stats{min-width:0;margin-top:2px}
 }
-.badge-on{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
-.badge-off{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--bad-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
+/* L'état se lit à la pastille de couleur, pas au fond : trois tuiles vertes
+   côte à côte criaient plus fort que le contenu qu'elles encadrent. */
+.badge-on,.badge-off,.badge-na{display:flex;align-items:center;gap:7px;padding:4px 10px;border-radius:99px;background:var(--subtle);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .badge-off .dot{background:var(--bad)}
-.badge-na{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--subtle);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .badge-na .dot{background:var(--muted-2)}
 .badge-on[hidden],.badge-off[hidden],.badge-na[hidden]{display:none}
-.badge-on .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--ok-text);opacity:.7}
+.badge-on .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
 .badge-on .lat:empty{display:none}
 .app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .app-foot{flex-wrap:wrap;row-gap:7px}
 .app-seen:empty{display:none}
-.badge-alert{margin-left:auto;padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
+.badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
 .add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
 .add-card:hover{border-color:var(--accent);color:var(--accent)}
@@ -371,8 +379,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .add-lab{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif}
 
 /* actions modifier / supprimer */
-/* Les commandes n'apparaissent qu'au survol — sauf l'étoile d'un favori, qui
-   est un état de la tuile et doit rester lisible en permanence. */
+/* Les commandes n'apparaissent qu'au survol. L'étoile, elle, est un état de la
+   tuile et non une commande : elle vit avec les pastilles (.app-tags) et reste
+   visible en permanence sur un favori. */
 .app-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:2}
 .act-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:var(--sh-1);opacity:0;transition:opacity .15s,color .15s,border-color .15s}
 .app-card:hover .act-btn,.app-actions:focus-within .act-btn{opacity:1}
@@ -405,11 +414,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .st-vide{padding:16px 0;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted);text-align:center}
 .st-liste{max-height:min(52vh,420px);overflow-y:auto}
 
-.act-btn.star.on{opacity:1;color:var(--warn);border-color:var(--warn-border)}
-.act-btn.star.on:hover{color:var(--warn-text);border-color:var(--warn)}
 /* l'étoile permanente ne doit pas recouvrir les pastilles du haut de tuile */
-.app-card.fav .app-top{padding-right:32px}
-.grid.list .app-card.fav .app-top{padding-right:0}
 
 /* list view */
 .grid.list{flex-direction:column;gap:8px}
@@ -1634,15 +1639,17 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-app-card">
   <a href="#" class="card app-card">
     <div class="app-actions">
-      <button class="act-btn star" data-act="fav" data-i18n-title="fav.add" title="Mettre en favori">☆</button>
       <button class="act-btn" data-act="menu" data-i18n-title="ti.actions" title="Actions">⋮</button>
       <button class="act-btn" data-act="edit" data-i18n-title="ti.edit" title="Modifier">✎</button>
       <button class="act-btn danger" data-act="del" data-i18n-title="btn.delete" title="Supprimer">✕</button>
     </div>
     <div class="app-top">
       <span class="logo-chip s40"><span class="cl"></span></span>
-      <span class="badge-alert" hidden>⚠</span>
-      <span class="badge-maj" hidden>MAJ</span>
+      <span class="app-tags">
+        <span class="badge-alert" hidden>⚠</span>
+        <span class="badge-maj" hidden>MAJ</span>
+        <button class="star" data-act="fav" data-i18n-title="fav.add" title="Mettre en favori">☆</button>
+      </span>
     </div>
     <div class="app-mid">
       <div class="app-name"></div>
@@ -4099,7 +4106,7 @@ function appCard(app, index) {
   a.querySelector('.app-role').textContent = app.role;
   if (majByName[app.nom]) a.querySelector('.badge-maj').hidden = false;
 
-  const etoile = a.querySelector('.act-btn.star');
+  const etoile = a.querySelector('.app-tags .star');
   if (app.fav) {
     a.classList.add('fav');
     etoile.classList.add('on');
