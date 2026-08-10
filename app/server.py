@@ -219,9 +219,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store, must-revalidate")
             # « connect-src * » est necessaire : l'interface appelle les services
             # du reseau en direct. Le reste ferme le chargement de code externe.
+            # Les deux origines de Google Fonts sont nommees explicitement :
+            # l'interface y charge sa typographie. Tout le reste est ferme.
             self.send_header("Content-Security-Policy",
                              "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-                             "style-src 'self' 'unsafe-inline'; "
+                             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                             "font-src 'self' https://fonts.gstatic.com; "
                              "img-src 'self' data: http: https:; connect-src *; "
                              "frame-ancestors 'self'; base-uri 'none'; form-action 'self'")
         super().end_headers()

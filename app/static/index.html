@@ -354,12 +354,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid:not(.list) .app-card.wide .app-stats{grid-column:2;grid-row:1 / 4;align-self:center;margin-top:0}
 .grid:not(.list) .app-card.wide .app-stats .st{min-width:72px}
 /* écran étroit : une tuile par rangée, disposition verticale */
-@media (max-width:620px){
-  .grid:not(.list) > *{flex:1 1 100%;max-width:none}
-  .grid:not(.list) .app-card.wide{flex:1 1 100%;display:flex}
-  .grid:not(.list) .app-card.wide .app-mid{min-width:0;max-width:none}
-  .grid:not(.list) .app-card.wide .app-stats{min-width:0;margin-top:2px}
-}
 /* L'état se lit à la pastille de couleur, pas au fond : trois tuiles vertes
    côte à côte criaient plus fort que le contenu qu'elles encadrent. */
 .badge-on,.badge-off,.badge-na{display:flex;align-items:center;gap:7px;padding:4px 10px;border-radius:99px;background:var(--subtle);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
@@ -689,6 +683,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 .conn-status.bad .dot{background:var(--bad)}
 .conn-status.na .dot{background:var(--muted-2)}
 
+/* ---- tablette : la colonne de gauche passe au-dessus ---- */
 @media (max-width:960px){
   .layout{grid-template-columns:1fr;height:auto;overflow:visible}
   .main{height:auto;overflow:visible}
@@ -696,6 +691,83 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   .health{display:none !important}
   .featured > .cock{max-width:none}
   .clock{display:none}
+  .spage-body{grid-template-columns:1fr}
+  .spage-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border);padding:10px 12px;gap:6px;scrollbar-width:none}
+  .spage-nav::-webkit-scrollbar{display:none}
+  .spage-nav .grp{display:none}
+  .spage-nav button{white-space:nowrap;flex:none}
+}
+
+/* ---- téléphone ---- */
+@media (max-width:760px){
+  /* La barre de navigation défile horizontalement au lieu de s'empiler sur
+     quatre lignes : sur un écran étroit, huit entrées repliées mangeaient la
+     moitié de la hauteur utile. */
+  .sidebar{flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:10px 12px;
+           scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .sidebar::-webkit-scrollbar{display:none}
+  .sidebar .nav{flex-direction:row;gap:6px;flex:none}
+  .sidebar .nav-title{display:none}
+  .nav-link{white-space:nowrap;flex:none;padding:8px 11px}
+  .brand{flex:none;margin-right:4px}
+  .brand-sub{display:none}
+
+  .topbar{flex-wrap:wrap;gap:10px;padding:10px 14px}
+  .search{order:2;flex:1 1 100%;max-width:none;height:38px}
+  .search .kbd{display:none}
+  .top-right{order:1;width:100%;justify-content:flex-end;gap:8px}
+
+  .content{padding:16px 14px 28px}
+  .featured{gap:12px}
+  .featured > .now-playing,.featured > .cock{flex:1 1 100%;max-width:none}
+  .now-playing{flex-direction:column;gap:14px}
+  .poster{width:100%;height:170px}
+
+  .apps-head{gap:10px}
+  .grid:not(.list) > *{flex:1 1 100%;max-width:none}
+  /* une tuile large ne tient pas en deux colonnes sur 375 px : les chiffres
+     passent sous le nom plutôt que de déborder */
+  .grid:not(.list) .app-card.wide{flex:1 1 100%;display:flex;flex-direction:column}
+  .grid:not(.list) .app-card.wide .app-mid{min-width:0;max-width:none}
+  .grid:not(.list) .app-card.wide .app-stats{margin-top:2px}
+  .app-stats{flex-wrap:wrap}
+
+  .srvpage-body{padding:16px 14px 28px}
+  .srv-tuiles{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px}
+  .srv-graphs{grid-template-columns:1fr}
+  .spage-head{padding:0 14px;height:52px}
+  .modal{padding:18px}
+  .qmenu{min-width:0;width:calc(100vw - 24px);max-width:280px}
+  .al-pop{width:calc(100vw - 24px);max-width:340px}
+  .maj-pop{width:calc(100vw - 24px);max-width:320px}
+
+  .opt-row{flex-direction:column;align-items:stretch;gap:10px}
+  .opt-row .seg,.opt-row .palette{align-self:flex-start}
+  .etat-row{flex-wrap:wrap}
+  .etat-row .btn-sm{margin-left:21px}
+}
+
+/* ---- encoches et barres système ---- */
+@supports (padding:env(safe-area-inset-bottom)){
+  @media (max-width:760px){
+    .content,.srvpage-body,.spage-content{
+      padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+    .sidebar{padding-left:calc(12px + env(safe-area-inset-left))}
+  }
+}
+
+/* ---- écrans sans survol : rien ne doit dépendre du pointeur ---- */
+@media (hover:none){
+  /* Le crayon et la croix ne se révélaient jamais au doigt. Seul le menu
+     reste visible en permanence ; il contient toutes les commandes. */
+  .app-actions .act-btn[data-act="edit"],
+  .app-actions .act-btn[data-act="del"]{display:none}
+  .app-actions .act-btn[data-act="menu"]{opacity:1}
+  .app-tags .star{opacity:1;color:var(--muted-3)}
+  .app-tags .star.on{color:var(--warn)}
+  .wbar button{opacity:1}
+  .act-btn{min-width:30px;min-height:30px}
+  .qmenu button{padding:11px 12px}
 }
 </style>
 </head>
@@ -2762,6 +2834,13 @@ async function ouvrirQMenu(bouton, index) {
     qitem(menu, '🌡', t('qm.temps'), () => ouvrirEntites('temperatures'));
     qitem(menu, '🔔', t('qm.autos'), () => ouvrirEntites('automatisations'));
   }
+
+  /* Modifier et Supprimer figurent aussi ici : sur un écran tactile, le
+     crayon et la croix ne se révèlent jamais, faute de survol. */
+  qsep(menu);
+  qitem(menu, '☆', t(app.fav ? 'fav.remove' : 'fav.add'), () => basculerFavori(index));
+  qitem(menu, '✎', t('ti.edit'), () => openAppModal(index));
+  qitem(menu, '✕', t('btn.delete'), () => openDelModal(index), { chaud: true });
 
   /* placement avant l'appel réseau : le menu ne doit pas sauter */
   const r = bouton.getBoundingClientRect();
