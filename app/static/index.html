@@ -373,6 +373,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .add-lab{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif}
 
 /* actions modifier / supprimer */
+/* Mode création éteint : Atrium est un lanceur, rien ne se modifie par
+   inadvertance. Les commandes reviennent d'un clic, elles ne sont pas perdues.
+   Mettre en favori reste possible : c'est un marque-page, pas une création. */
+:root[data-creatif="0"] .act-btn[data-act="edit"],
+:root[data-creatif="0"] .act-btn[data-act="del"],
+:root[data-creatif="0"] #side-add,
+:root[data-creatif="0"] #btn-ranger,
+:root[data-creatif="0"] #w-edit{display:none}
+/* sauf s'il n'y a aucune application : il faut bien pouvoir en ajouter une */
+:root[data-creatif="0"] .grid:not(.vide) .add-card{display:none}
+.nav-link.bascule.on{background:var(--accent-soft);color:var(--accent-strong)}
+.nav-link.bascule.on .ico{color:var(--accent-strong)}
+
 /* Les commandes n'apparaissent qu'au survol. L'étoile, elle, est un état de la
    tuile et non une commande : elle vit avec les pastilles (.app-tags) et reste
    visible en permanence sur un favori. */
@@ -805,6 +818,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
     <div class="nav">
       <div class="nav-title" data-i18n="nav.manage">Gérer</div>
+      <button class="nav-link bascule" id="side-creatif" type="button" aria-pressed="false"><span class="ico">✎</span><span data-i18n="nav.creative">Mode création</span></button>
       <button class="nav-link" id="side-add"><span class="ico">+</span><span data-i18n="nav.add">Ajouter une app</span></button>
       <button class="nav-link" id="side-servers"><span class="ico">⛁</span><span data-i18n="servers">Serveurs</span></button>
       <button class="nav-link" id="side-settings"><span class="ico">⚙</span><span data-i18n="nav.settings">Réglages</span></button>
@@ -1437,6 +1451,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 <span data-i18n="look.anim.d">Transitions et apparitions.</span></span>
               <button class="bouton-bascule" id="look-anim" type="button" role="switch"
                       aria-labelledby="lb-anim"></button>
+            </div>
+            <div class="opt-row">
+              <span class="opt-tx"><b id="lb-creatif" data-i18n="nav.creative">Mode création</b>
+                <span data-i18n="look.creative.d">Affiche les commandes de modification, de suppression et d'ajout.</span></span>
+              <button class="bouton-bascule" id="look-creatif" type="button" role="switch"
+                      aria-labelledby="lb-creatif"></button>
             </div>
             <div class="opt-row">
               <span class="opt-tx"><b id="lb-stats" data-i18n="look.stats">Chiffres sur les tuiles</b>
@@ -2105,6 +2125,9 @@ const ACCENTS = {
 let accent = store.get('accent', 'bleu');
 let densite = store.get('densite', 'normal');
 let animations = store.get('anim', '1') !== '0';
+/* Propre à cet appareil : on peut vouloir modifier depuis son bureau et se
+   contenter de lancer depuis son téléphone. */
+let creatif = store.get('creatif', '0') === '1';
 let voirStats = store.get('stats', '1') !== '0';
 
 function appliquerAccent() {
@@ -2121,6 +2144,20 @@ function appliquerAccent() {
   r.setProperty('--accent-strong', sombre ? a.sf : a.s);
   r.setProperty('--accent-soft', (sombre ? a.c : a.f) + (sombre ? '33' : '22'));
   r.setProperty('--accent-border', (sombre ? a.f : a.c) + '55');
+}
+
+function appliquerCreatif() {
+  document.documentElement.setAttribute('data-creatif', creatif ? '1' : '0');
+  const b = $('side-creatif');
+  if (b) {
+    b.classList.toggle('on', creatif);
+    b.setAttribute('aria-pressed', creatif ? 'true' : 'false');
+  }
+  if (!creatif && EDIT_W) {          // on ne reste pas coincé en édition
+    EDIT_W = false;
+    majBoutonsWidgets();
+    renderCockpit();
+  }
 }
 
 function applyTheme() {
@@ -2835,12 +2872,15 @@ async function ouvrirQMenu(bouton, index) {
     qitem(menu, '🔔', t('qm.autos'), () => ouvrirEntites('automatisations'));
   }
 
-  /* Modifier et Supprimer figurent aussi ici : sur un écran tactile, le
-     crayon et la croix ne se révèlent jamais, faute de survol. */
   qsep(menu);
   qitem(menu, '☆', t(app.fav ? 'fav.remove' : 'fav.add'), () => basculerFavori(index));
-  qitem(menu, '✎', t('ti.edit'), () => openAppModal(index));
-  qitem(menu, '✕', t('btn.delete'), () => openDelModal(index), { chaud: true });
+  /* Modifier et Supprimer figurent ici aussi : sur un écran tactile, le crayon
+     et la croix ne se révèlent jamais, faute de survol. Le mode création les
+     gouverne des deux côtés. */
+  if (creatif) {
+    qitem(menu, '✎', t('ti.edit'), () => openAppModal(index));
+    qitem(menu, '✕', t('btn.delete'), () => openDelModal(index), { chaud: true });
+  }
 
   /* placement avant l'appel réseau : le menu ne doit pas sauter */
   const r = bouton.getBoundingClientRect();
@@ -4354,7 +4394,8 @@ function renderApps() {
   favs.forEach(([app, i]) => fgrid.appendChild(appCard(app, i)));
 
   const grid = $('apps-grid');
-  grid.className = 'grid' + (view === 'list' ? ' list' : '');
+  grid.className = 'grid' + (view === 'list' ? ' list' : '')
+                 + (apps.length ? '' : ' vide');
   grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
@@ -4612,6 +4653,15 @@ $('sp-nav').addEventListener('click', (e) => {
   if (b) spNav(b.dataset.p);
 });
 $('sp-back').addEventListener('click', closeSettings);
+$('side-creatif').addEventListener('click', () => {
+  creatif = !creatif;
+  store.set('creatif', creatif ? '1' : '0');
+  appliquerCreatif();
+  renderApps();
+  if (!$('spage').hidden) renderApparence();
+  toast(t(creatif ? 'creative.on' : 'creative.off'));
+});
+
 $('side-settings').addEventListener('click', () => openSettings('profil'));
 
 /* ---------- Apparence ---------- */
@@ -4650,6 +4700,13 @@ function renderApparence() {
     animations = v;
     store.set('anim', v ? '1' : '0');
     applyTheme();
+    renderApparence();
+  });
+  bascule('look-creatif', creatif, (v) => {
+    creatif = v;
+    store.set('creatif', v ? '1' : '0');
+    appliquerCreatif();
+    renderApps();
     renderApparence();
   });
   bascule('look-stats', voirStats, (v) => {
@@ -5735,6 +5792,7 @@ async function lireSession() {
 
 (async function demarrer() {
   applyTheme();
+  appliquerCreatif();
   i18n.appliquer();          // langue du navigateur, ou celle choisie
   renderAvatar();
   const etat = await lireSession();
