@@ -464,6 +464,14 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* fiche application : blocs uniformes pour toutes les intégrations */
 .mblock{border:1px solid var(--border);border-radius:11px;background:var(--surface-2);overflow:hidden}
 .mblock-h{padding:11px 14px;border-bottom:1px solid var(--divider);background:var(--surface);font:700 11.5px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.donnees{margin-top:2px;display:flex;flex-direction:column;gap:6px}
+.donnees[hidden]{display:none}
+.donnees .d-t{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;
+              text-transform:uppercase;color:var(--muted-3)}
+.donnees .d-l{display:flex;flex-wrap:wrap;gap:5px}
+.donnees .d-l b{font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent-strong);
+                background:var(--accent-soft);border-radius:6px;padding:4px 7px}
+
 .cases{display:flex;flex-direction:column;gap:2px}
 .cases label{display:flex;align-items:center;gap:10px;padding:8px 4px;border-radius:8px;
              font:500 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text-2);cursor:pointer}
@@ -1102,6 +1110,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="test-row">
             <button class="btn-sm" id="m-test" type="button" data-i18n="f.test">Tester la connexion</button>
             <span class="conn-status na" id="m-status"><span class="dot"></span><span class="lbl" data-i18n="f.test.idle">Non testé</span></span>
+          </div>
+          <div class="donnees" id="m-donnees" hidden>
+            <span class="d-t" data-i18n="f.donnees">Données disponibles</span>
+            <span class="d-l" id="m-donnees-l"></span>
           </div>
           <input type="hidden" id="m-type" value="">
         </div>
@@ -4540,6 +4552,8 @@ async function detecterEtTester() {
 
   if (!d.trouve) {
     $('m-type').value = '';
+    DONNEES = [];
+    peindreDonnees();
     syncKind();
     majTest(d.joignable ? 'na' : 'bad',
       d.joignable ? t('f.test.unknown') : t('f.test.unreachable'));
@@ -4547,6 +4561,9 @@ async function detecterEtTester() {
   }
 
   $('m-type').value = d.type;
+  DONNEES = Array.isArray(d.donnees) ? d.donnees : [];
+  peindreDonnees();
+  renderInfos(apps[editIndex] || { nom: $('m-nom').value.trim() });
   syncKind();
   /* Nouvelle application seulement : sur une fiche existante, la catégorie est
      un choix de l'utilisateur, la détection n'a pas à la défaire. */
@@ -4584,6 +4601,22 @@ $('m-ico-auto').addEventListener('click', () => {
 /* Cases d'affichage. Les trois premières valent pour toute application ; les
    suivantes sont les chiffres que ce service remonte réellement, on ne propose
    pas de masquer ce qui n'existe pas. */
+/* Ce que l'intégration détectée sait lire, annoncé par le serveur. Vide tant
+   qu'aucune détection n'a eu lieu. */
+let DONNEES = [];
+
+function peindreDonnees() {
+  const z = $('m-donnees');
+  const l = $('m-donnees-l');
+  l.textContent = '';
+  z.hidden = !DONNEES.length;
+  DONNEES.forEach((d) => {
+    const b = document.createElement('b');
+    b.textContent = d;
+    l.appendChild(b);
+  });
+}
+
 const INFOS_BASE = [
   ['etat', 'f.infos.etat'],
   ['latence', 'f.infos.latence'],
@@ -4594,7 +4627,13 @@ let MASQUE = [];
 function renderInfos(app) {
   const zone = $('m-infos');
   zone.textContent = '';
-  const stats = STATS[app.nom] || [];
+  /* Ce que le service remonte en ce moment, complété par ce que l'intégration
+     déclare savoir lire : on peut ainsi régler une tuile avant même que la
+     première mesure ait abouti. */
+  const mesure = STATS[app.nom] || [];
+  const vus = mesure.map((x) => x.lab);
+  const stats = mesure.concat(
+    DONNEES.filter((d) => !vus.includes(d)).map((d) => ({ lab: d, val: '' })));
   const ligne = (id, libelle, exemple) => {
     const l = document.createElement('label');
     const c = document.createElement('input');
@@ -4650,6 +4689,8 @@ function openAppModal(index) {
   $('m-logo').value = app.logoUrl;
   $('m-type').value = kindOfApp(app);
   MASQUE = Array.isArray(app.masque) ? app.masque.slice() : [];
+  DONNEES = [];
+  peindreDonnees();
   renderInfos(app);
   $('m-key').value = kindOfApp(app) === 'ha' ? (app.token || '') : (app.apiKey || '');
   $('m-temp').value = app.tempEntity || '';

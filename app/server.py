@@ -420,7 +420,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if not host_allowed(url if url.startswith(("http://", "https://")) else "http://" + url):
             self.reply(403, json.dumps({"error": "Adresse hors du réseau privé"}, ensure_ascii=False).encode())
             return
-        self.reply(200, json.dumps(services.identifier(url, cle), ensure_ascii=False).encode())
+        vu = services.identifier(url, cle)
+        # ce que cette integration saura lire : l'interface l'annonce sur la
+        # fiche, avant meme qu'une mesure ait abouti
+        vu["donnees"] = widgets.CAPACITES.get(vu.get("type") or "", [])
+        self.reply(200, json.dumps(vu, ensure_ascii=False).encode())
 
     def _app_nommee(self, nom):
         return next((a for a in (charger_config().get("apps") or [])

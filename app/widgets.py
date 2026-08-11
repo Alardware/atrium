@@ -1,8 +1,12 @@
-"""Atrium — donnees affichees sur les tuiles.
+"""Atrium — ce que chaque service sait dire de lui-meme.
 
-Trois chiffres au maximum par application : ce qu on veut savoir d un coup
-d oeil, pas un tableau de bord miniature. Chaque fonction renvoie une liste
-[{"lab": "MOVIES", "val": "634"}] ou None.
+Une integration lit tout ce que son API expose d interessant et le renvoie
+sous forme de liste [{"lab": "LECTURES", "val": "2"}]. C est la fiche de
+l application qui decide ensuite lesquelles apparaissent sur la tuile : mieux
+vaut mesurer largement et laisser choisir que decider a la place.
+
+CAPACITES declare, pour chaque type, ce qu il sait lire — de quoi l annoncer
+avant meme la premiere mesure.
 """
 import json
 import re
@@ -11,6 +15,7 @@ import urllib.parse
 from services import _chemin, _http, _json
 
 _PASSERELLE = re.compile(r"udm|uxg|ucg|usg|gateway|dream", re.I)
+_BORNE = re.compile(r"\buap|u6|u7|nanohd|flexhd|lite\b|lr\b|ac-?pro|ac-?lite", re.I)
 
 
 def _n(v):
@@ -36,15 +41,50 @@ def _octets(v):
 # --- media -------------------------------------------------------------------
 
 def w_plex(base, cle):
+    """Lectures, spectateurs, transcodages, debit et bibliotheques.
+
+    Le debit et le transcodage viennent des sessions elles-memes : Plex les
+    decrit dans chaque flux, inutile d interroger un service tiers."""
     code, corps, _ = _http(base + "/status/sessions", {"X-Plex-Token": cle})
     j = _json(corps)
     if code != 200 or not isinstance(j, dict):
         return None
     mc = j.get("MediaContainer") or {}
+    flux = mc.get("Metadata") or []
     n = mc.get("size")
     if n is None:
-        n = len(mc.get("Metadata") or [])
-    return [{"lab": "LECTURES", "val": _n(n)}]
+        n = len(flux)
+
+    spectateurs, transcodages, kbps = set(), 0, 0
+    for f in flux:
+        u = _chemin(f, "User", "title")
+        if u:
+            spectateurs.add(u)
+        for s in (f.get("Media") or []):
+            for part in (s.get("Part") or []):
+                deb = part.get("decision") or ""
+                if deb == "transcode":
+                    transcodages += 1
+            try:
+                kbps += int(s.get("bitrate") or 0)
+            except (TypeError, ValueError):
+                pass
+
+    stats = [{"lab": "LECTURES", "val": _n(n)}]
+    if spectateurs:
+        stats.append({"lab": "SPECTATEURS", "val": _n(len(spectateurs))})
+    if transcodages:
+        stats.append({"lab": "TRANSCODAGES", "val": _n(transcodages)})
+    if kbps:
+        stats.append({"lab": "DÉBIT", "val": "%.1f Mb/s" % (kbps / 1000.0)})
+
+    # Les bibliotheques ne bougent pas d une minute a l autre, mais elles
+    # disent la taille de la mediatheque : on les compte a part.
+    code, corps, _ = _http(base + "/library/sections", {"X-Plex-Token": cle})
+    d = _chemin(_json(corps), "MediaContainer", "Directory")
+    if code == 200 and isinstance(d, list) and d:
+        stats.append({"lab": "BIBLIOTHÈQUES", "val": _n(len(d))})
+    return stats
 
 
 def w_jellyfin(base, cle):
@@ -255,11 +295,16 @@ def w_ha(base, cle):
                       "{{ states | selectattr('state','in',['unavailable','unknown'])"
                       " | list | count }}|"
                       "{{ states.automation | selectattr('state','eq','off')"
-                      " | list | count }}")
-    if not rep or rep.count("|") != 2:
+                      " | list | count }}|"
+                      "{{ states.light | selectattr('state','eq','on') | list | count }}|"
+                      "{{ states.binary_sensor"
+                      " | selectattr('attributes.device_class','defined')"
+                      " | selectattr('attributes.device_class','in',['door','garage_door','opening'])"
+                      " | selectattr('state','eq','on') | list | count }}")
+    if not rep or rep.count("|") != 4:
         return None
     try:
-        presents, muettes, arretees = (int(x) for x in rep.split("|"))
+        presents, muettes, arretees, lumieres, portes = (int(x) for x in rep.split("|"))
     except ValueError:
         return None
     stats = []
@@ -267,6 +312,10 @@ def w_ha(base, cle):
         stats.append({"lab": "INDISPO", "val": _n(muettes)})
     if arretees:
         stats.append({"lab": "AUTOM. OFF", "val": _n(arretees)})
+    if lumieres:
+        stats.append({"lab": "LUMIÈRES", "val": _n(lumieres)})
+    if portes:
+        stats.append({"lab": "OUVERTURES", "val": _n(portes)})
     if presents:
         stats.append({"lab": "PRÉSENTS", "val": _n(presents)})
     return stats or None
@@ -278,7 +327,10 @@ def w_unraid(base, cle):
         return None
     corps = json.dumps({"query": "{ metrics { cpu { percentTotal } "
                                  "memory { percentTotal } } "
-                                 "array { capacity { kilobytes { used total } } } }"}).encode()
+                                 "array { capacity { kilobytes { used total } } "
+                                 "disks { temp } } "
+                                 "info { time uptime } "
+                                 "docker { containers { state } } }"}).encode()
     code, rep, _ = _http(base + "/graphql",
                          {"x-api-key": cle, "Content-Type": "application/json"},
                          "POST", corps)
@@ -300,6 +352,25 @@ def w_unraid(base, cle):
                           "val": "%d %%" % round(float(cap.get("used") or 0) * 100 / total)})
     except (TypeError, ValueError):
         pass
+
+    # La grappe compte plusieurs disques : la temperature qui compte est la
+    # plus elevee, c est elle qui declenchera une alerte.
+    temps = [t for t in ((x or {}).get("temp") for x in (_chemin(d, "array", "disks") or []))
+             if isinstance(t, (int, float)) and 0 < t < 120]
+    if temps:
+        stats.append({"lab": "TEMPÉRATURE", "val": "%d °C" % round(max(temps))})
+
+    up = _chemin(d, "info", "uptime")
+    if isinstance(up, (int, float)) and up > 0:
+        jours = int(up // 86400)
+        stats.append({"lab": "UPTIME",
+                      "val": ("%d j" % jours) if jours else ("%d h" % int(up // 3600))})
+
+    conteneurs = _chemin(d, "docker", "containers")
+    if isinstance(conteneurs, list) and conteneurs:
+        actifs = sum(1 for c in conteneurs
+                     if str((c or {}).get("state", "")).upper().startswith("RUNNING"))
+        stats.append({"lab": "DOCKER", "val": "%d / %d" % (actifs, len(conteneurs))})
     return stats or None
 
 
@@ -343,6 +414,12 @@ def w_unifi(base, cle):
 
     code, rep, _ = _http("%s/sites/%s/devices?limit=200" % (racine, site), entetes)
     liste = (_json(rep) or {}).get("data") or [] if code == 200 else []
+    if liste:
+        stats.append({"lab": "ÉQUIPEMENTS", "val": _n(len(liste))})
+        bornes = [d for d in liste if _BORNE.search((d.get("model") or "")
+                                                    + " " + (d.get("name") or ""))]
+        if bornes:
+            stats.append({"lab": "BORNES WIFI", "val": _n(len(bornes))})
     passerelle = next((d for d in liste if _PASSERELLE.search(
         (d.get("model") or "") + " " + (d.get("name") or ""))), None) or (liste[0] if liste else None)
     if passerelle and passerelle.get("id"):
@@ -393,6 +470,35 @@ REGISTRE = {
 }
 
 
+# Ce que chaque integration sait lire. Sert a l annoncer sur la fiche de
+# l application, avant meme la premiere mesure : l utilisateur voit ce qu il
+# gagne a fournir une cle. Les libelles correspondent aux pastilles produites.
+CAPACITES = {
+    "plex": ["LECTURES", "SPECTATEURS", "TRANSCODAGES", "DÉBIT", "BIBLIOTHÈQUES"],
+    "jellyfin": ["LECTURES"],
+    "tautulli": ["LECTURES", "DÉBIT"],
+    "sonarr": ["MANQUE", "FILE", "SÉRIES"],
+    "radarr": ["MANQUE", "FILE", "FILMS"],
+    "lidarr": ["MANQUE", "FILE", "ARTISTES"],
+    "readarr": ["MANQUE", "FILE", "AUTEURS"],
+    "whisparr": ["MANQUE", "FILE", "FILMS"],
+    "prowlarr": ["INDEXEURS"],
+    "bazarr": ["FILMS", "ÉPISODES"],
+    "sabnzbd": ["DÉBIT", "FILE"],
+    "qbittorrent": ["RÉCEPTION", "ENVOI"],
+    "adguard": ["REQUÊTES", "BLOQUÉES"],
+    "pihole": ["REQUÊTES", "BLOQUÉES"],
+    "portainer": ["ACTIFS", "ARRÊTÉS"],
+    "uptimekuma": ["EN LIGNE", "HORS LIGNE"],
+    "immich": ["PHOTOS", "VIDÉOS"],
+    "paperless": ["DOCUMENTS"],
+    "nextcloud": ["UTILISATEURS", "FICHIERS"],
+    "ha": ["INDISPO", "AUTOM. OFF", "LUMIÈRES", "OUVERTURES", "PRÉSENTS"],
+    "unraid": ["CPU", "RAM", "DISQUE", "TEMPÉRATURE", "UPTIME", "DOCKER"],
+    "unifi": ["CLIENTS", "ÉQUIPEMENTS", "BORNES WIFI", "CPU", "RAM"],
+}
+
+
 def mesurer(type_service, url, cle):
     fn = REGISTRE.get(type_service)
     if not fn:
@@ -404,4 +510,6 @@ def mesurer(type_service, url, cle):
         stats = fn(base, cle or "")
     except Exception:
         return None
-    return stats[:3] if stats else None
+    # Plus de plafond ici : on remonte tout ce que le service donne, la fiche
+    # de l application decide de ce qui apparait sur la tuile.
+    return stats[:8] if stats else None

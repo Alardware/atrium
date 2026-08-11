@@ -176,13 +176,35 @@ LABELS_SURVEILLES = {
     "MÉMOIRE": ("ram", SEUILS_CHARGE),
 }
 
+# Temperatures de disque : au-dela de 55 degres la duree de vie chute, au-dela
+# de 60 le constructeur sort de sa plage. Le processeur n est pas concerne, un
+# pic a 80 y est normal — seules les pastilles en degres passent ici, et elles
+# viennent des grappes de stockage.
+SEUILS_TEMP = ((60, "critique"), (55, "avertissement"), (50, "surveillance"))
+LABELS_TEMP = ("TEMPÉRATURE", "TEMPERATURE")
+
 
 def _evaluer_tuiles(tuiles):
     vus = set()
     for service, pastilles in (tuiles or {}).items():
         for p in pastilles:
-            surveille = LABELS_SURVEILLES.get((p.get("lab") or "").upper())
+            lab = (p.get("lab") or "").upper()
             val = (p.get("val") or "").strip()
+            if lab in LABELS_TEMP and val.endswith("C"):
+                try:
+                    deg = int(float(val.rstrip("C").rstrip("° ").strip().replace(",", ".")))
+                except ValueError:
+                    continue
+                cle = "temp:%s" % service
+                vus.add(cle)
+                niveau = _seuil(deg, SEUILS_TEMP)
+                if niveau:
+                    _poser(cle, niveau, service, "temp",
+                           "Température à %d °C" % deg, {"deg": deg})
+                else:
+                    _lever(cle)
+                continue
+            surveille = LABELS_SURVEILLES.get(lab)
             if not surveille or not val.endswith("%"):
                 continue
             try:
@@ -198,7 +220,7 @@ def _evaluer_tuiles(tuiles):
                        "%s à %d %%" % (p.get("lab"), pc), {"pc": pc})
             else:
                 _lever(cle)
-    for cle in [c for c in list(_alertes) if c.startswith("pct:")]:
+    for cle in [c for c in list(_alertes) if c.startswith(("pct:", "temp:"))]:
         if cle not in vus:
             _lever(cle)
 
