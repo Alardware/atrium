@@ -15,7 +15,7 @@
   --border:#e6e8ec; --border-2:#e0e3e9; --border-3:#c3cbd8;
   --divider:#f0f2f5; --subtle:#f2f4f7; --track:#eceef2;
   --text:#101828; --text-2:#475467; --text-3:#667085;
-  --muted:#8a919e; --muted-2:#98a2b3; --muted-3:#9aa1ad;
+  --muted:#6f7786; --muted-2:#69778e; --muted-3:#6e7787;
   --accent:#2f6fed; --accent-strong:#1d55c9; --accent-soft:#eef3ff;
   --accent-border:#c8d6f7; --avatar-bg:#e8edf7; --on-accent:#fff;
   --ok:#16a34a; --ok-soft:#eaf7f0; --ok-text:#15803d;
@@ -35,7 +35,7 @@
   --border:#242b36; --border-2:#2c3440; --border-3:#3a4351;
   --divider:#1f2530; --subtle:#1c222b; --track:#252d38;
   --text:#e9eef5; --text-2:#b6bfcb; --text-3:#9ba5b3;
-  --muted:#7e8896; --muted-2:#6c7684; --muted-3:#626c79;
+  --muted:#7e8896; --muted-2:#7a8492; --muted-3:#79838f;
   --accent:#5b8cff; --accent-strong:#88abff; --accent-soft:#182643;
   --accent-border:#31497f; --avatar-bg:#1d2a45; --on-accent:#0b1220;
   --ok:#22c55e; --ok-soft:#12291d; --ok-text:#6ee7a8;
@@ -66,12 +66,21 @@ template{display:none}
 
 /* ---- sidebar (fixe, scroll interne si besoin) ---- */
 .sidebar{display:flex;flex-direction:column;gap:26px;padding:22px 18px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto}
+/* Un anneau de focus visible sur tout ce qui se pilote au clavier. Sans lui,
+   naviguer à la tabulation revient à avancer les yeux fermés. « :focus-visible »
+   ne le montre qu'au clavier, jamais au clic à la souris. */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
+summary:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.field input:focus-visible,.field select:focus-visible,
+.lock-box input:focus-visible{outline-offset:0}
+
 .brand{display:flex;align-items:center;gap:11px;padding:0 6px}
 .brand-mark{width:34px;height:34px;border-radius:10px;background:#0d1526;border:1px solid var(--border);display:grid;place-items:center}
 .brand-mark svg{width:24px;height:24px;display:block}
-.brand-name{font:700 14.5px/1.2 'Plus Jakarta Sans',sans-serif}
+.brand-name{margin:0;font:700 14.5px/1.2 'Plus Jakarta Sans',sans-serif}
 .brand-sub{font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.brand-sub2{font:500 8.5px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3)}
+.brand-sub2{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3)}
 .nav{display:flex;flex-direction:column;gap:3px}
 .nav-title{padding:0 8px 8px;font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
 .nav-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:var(--text-2);font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;transition:background .15s,color .15s;text-align:left;width:100%}
@@ -85,7 +94,7 @@ template{display:none}
 .nav-link .count.pb{color:var(--bad);font-weight:700}
 .nav-link.active .count.pb{color:var(--bad)}
 .health{margin-top:auto;flex:none}
-.health-head{display:flex;align-items:center;gap:7px;padding:0 4px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3);margin-bottom:9px}
+.health-head{display:flex;align-items:center;gap:7px;padding:0 4px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3);margin-bottom:9px}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
 .health-rows{display:flex;flex-direction:column;gap:10px}
 .health-row{display:flex;flex-direction:column;gap:6px}
@@ -134,7 +143,7 @@ template{display:none}
 .bell:hover{border-color:var(--accent);color:var(--accent)}
 .bell.n1{color:var(--warn);border-color:var(--warn-border)}
 .bell.n2,.bell.n3{color:var(--bad);border-color:var(--bad)}
-.bell-count{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--bad);color:#fff;font:700 9.5px/16px 'Plus Jakarta Sans',sans-serif;text-align:center}
+.bell-count{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--bad);color:#fff;font:700 10px/16px 'Plus Jakarta Sans',sans-serif;text-align:center}
 .bell-count[hidden]{display:none}
 .bell.n1 .bell-count{background:var(--warn)}
 .al-pop{position:absolute;top:calc(100% + 10px);right:0;width:340px;max-height:min(70vh,460px);overflow-y:auto;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-modal);z-index:40;cursor:default;text-align:left}
@@ -194,9 +203,9 @@ template{display:none}
 .av-users{padding:2px 0 4px}
 .av-u{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:8px;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);text-align:left}
 .av-u:hover{background:var(--subtle);color:var(--text)}
-.av-u .u-avatar{width:24px;height:24px;font:700 9.5px/1 'Plus Jakarta Sans',sans-serif}
+.av-u .u-avatar{width:24px;height:24px;font:700 10px/1 'Plus Jakarta Sans',sans-serif}
 .av-u .chk{margin-left:auto;color:var(--accent);font-size:12px}
-.av-lab{padding:8px 10px 4px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
+.av-lab{padding:8px 10px 4px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
 
 /* ---- content ---- */
 .content{padding:26px 28px 40px;display:flex;flex-direction:column;gap:26px}
@@ -255,7 +264,7 @@ template{display:none}
 .w-choix .tx{flex:1;min-width:0}
 .w-choix .nm{display:block;font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .w-choix .ds{display:block;font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
-.w-choix .et{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3);white-space:nowrap}
+.w-choix .et{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3);white-space:nowrap}
 .card{border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-1);color:inherit;transition:box-shadow .2s,transform .2s,border-color .2s}
 a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transform:translateY(-2px);color:inherit}
 .now-playing{display:flex;gap:18px;padding:18px}
@@ -276,7 +285,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .np-sub{margin-top:5px;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .np-more{display:flex;flex-direction:column;gap:6px;margin-top:14px}
 .np-more:empty{display:none}
-.np-more::before{content:'Aussi en cours';font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3);margin-bottom:2px}
+.np-more::before{content:'Aussi en cours';font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3);margin-bottom:2px}
 .np-mrow{display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);cursor:pointer;transition:border-color .15s}
 .np-mrow:hover{border-color:var(--accent-border)}
 .pchip{position:relative;width:26px;height:26px;border-radius:6px;overflow:hidden;flex:none;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
@@ -338,7 +347,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-stats{display:flex;gap:6px;margin-top:2px}
 .app-stats .st{flex:1;min-width:0;padding:7px 8px;border-radius:8px;background:var(--subtle);text-align:center}
 .app-stats .v{font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.app-stats .l{margin-top:2px;font:600 8.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-stats .l{margin-top:2px;font:600 10px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .grid.list .app-stats{margin-top:0;max-width:290px}
 
 /* Une tuile qui porte des chiffres s'élargit sur deux colonnes au lieu de
@@ -403,7 +412,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .qmenu button .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
 .qmenu button[disabled]{opacity:.45;pointer-events:none}
 .qmenu .sep{height:1px;margin:5px 6px;background:var(--divider)}
-.qmenu .grp{padding:9px 10px 4px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.qmenu .grp{padding:9px 10px 4px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
 .qmenu button.chaud:hover{color:var(--warn-text);background:var(--warn-soft)}
 
 /* ---- fiche de statut ---- */
@@ -472,8 +481,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .user-row.actif{border-color:var(--accent);background:var(--accent-soft)}
 .u-avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#fff;flex:none}
 .u-nom{flex:1;min-width:0;font:600 13.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.u-tag{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--subtle);color:var(--muted);white-space:nowrap}
-.u-actif{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.u-tag{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--subtle);color:var(--muted);white-space:nowrap}
+.u-actif{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
 
 /* champ mot de passe : œil + jauge */
 .pwd-wrap{position:relative;flex:1;min-width:0;display:flex}
@@ -499,7 +508,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-head h2{margin:0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .spage-body{flex:1;display:grid;grid-template-columns:236px 1fr;overflow:hidden}
 .spage-nav{display:flex;flex-direction:column;gap:2px;padding:16px 12px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto}
-.spage-nav .grp{padding:14px 10px 6px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.spage-nav .grp{padding:14px 10px 6px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
 .spage-nav .grp:first-child{padding-top:2px}
 .spage-nav button{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;color:var(--text-2);font:600 13px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .13s,color .13s}
 .spage-nav button:hover{background:var(--subtle);color:var(--text)}
@@ -545,7 +554,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .sess-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .sess-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .sess-tx span{font:500 11px/1.45 'IBM Plex Mono',monospace;color:var(--muted)}
-.sess-eti{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.sess-eti{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 .about-l{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .about-l:first-child{border-top:0;padding-top:0}
 .about-l b{font:600 12.5px/1.35 'IBM Plex Mono',monospace;color:var(--text)}
@@ -570,7 +579,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srv-bloc-h .s{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .srv-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:16px}
 .srv-tuile{padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-.srv-tuile .l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3);margin-bottom:8px}
+.srv-tuile .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3);margin-bottom:8px}
 .srv-tuile .v{font:700 24px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
 .srv-tuile .d{margin-top:6px;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
 .srv-tuile.s2 .v{color:var(--warn-text)}
@@ -581,7 +590,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srv-graphs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px}
 .srv-graph{padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .srv-graph-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
-.srv-graph-h .l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.srv-graph-h .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
 .srv-graph-h .m{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
 .srv-graph svg{display:block;width:100%;height:64px;overflow:visible}
 .srv-graph .trace{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
@@ -589,7 +598,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srv-graph .rep{stroke:var(--divider);stroke-width:1;vector-effect:non-scaling-stroke}
 .srv-graph .vide{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted);padding:18px 0;text-align:center}
 .srv-tab{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
-.srv-tab th{text-align:left;padding:10px 14px;font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-3);border-bottom:1px solid var(--border);white-space:nowrap}
+.srv-tab th{text-align:left;padding:10px 14px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-3);border-bottom:1px solid var(--border);white-space:nowrap}
 .srv-tab td{padding:10px 14px;font:500 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text-2);border-top:1px solid var(--divider);white-space:nowrap}
 .srv-tab td.nom{font-weight:600;color:var(--text);width:100%;white-space:normal}
 .srv-tab td.num{font-family:'IBM Plex Mono',monospace;text-align:right}
@@ -769,6 +778,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   }
 }
 
+/* ---- mouvement réduit : le réglage du système fait foi ----
+   Certains utilisateurs souffrent de vertiges avec les animations. Le réglage
+   d'Apparence reste utile pour les autres, mais il ne peut pas passer outre
+   cette demande-là. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001s !important;animation-iteration-count:1 !important;
+    transition-duration:.001s !important;scroll-behavior:auto !important}
+}
+
 /* ---- écrans sans survol : rien ne doit dépendre du pointeur ---- */
 @media (hover:none){
   /* Le crayon et la croix ne se révélaient jamais au doigt. Seul le menu
@@ -779,8 +798,18 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   .app-tags .star{opacity:1;color:var(--muted-3)}
   .app-tags .star.on{color:var(--warn)}
   .wbar button{opacity:1}
-  .act-btn{min-width:30px;min-height:30px}
-  .qmenu button{padding:11px 12px}
+  /* 44 px : la norme Apple ; Material demande 48 dp. Au doigt, un bouton plus
+     grand n'est pas un défaut : on les laisse grandir plutôt que de bricoler
+     une zone tactile invisible autour d'un dessin bordé. */
+  .act-btn,.app-tags .star,.wbar button,.pwd-eye,.bell,.theme-btn,.avatar{
+    min-width:44px;min-height:44px}
+  .app-actions{top:6px;right:6px}
+  .qmenu button{padding:13px 12px}
+  .nav-link,.spage-nav button,.seg button,.btn-sm{min-height:44px}
+  .al-row,.mu-row,.sess-row{min-height:44px}
+  .srv-tab td{padding-top:13px;padding-bottom:13px}
+  /* iOS agrandit la page dès qu'on touche un champ sous 16 px : on l'évite. */
+  .field input,.field select,.lock-box input,.setup-box input,#search{font-size:16px}
 }
 </style>
 </head>
@@ -802,7 +831,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         </svg>
       </div>
       <div>
-        <div class="brand-name">Atrium</div>
+        <h1 class="brand-name">Atrium</h1>
         <div class="brand-sub" data-i18n="app.sub">Central Dashboard</div>
         <div class="brand-sub2" data-i18n="app.sub2">Services | Serveurs</div>
       </div>
