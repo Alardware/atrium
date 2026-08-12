@@ -162,6 +162,13 @@ summary:focus-visible,[tabindex]:focus-visible{
 .al-srv{font:700 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .al-msg{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .al-age{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap;padding-top:3px}
+.al-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.al-act:empty{display:none}
+.al-act button{padding:5px 9px;border-radius:7px;border:1px solid var(--border-2);
+               background:var(--surface-2);font:600 11px/1 'Plus Jakarta Sans',sans-serif;
+               color:var(--text-2);transition:border-color .13s,color .13s}
+.al-act button:hover{border-color:var(--accent);color:var(--accent)}
+.al-act button.chaud:hover{border-color:var(--warn);color:var(--warn-text)}
 .al-row.neuf .al-srv::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
 .al-vide{padding:12px 0 2px;font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 
@@ -1781,7 +1788,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 <template id="tpl-al-row">
   <div class="al-row">
     <span class="dot"></span>
-    <span class="al-txt"><span class="al-srv"></span><span class="al-msg"></span></span>
+    <span class="al-txt">
+      <span class="al-srv"></span><span class="al-msg"></span>
+      <span class="al-act"></span>
+    </span>
     <span class="al-age"></span>
   </div>
 </template>
@@ -3561,7 +3571,11 @@ function priorite(id) {
     case 'alertes':
       return pire((a) => a.niveau !== 'info') + (SUPER.alertes.problemes ? 10 : 0);
     case 'serveur':
-      return pire((a) => ['disque', 'ram'].includes(a.code));
+      /* la machine d'Atrium alerte sous son propre code, une machine vue par
+         une intégration passe par « seuil » : les deux parlent de la même
+         grandeur, le widget doit remonter dans les deux cas */
+      return pire((a) => ['disque', 'ram', 'temp'].includes(a.code)
+                      || ['disque', 'ram', 'temp'].includes((a.param || {}).metrique));
     case 'media':
       return MEDIA ? (MEDIA.etat === 'playing' ? 45 : 25) : 0;
     case 'plex':
@@ -3940,6 +3954,39 @@ function majAges() {
 }
 setInterval(majAges, 10000);
 
+/* Ce qu'on peut faire face à une alerte. Chaque action existe déjà ailleurs
+   dans Atrium : on ne fait que l'amener là où le problème est signalé. */
+function actionsPour(a) {
+  const liste = [];
+  const app = apps.find((x) => x.nom === a.service);
+  if (app) {
+    if (app.url) {
+      liste.push({ lab: t('qm.open'), fn: () => window.open(app.url, '_blank', 'noopener') });
+    }
+    liste.push({ lab: t('qm.refresh'), fn: () => sonderMaintenant(app) });
+    liste.push({ lab: t('qm.status'), fn: () => ouvrirStatut(app) });
+    const c = DOCKER.actif ? conteneurDe(app) : null;
+    if (c) {
+      liste.push({ lab: t('qm.restart.go'), chaud: true,
+                   fn: () => demanderRedemarrage(app, c) });
+    }
+  }
+  /* Une alerte de seuil sur une machine mène à sa page, pas à une tuile. */
+  if (a.code === 'seuil' || a.code === 'disque' || a.code === 'ram') {
+    liste.push({ lab: t('servers'), fn: () => { fermerAlertes(); ouvrirServeurs(); } });
+  }
+  if (a.code === 'maj') {
+    liste.push({ lab: t('update.title'), fn: () => {
+      fermerAlertes();
+      $('maj-pop').hidden = false;
+      renderMajPop();
+    } });
+  }
+  return liste;
+}
+
+function fermerAlertes() { $('al-pop').hidden = true; }
+
 function renderAlertes() {
   const res = SUPER.alertes;
   const rang = { info: 0, surveillance: 1, avertissement: 2, critique: 3 };
@@ -3953,6 +4000,11 @@ function renderAlertes() {
 
   const liste = $('al-list');
   liste.textContent = '';
+  /* la liste des conteneurs sert à savoir si « Redémarrer » a un sens ; elle
+     est mise en cache une minute, la demander ici ne coûte rien */
+  if (res.problemes && Date.now() - DOCKER.a > 60000) {
+    chargerConteneurs().then(() => { if (!$('al-pop').hidden) renderAlertes(); });
+  }
   if (!res.alertes.length) {
     const v = document.createElement('div');
     v.className = 'al-vide';
@@ -3967,6 +4019,15 @@ function renderAlertes() {
     const vieux = row.querySelector('.al-age');
     vieux.dataset.depuis = a.depuis;
     vieux.textContent = age(a.depuis);
+    const zone = row.querySelector('.al-act');
+    actionsPour(a).forEach((act) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = act.lab;
+      if (act.chaud) b.classList.add('chaud');
+      b.addEventListener('click', (e) => { e.stopPropagation(); act.fn(); });
+      zone.appendChild(b);
+    });
     liste.appendChild(row);
   });
 
@@ -4374,7 +4435,7 @@ function appCard(app, index) {
 
   /* chiffres du service, quand il en fournit */
   const chiffres = voirStats
-    ? (STATS[app.nom] || []).filter((x) => !cache('st:' + x.lab))
+    ? (STATS[app.nom] || []).filter((x) => !cache(cleInfo(x)) && !cache('st:' + x.lab))
     : null;
   const zone = a.querySelector('.app-stats');
   if (chiffres && chiffres.length) {
@@ -4605,6 +4666,12 @@ $('m-ico-auto').addEventListener('click', () => {
    qu'aucune détection n'a eu lieu. */
 let DONNEES = [];
 
+/* Une mesure se masque par son identifiant, stable, et non par son libellé qui
+   dépend de la langue et peut être reformulé. Les fiches enregistrées avant
+   l'arrivée des identifiants gardent leur clé en libellé : on la reconnaît
+   encore, et l'ouverture de la fiche la convertit. */
+function cleInfo(m) { return 'st:' + (m.id || m.lab); }
+
 function peindreDonnees() {
   const z = $('m-donnees');
   const l = $('m-donnees-l');
@@ -4612,7 +4679,7 @@ function peindreDonnees() {
   z.hidden = !DONNEES.length;
   DONNEES.forEach((d) => {
     const b = document.createElement('b');
-    b.textContent = d;
+    b.textContent = d.lab || d;
     l.appendChild(b);
   });
 }
@@ -4631,9 +4698,17 @@ function renderInfos(app) {
      déclare savoir lire : on peut ainsi régler une tuile avant même que la
      première mesure ait abouti. */
   const mesure = STATS[app.nom] || [];
-  const vus = mesure.map((x) => x.lab);
+  /* conversion des anciennes clés, tant qu'on tient le libellé et l'identifiant
+     de la même mesure sous la main */
+  mesure.forEach((m) => {
+    if (!m.id) return;
+    const vieux = MASQUE.indexOf('st:' + m.lab);
+    if (vieux >= 0) MASQUE[vieux] = 'st:' + m.id;
+  });
+  const vus = mesure.map((x) => x.id || x.lab);
   const stats = mesure.concat(
-    DONNEES.filter((d) => !vus.includes(d)).map((d) => ({ lab: d, val: '' })));
+    DONNEES.filter((d) => !vus.includes(d.id || d))
+           .map((d) => ({ id: d.id, lab: d.lab || d, val: '' })));
   const ligne = (id, libelle, exemple) => {
     const l = document.createElement('label');
     const c = document.createElement('input');
@@ -4671,7 +4746,7 @@ function renderInfos(app) {
     s.className = 'sep';
     s.textContent = t('f.infos.stats');
     zone.appendChild(s);
-    stats.forEach((x) => ligne('st:' + x.lab, x.lab, x.val));
+    stats.forEach((x) => ligne(cleInfo(x), x.lab, x.val));
   }
   $('m-infos-vide').hidden = !!stats.length;
 }

@@ -14,13 +14,10 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
+import metriques
 import reseau
 
 NIVEAUX = {"info": 0, "surveillance": 1, "avertissement": 2, "critique": 3}
-
-# Seuils de remplissage, du plus calme au plus grave
-SEUILS_DISQUE = ((95, "critique"), (85, "avertissement"), (70, "surveillance"))
-SEUILS_CHARGE = ((95, "avertissement"), (85, "surveillance"))
 
 # Deux echecs consecutifs avant d alerter : une coupure d une seule sonde est
 # du bruit, pas une panne.
@@ -159,68 +156,32 @@ def _lever(cle):
         _alertes.pop(cle, None)
 
 
-def _seuil(valeur, table):
-    for limite, niveau in table:
-        if (valeur or 0) >= limite:
-            return niveau
-    return None
-
-
-# Pastilles exprimees en pourcentage qui meritent les memes seuils que l hote :
-# la grappe d un NAS remplie a 95 % doit alerter, meme si Atrium tourne sur un
-# autre volume. La charge processeur en est exclue : un pic est normal.
-LABELS_SURVEILLES = {
-    "DISQUE": ("disque", SEUILS_DISQUE),
-    "STOCKAGE": ("disque", SEUILS_DISQUE),
-    "RAM": ("ram", SEUILS_CHARGE),
-    "MÉMOIRE": ("ram", SEUILS_CHARGE),
-}
-
-# Temperatures de disque : au-dela de 55 degres la duree de vie chute, au-dela
-# de 60 le constructeur sort de sa plage. Le processeur n est pas concerne, un
-# pic a 80 y est normal — seules les pastilles en degres passent ici, et elles
-# viennent des grappes de stockage.
-SEUILS_TEMP = ((60, "critique"), (55, "avertissement"), (50, "surveillance"))
-LABELS_TEMP = ("TEMPÉRATURE", "TEMPERATURE")
-
-
 def _evaluer_tuiles(tuiles):
+    """Applique les seuils declares dans metriques.SEUILS.
+
+    Aucune analyse de texte : chaque mesure porte son identifiant et son
+    nombre. Surveiller une nouvelle grandeur ne demande plus de toucher a ce
+    code, seulement d ajouter une ligne au registre.
+    """
     vus = set()
-    for service, pastilles in (tuiles or {}).items():
-        for p in pastilles:
-            lab = (p.get("lab") or "").upper()
-            val = (p.get("val") or "").strip()
-            if lab in LABELS_TEMP and val.endswith("C"):
-                try:
-                    deg = int(float(val.rstrip("C").rstrip("° ").strip().replace(",", ".")))
-                except ValueError:
-                    continue
-                cle = "temp:%s" % service
-                vus.add(cle)
-                niveau = _seuil(deg, SEUILS_TEMP)
-                if niveau:
-                    _poser(cle, niveau, service, "temp",
-                           "Température à %d °C" % deg, {"deg": deg})
-                else:
-                    _lever(cle)
+    for service, mesures in (tuiles or {}).items():
+        for m in mesures:
+            ident, num = m.get("id"), m.get("num")
+            grav = metriques.niveau(ident, num)
+            if grav is None and ident not in metriques.SEUILS:
                 continue
-            surveille = LABELS_SURVEILLES.get(lab)
-            if not surveille or not val.endswith("%"):
-                continue
-            try:
-                pc = int(float(val[:-1].strip().replace(",", ".")))
-            except ValueError:
-                continue
-            code, table = surveille
-            cle = "pct:%s:%s" % (service, code)
+            cle = "seuil:%s:%s" % (service, ident)
             vus.add(cle)
-            niveau = _seuil(pc, table)
-            if niveau:
-                _poser(cle, niveau, service, code,
-                       "%s à %d %%" % (p.get("lab"), pc), {"pc": pc})
+            if grav:
+                # code « seuil » et non l identifiant : l interface a une
+                # seule formulation a traduire, quelle que soit la grandeur
+                _poser(cle, grav, service, "seuil",
+                       "%s : %s" % (metriques.libelle(ident), m.get("val")),
+                       {"val": m.get("val"), "lab": metriques.libelle(ident),
+                        "metrique": ident})
             else:
                 _lever(cle)
-    for cle in [c for c in list(_alertes) if c.startswith(("pct:", "temp:"))]:
+    for cle in [c for c in list(_alertes) if c.startswith("seuil:")]:
         if cle not in vus:
             _lever(cle)
 
@@ -238,21 +199,14 @@ def evaluer(apps, hote, maj, erreurs_integration, tuiles=None):
 
     if hote and hote.get("disponible"):
         nom = hote.get("nom") or "Serveur"
-        pc = (hote.get("disque") or {}).get("pourcent")
-        niveau = _seuil(pc, SEUILS_DISQUE)
-        if niveau:
-            _poser("disque", niveau, nom, "disque",
-                   "Stockage occupé à %d %%" % pc, {"pc": pc})
-        else:
-            _lever("disque")
-
-        pc = (hote.get("memoire") or {}).get("pourcent")
-        niveau = _seuil(pc, SEUILS_CHARGE)
-        if niveau:
-            _poser("ram", niveau, nom, "ram",
-                   "Mémoire occupée à %d %%" % pc, {"pc": pc})
-        else:
-            _lever("ram")
+        for champ, ident, texte in (("disque", "disque", "Stockage occupé à %d %%"),
+                                    ("memoire", "ram", "Mémoire occupée à %d %%")):
+            pc = (hote.get(champ) or {}).get("pourcent")
+            grav = metriques.niveau(ident, pc)
+            if grav:
+                _poser(ident, grav, nom, ident, texte % pc, {"pc": pc})
+            else:
+                _lever(ident)
 
     for nom, msg in (erreurs_integration or {}).items():
         cle = "integration:" + nom

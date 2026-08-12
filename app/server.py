@@ -423,7 +423,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         vu = services.identifier(url, cle)
         # ce que cette integration saura lire : l'interface l'annonce sur la
         # fiche, avant meme qu'une mesure ait abouti
-        vu["donnees"] = widgets.CAPACITES.get(vu.get("type") or "", [])
+        vu["donnees"] = widgets.capacites(vu.get("type") or "")
         self.reply(200, json.dumps(vu, ensure_ascii=False).encode())
 
     def _app_nommee(self, nom):

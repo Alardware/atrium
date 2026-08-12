@@ -1,9 +1,9 @@
 """Atrium — ce que chaque service sait dire de lui-meme.
 
-Une integration lit tout ce que son API expose d interessant et le renvoie
-sous forme de liste [{"lab": "LECTURES", "val": "2"}]. C est la fiche de
-l application qui decide ensuite lesquelles apparaissent sur la tuile : mieux
-vaut mesurer largement et laisser choisir que decider a la place.
+Une integration lit tout ce que son API expose d interessant et en fait des
+metriques typees, construites par metriques.M : identifiant, valeur numerique,
+libelle et rendu. Le moteur d alertes raisonne sur le nombre, l interface
+affiche le texte, et aucun des deux n a besoin de connaitre l autre.
 
 CAPACITES declare, pour chaque type, ce qu il sait lire — de quoi l annoncer
 avant meme la premiere mesure.
@@ -12,30 +12,11 @@ import json
 import re
 import urllib.parse
 
+from metriques import M, libelle
 from services import _chemin, _http, _json
 
 _PASSERELLE = re.compile(r"udm|uxg|ucg|usg|gateway|dream", re.I)
 _BORNE = re.compile(r"\buap|u6|u7|nanohd|flexhd|lite\b|lr\b|ac-?pro|ac-?lite", re.I)
-
-
-def _n(v):
-    """Formate un nombre : 56055 -> 56 055."""
-    try:
-        return "{:,}".format(int(v)).replace(",", " ")
-    except (TypeError, ValueError):
-        return str(v)
-
-
-def _octets(v):
-    try:
-        v = float(v)
-    except (TypeError, ValueError):
-        return str(v)
-    for unite in ("o/s", "Ko/s", "Mo/s", "Go/s"):
-        if v < 1024:
-            return "%.0f %s" % (v, unite) if unite == "o/s" else "%.1f %s" % (v, unite)
-        v /= 1024
-    return "%.1f To/s" % v
 
 
 # --- media -------------------------------------------------------------------
@@ -70,20 +51,20 @@ def w_plex(base, cle):
             except (TypeError, ValueError):
                 pass
 
-    stats = [{"lab": "LECTURES", "val": _n(n)}]
+    stats = [M("lectures", n)]
     if spectateurs:
-        stats.append({"lab": "SPECTATEURS", "val": _n(len(spectateurs))})
+        stats.append(M("spectateurs", len(spectateurs)))
     if transcodages:
-        stats.append({"lab": "TRANSCODAGES", "val": _n(transcodages)})
+        stats.append(M("transcodages", transcodages))
     if kbps:
-        stats.append({"lab": "DÉBIT", "val": "%.1f Mb/s" % (kbps / 1000.0)})
+        stats.append(M("debit", kbps / 1000.0))
 
     # Les bibliotheques ne bougent pas d une minute a l autre, mais elles
     # disent la taille de la mediatheque : on les compte a part.
     code, corps, _ = _http(base + "/library/sections", {"X-Plex-Token": cle})
     d = _chemin(_json(corps), "MediaContainer", "Directory")
     if code == 200 and isinstance(d, list) and d:
-        stats.append({"lab": "BIBLIOTHÈQUES", "val": _n(len(d))})
+        stats.append(M("bibliotheques", len(d)))
     return stats
 
 
@@ -93,7 +74,7 @@ def w_jellyfin(base, cle):
     if code != 200 or not isinstance(j, list):
         return None
     actives = [s for s in j if s.get("NowPlayingItem")]
-    return [{"lab": "LECTURES", "val": _n(len(actives))}]
+    return [M("lectures", len(actives))]
 
 
 def w_tautulli(base, cle):
@@ -102,8 +83,8 @@ def w_tautulli(base, cle):
     if code != 200 or not isinstance(d, dict):
         return None
     return [
-        {"lab": "LECTURES", "val": _n(d.get("stream_count", 0))},
-        {"lab": "DÉBIT", "val": "%.1f Mb/s" % (float(d.get("total_bandwidth") or 0) / 1000)},
+        M("lectures", d.get("stream_count", 0)),
+        M("debit", float(d.get("total_bandwidth") or 0) / 1000),
     ]
 
 
@@ -121,18 +102,18 @@ def _arr_compte(base, cle, chemin):
     return None
 
 
-def _w_arr(nom_collection, libelle):
+def _w_arr(nom_collection, ident):
     def widget(base, cle):
         total = _arr_compte(base, cle, "/api/v3/%s" % nom_collection)
         manquants = _arr_compte(base, cle, "/api/v3/wanted/missing?pageSize=1")
         file = _arr_compte(base, cle, "/api/v3/queue?pageSize=1")
         stats = []
         if manquants is not None:
-            stats.append({"lab": "MANQUE", "val": _n(manquants)})
+            stats.append(M("manque", manquants))
         if file is not None:
-            stats.append({"lab": "FILE", "val": _n(file)})
+            stats.append(M("file", file))
         if total is not None:
-            stats.append({"lab": libelle, "val": _n(total)})
+            stats.append(M(ident, total))
         return stats or None
     return widget
 
@@ -143,7 +124,7 @@ def w_prowlarr(base, cle):
     if code != 200 or not isinstance(j, list):
         return None
     actifs = [i for i in j if i.get("enable")]
-    return [{"lab": "INDEXEURS", "val": _n(len(actifs))}]
+    return [M("indexeurs", len(actifs))]
 
 
 def w_bazarr(base, cle):
@@ -152,8 +133,8 @@ def w_bazarr(base, cle):
     if code != 200 or not isinstance(j, dict):
         return None
     return [
-        {"lab": "FILMS", "val": _n(j.get("movies", 0))},
-        {"lab": "ÉPISODES", "val": _n(j.get("episodes", 0))},
+        M("films", j.get("movies", 0)),
+        M("episodes", j.get("episodes", 0)),
     ]
 
 
@@ -165,8 +146,8 @@ def w_sabnzbd(base, cle):
     if code != 200 or not isinstance(q, dict):
         return None
     return [
-        {"lab": "DÉBIT", "val": "%.1f Mo/s" % (float(q.get("kbpersec") or 0) / 1024)},
-        {"lab": "FILE", "val": _n(q.get("noofslots", 0))},
+        M("debit_o", float(q.get("kbpersec") or 0) * 1024),
+        M("file", q.get("noofslots", 0)),
     ]
 
 
@@ -176,8 +157,8 @@ def w_qbittorrent(base, cle):
     if code != 200 or not isinstance(j, dict):
         return None
     return [
-        {"lab": "RÉCEPTION", "val": _octets(j.get("dl_info_speed", 0))},
-        {"lab": "ENVOI", "val": _octets(j.get("up_info_speed", 0))},
+        M("reception", j.get("dl_info_speed", 0)),
+        M("envoi", j.get("up_info_speed", 0)),
     ]
 
 
@@ -189,8 +170,8 @@ def w_adguard(base, cle):
     if code != 200 or not isinstance(j, dict):
         return None
     return [
-        {"lab": "REQUÊTES", "val": _n(j.get("num_dns_queries", 0))},
-        {"lab": "BLOQUÉES", "val": _n(j.get("num_blocked_filtering", 0))},
+        M("requetes", j.get("num_dns_queries", 0)),
+        M("bloquees", j.get("num_blocked_filtering", 0)),
     ]
 
 
@@ -200,8 +181,8 @@ def w_pihole(base, cle):
     if code != 200 or not isinstance(j, dict) or "dns_queries_today" not in j:
         return None
     return [
-        {"lab": "REQUÊTES", "val": _n(j.get("dns_queries_today", 0))},
-        {"lab": "BLOQUÉES", "val": _n(j.get("ads_blocked_today", 0))},
+        M("requetes", j.get("dns_queries_today", 0)),
+        M("bloquees", j.get("ads_blocked_today", 0)),
     ]
 
 
@@ -219,8 +200,8 @@ def w_portainer(base, cle):
             actifs += s[0].get("RunningContainerCount", 0) or 0
             arretes += s[0].get("StoppedContainerCount", 0) or 0
     return [
-        {"lab": "ACTIFS", "val": _n(actifs)},
-        {"lab": "ARRÊTÉS", "val": _n(arretes)},
+        M("actifs", actifs),
+        M("arretes", arretes),
     ]
 
 
@@ -232,7 +213,7 @@ def w_uptimekuma(base, cle):
     down = corps.count(b'} 0')
     if not up and not down:
         return None
-    return [{"lab": "EN LIGNE", "val": _n(up)}, {"lab": "HORS LIGNE", "val": _n(down)}]
+    return [M("en_ligne", up), M("hors_ligne", down)]
 
 
 def w_immich(base, cle):
@@ -241,8 +222,8 @@ def w_immich(base, cle):
     if code != 200 or not isinstance(j, dict):
         return None
     return [
-        {"lab": "PHOTOS", "val": _n(j.get("photos", 0))},
-        {"lab": "VIDÉOS", "val": _n(j.get("videos", 0))},
+        M("photos", j.get("photos", 0)),
+        M("videos", j.get("videos", 0)),
     ]
 
 
@@ -252,7 +233,7 @@ def w_paperless(base, cle):
     j = _json(corps)
     if code != 200 or not isinstance(j, dict) or "count" not in j:
         return None
-    return [{"lab": "DOCUMENTS", "val": _n(j.get("count", 0))}]
+    return [M("documents", j.get("count", 0))]
 
 
 def w_nextcloud(base, cle):
@@ -265,9 +246,9 @@ def w_nextcloud(base, cle):
     f = _chemin(d, "storage", "num_files")
     stats = []
     if n is not None:
-        stats.append({"lab": "UTILISATEURS", "val": _n(n)})
+        stats.append(M("utilisateurs", n))
     if f is not None:
-        stats.append({"lab": "FICHIERS", "val": _n(f)})
+        stats.append(M("fichiers", f))
     return stats or None
 
 
@@ -309,15 +290,15 @@ def w_ha(base, cle):
         return None
     stats = []
     if muettes:
-        stats.append({"lab": "INDISPO", "val": _n(muettes)})
+        stats.append(M("indispo", muettes))
     if arretees:
-        stats.append({"lab": "AUTOM. OFF", "val": _n(arretees)})
+        stats.append(M("autom_off", arretees))
     if lumieres:
-        stats.append({"lab": "LUMIÈRES", "val": _n(lumieres)})
+        stats.append(M("lumieres", lumieres))
     if portes:
-        stats.append({"lab": "OUVERTURES", "val": _n(portes)})
+        stats.append(M("ouvertures", portes))
     if presents:
-        stats.append({"lab": "PRÉSENTS", "val": _n(presents)})
+        stats.append(M("presents", presents))
     return stats or None
 
 
@@ -340,16 +321,15 @@ def w_unraid(base, cle):
     stats = []
     cpu = _chemin(d, "metrics", "cpu", "percentTotal")
     if cpu is not None:
-        stats.append({"lab": "CPU", "val": "%d %%" % round(float(cpu))})
+        stats.append(M("cpu", float(cpu)))
     mem = _chemin(d, "metrics", "memory", "percentTotal")
     if mem is not None:
-        stats.append({"lab": "RAM", "val": "%d %%" % round(float(mem))})
+        stats.append(M("ram", float(mem)))
     cap = _chemin(d, "array", "capacity", "kilobytes") or {}
     try:
         total = float(cap.get("total") or 0)
         if total > 0:
-            stats.append({"lab": "DISQUE",
-                          "val": "%d %%" % round(float(cap.get("used") or 0) * 100 / total)})
+            stats.append(M("disque", float(cap.get("used") or 0) * 100 / total))
     except (TypeError, ValueError):
         pass
 
@@ -358,19 +338,19 @@ def w_unraid(base, cle):
     temps = [t for t in ((x or {}).get("temp") for x in (_chemin(d, "array", "disks") or []))
              if isinstance(t, (int, float)) and 0 < t < 120]
     if temps:
-        stats.append({"lab": "TEMPÉRATURE", "val": "%d °C" % round(max(temps))})
+        stats.append(M("temp", max(temps)))
 
     up = _chemin(d, "info", "uptime")
     if isinstance(up, (int, float)) and up > 0:
         jours = int(up // 86400)
-        stats.append({"lab": "UPTIME",
-                      "val": ("%d j" % jours) if jours else ("%d h" % int(up // 3600))})
+        stats.append(M("uptime", up,
+                        ("%d j" % jours) if jours else ("%d h" % int(up // 3600))))
 
     conteneurs = _chemin(d, "docker", "containers")
     if isinstance(conteneurs, list) and conteneurs:
         actifs = sum(1 for c in conteneurs
                      if str((c or {}).get("state", "")).upper().startswith("RUNNING"))
-        stats.append({"lab": "DOCKER", "val": "%d / %d" % (actifs, len(conteneurs))})
+        stats.append(M("docker", actifs, "%d / %d" % (actifs, len(conteneurs))))
     return stats or None
 
 
@@ -410,16 +390,16 @@ def w_unifi(base, cle):
         return None
     n = (_json(rep) or {}).get("totalCount") if code == 200 else None
     if n is not None:
-        stats.append({"lab": "CLIENTS", "val": _n(n)})
+        stats.append(M("clients", n))
 
     code, rep, _ = _http("%s/sites/%s/devices?limit=200" % (racine, site), entetes)
     liste = (_json(rep) or {}).get("data") or [] if code == 200 else []
     if liste:
-        stats.append({"lab": "ÉQUIPEMENTS", "val": _n(len(liste))})
+        stats.append(M("equipements", len(liste)))
         bornes = [d for d in liste if _BORNE.search((d.get("model") or "")
                                                     + " " + (d.get("name") or ""))]
         if bornes:
-            stats.append({"lab": "BORNES WIFI", "val": _n(len(bornes))})
+            stats.append(M("bornes", len(bornes)))
     passerelle = next((d for d in liste if _PASSERELLE.search(
         (d.get("model") or "") + " " + (d.get("name") or ""))), None) or (liste[0] if liste else None)
     if passerelle and passerelle.get("id"):
@@ -428,9 +408,9 @@ def w_unifi(base, cle):
         st = _json(rep) if code == 200 else None
         if isinstance(st, dict):
             if st.get("cpuUtilizationPct") is not None:
-                stats.append({"lab": "CPU", "val": "%d %%" % round(float(st["cpuUtilizationPct"]))})
+                stats.append(M("cpu", float(st["cpuUtilizationPct"])))
             if st.get("memoryUtilizationPct") is not None:
-                stats.append({"lab": "RAM", "val": "%d %%" % round(float(st["memoryUtilizationPct"]))})
+                stats.append(M("ram", float(st["memoryUtilizationPct"])))
     return stats or None
 
 
@@ -448,11 +428,11 @@ REGISTRE = {
     "plex": w_plex,
     "jellyfin": w_jellyfin,
     "tautulli": w_tautulli,
-    "sonarr": _w_arr("series", "SÉRIES"),
-    "radarr": _w_arr("movie", "FILMS"),
-    "lidarr": _w_arr("artist", "ARTISTES"),
-    "readarr": _w_arr("author", "AUTEURS"),
-    "whisparr": _w_arr("movie", "FILMS"),
+    "sonarr": _w_arr("series", "series"),
+    "radarr": _w_arr("movie", "films"),
+    "lidarr": _w_arr("artist", "artistes"),
+    "readarr": _w_arr("author", "auteurs"),
+    "whisparr": _w_arr("movie", "films"),
     "prowlarr": w_prowlarr,
     "bazarr": w_bazarr,
     "sabnzbd": w_sabnzbd,
@@ -474,29 +454,34 @@ REGISTRE = {
 # l application, avant meme la premiere mesure : l utilisateur voit ce qu il
 # gagne a fournir une cle. Les libelles correspondent aux pastilles produites.
 CAPACITES = {
-    "plex": ["LECTURES", "SPECTATEURS", "TRANSCODAGES", "DÉBIT", "BIBLIOTHÈQUES"],
-    "jellyfin": ["LECTURES"],
-    "tautulli": ["LECTURES", "DÉBIT"],
-    "sonarr": ["MANQUE", "FILE", "SÉRIES"],
-    "radarr": ["MANQUE", "FILE", "FILMS"],
-    "lidarr": ["MANQUE", "FILE", "ARTISTES"],
-    "readarr": ["MANQUE", "FILE", "AUTEURS"],
-    "whisparr": ["MANQUE", "FILE", "FILMS"],
-    "prowlarr": ["INDEXEURS"],
-    "bazarr": ["FILMS", "ÉPISODES"],
-    "sabnzbd": ["DÉBIT", "FILE"],
-    "qbittorrent": ["RÉCEPTION", "ENVOI"],
-    "adguard": ["REQUÊTES", "BLOQUÉES"],
-    "pihole": ["REQUÊTES", "BLOQUÉES"],
-    "portainer": ["ACTIFS", "ARRÊTÉS"],
-    "uptimekuma": ["EN LIGNE", "HORS LIGNE"],
-    "immich": ["PHOTOS", "VIDÉOS"],
-    "paperless": ["DOCUMENTS"],
-    "nextcloud": ["UTILISATEURS", "FICHIERS"],
-    "ha": ["INDISPO", "AUTOM. OFF", "LUMIÈRES", "OUVERTURES", "PRÉSENTS"],
-    "unraid": ["CPU", "RAM", "DISQUE", "TEMPÉRATURE", "UPTIME", "DOCKER"],
-    "unifi": ["CLIENTS", "ÉQUIPEMENTS", "BORNES WIFI", "CPU", "RAM"],
+    "plex": ["lectures", "spectateurs", "transcodages", "debit", "bibliotheques"],
+    "jellyfin": ["lectures"],
+    "tautulli": ["lectures", "debit"],
+    "sonarr": ["manque", "file", "series"],
+    "radarr": ["manque", "file", "films"],
+    "lidarr": ["manque", "file", "artistes"],
+    "readarr": ["manque", "file", "auteurs"],
+    "whisparr": ["manque", "file", "films"],
+    "prowlarr": ["indexeurs"],
+    "bazarr": ["films", "episodes"],
+    "sabnzbd": ["debit_o", "file"],
+    "qbittorrent": ["reception", "envoi"],
+    "adguard": ["requetes", "bloquees"],
+    "pihole": ["requetes", "bloquees"],
+    "portainer": ["actifs", "arretes"],
+    "uptimekuma": ["en_ligne", "hors_ligne"],
+    "immich": ["photos", "videos"],
+    "paperless": ["documents"],
+    "nextcloud": ["utilisateurs", "fichiers"],
+    "ha": ["indispo", "autom_off", "lumieres", "ouvertures", "presents"],
+    "unraid": ["cpu", "ram", "disque", "temp", "uptime", "docker"],
+    "unifi": ["clients", "equipements", "bornes", "cpu", "ram"],
 }
+
+
+def capacites(type_service):
+    """Ce qu une integration sait lire, en clair pour l interface."""
+    return [{"id": i, "lab": libelle(i)} for i in CAPACITES.get(type_service, [])]
 
 
 def mesurer(type_service, url, cle):
