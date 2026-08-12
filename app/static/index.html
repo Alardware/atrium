@@ -650,10 +650,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .sdetails summary::before{content:'▸ ';font-size:10px}
 .sdetails[open] summary::before{content:'▾ '}
 .sdetails[open] summary{margin-bottom:10px}
-.p-ident{display:flex;align-items:center;gap:14px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--divider)}
-.p-ident-tx{display:flex;flex-direction:column;gap:3px}
-.p-ident-tx b{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
-.p-ident-tx span{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .bouton-bascule{width:42px;height:24px;border-radius:99px;background:var(--track);border:1px solid var(--border-2);position:relative;flex:none;transition:background .15s,border-color .15s}
 .bouton-bascule::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:var(--sh-1);transition:transform .15s}
 .bouton-bascule.on{background:var(--accent);border-color:var(--accent)}
@@ -799,7 +795,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spanel h4{margin:10px 0 0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .spanel h4:first-child{margin-top:0}
 .scard{padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
-.scard > h4{margin:0;padding:15px 18px;border-bottom:1px solid var(--divider);font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;background:var(--surface-2)}
+.scard > h4{margin:0;padding:13px 18px;border-bottom:1px solid var(--divider);font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;background:var(--surface-2);
+            display:flex;align-items:center;gap:9px;min-height:44px}
 .scard-body{padding:18px;display:flex;flex-direction:column;gap:18px}
 .scard-foot{padding:13px 18px;border-top:1px solid var(--divider);background:var(--surface-2);display:flex;justify-content:flex-end;gap:9px;align-items:center}
 .scard-foot .fill{margin-right:auto;font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
@@ -819,9 +816,97 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .dzone .dz-txt{flex:1;min-width:0}
 .dzone .dz-title{font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .dzone .dz-sub{margin-top:3px;font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
+/* Trois chiffres pour situer l'ensemble avant d'entrer dans le détail. */
+/* Le mode se choisit sur une vignette : « sombre » et « clair » se
+   reconnaissent d'un coup d'œil mieux que par leur nom. */
+.modes{display:flex;gap:8px}
+.modes button{display:flex;flex-direction:column;align-items:center;gap:7px;padding:7px;
+              border-radius:10px;border:1.5px solid var(--border-2);background:none;
+              transition:border-color .13s}
+.modes button:hover{border-color:var(--muted-3)}
+.modes button.on{border-color:var(--accent)}
+.modes .lb{font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.modes button.on .lb{color:var(--text)}
+.vign{position:relative;display:block;width:52px;height:36px;border-radius:6px;overflow:hidden;
+      border:1px solid var(--border)}
+.vign .b{position:absolute;left:0;top:0;bottom:0;width:14px}
+.vign .c{position:absolute;right:5px;height:8px;border-radius:2px;left:20px}
+.vign .c:nth-of-type(2){top:7px}
+.vign .c:nth-of-type(3){top:19px;right:20px}
+.vign.sombre{background:#131a24}
+.vign.sombre .b{background:#0c1119}
+.vign.sombre .c{background:#28313f}
+.vign.clair{background:#f4f6fa}
+.vign.clair .b{background:#e6eaf1}
+.vign.clair .c{background:#cfd6e2}
+/* « Système » : la vignette montre les deux, coupée en diagonale. */
+.vign.duo{background:linear-gradient(115deg,#131a24 0 50%,#f4f6fa 50% 100%)}
+.vign.duo .b{background:linear-gradient(115deg,#0c1119 0 100%)}
+.vign.duo .c{background:linear-gradient(115deg,#28313f 0 46%,#cfd6e2 46% 100%)}
+.look-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
+.look-col{display:flex;flex-direction:column}
+.look-apercu{position:sticky;top:0}
+.ap-l,.ap-note{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
+.ap-note{margin-top:11px;letter-spacing:0;font-weight:500;font-size:11px;line-height:1.45}
+.ap-box{margin-top:11px;padding:14px;border:1px solid var(--border);border-radius:12px;
+        background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.ap-barre{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:9px;
+          border:1px solid var(--border);background:var(--surface)}
+.ap-barre .t{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif}
+.ap-barre .j{margin-left:auto;width:74px;height:5px;border-radius:3px;background:var(--divider);overflow:hidden}
+.ap-barre .j > i{display:block;height:100%;width:62%;background:var(--accent)}
+.ap-grille{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ap-tuile{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.ap-tuile .h{display:flex;align-items:center;gap:7px;font:700 11px/1 'Plus Jakarta Sans',sans-serif}
+.ap-tuile .p{width:13px;height:13px;border-radius:4px;flex:none}
+.ap-tuile .ch{display:flex;gap:6px;margin-top:9px}
+.ap-tuile .ch span{flex:1;padding:5px 0;border-radius:6px;background:var(--subtle);text-align:center;
+                   font:700 10.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
+.ap-tuile .tr{height:2px;margin-top:9px;border-radius:2px;background:var(--accent);opacity:.75}
+@media (max-width:1080px){ .look-cols{grid-template-columns:1fr} .look-apercu{position:static} }
+/* L'identité n'est plus un champ parmi d'autres : elle a sa carte, et les
+   réglages modifiables sont regroupés dessous, derrière une barre qui dit
+   clairement s'il reste quelque chose à enregistrer. */
+.p-carte{display:flex;align-items:center;gap:18px;padding:20px 22px;
+         border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.p-carte .av-big{width:78px;height:78px;border-radius:20px;flex:none;
+                 font:700 28px/1 'Plus Jakarta Sans',sans-serif;overflow:hidden}
+.p-carte-tx{display:flex;flex-direction:column;gap:9px;min-width:0}
+.p-carte-tx > b{font:700 19px/1.15 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.p-puces{display:flex;flex-wrap:wrap;gap:7px}
+.p-puce{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:6px;
+        background:var(--subtle);font:600 10.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.p-puce .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+.p-puce.sans .dot{background:var(--muted-3)}
+.p-puce.actif{background:var(--accent-soft);color:var(--accent)}
+.p-carte-btns{margin-left:auto;display:flex;flex-direction:column;gap:8px;flex:none}
+.fhint{margin-top:-4px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.scard-foot .fill.sale{color:var(--warn-text);font-weight:600}
+.conn-bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
+.conn-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.conn-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
+.conn-t .v{margin-top:9px;font:700 21px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.conn-t .v.warn{color:var(--warn-text)}
+.conn-t .d{margin-top:5px;font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.scard > h4 .pt{width:7px;height:7px;border-radius:50%;background:var(--muted-3);flex:none}
+.scard > h4 .pt.ok{background:var(--ok)}
+.scard > h4 .n{padding:2px 7px;border-radius:6px;background:var(--subtle);
+             font:600 10.5px/1.4 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.scard > h4 .aide{margin-left:auto;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-3)}
+.scard > h4 .btn-sm{margin-left:auto}
+.conn-hote{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
+.conn-detail{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.conn-mesure{margin-left:auto;display:flex;align-items:center;gap:11px}
+.conn-mesure .spark{width:52px;flex:none}
+.conn-mesure .lat{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.conn-dispo{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.conn-d{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;
+        border:1px solid transparent;transition:border-color .13s}
+.conn-d:hover{border-color:var(--border-2)}
+.conn-d .n{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.conn-d .btn-sm{margin-left:auto}
 .conn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .conn-row .cr-nom{flex:1;min-width:0;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
-.conn-row .cr-st{font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
 .about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .sec-l{display:flex;gap:11px;align-items:flex-start}
 .sec-l + .sec-l{padding-top:14px;border-top:1px solid var(--divider)}
@@ -1447,39 +1532,32 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           </div>
         </div>
         <div id="p-fiche">
-          <div class="scard">
-            <h4 data-i18n="profile.identity">Identité</h4>
-            <div class="scard-body">
-              <div class="p-ident">
-                <span class="av-big" id="p-av-vue">?</span>
-                <span class="p-ident-tx">
-                  <b id="p-ident-nom">—</b>
-                  <span id="p-ident-role">—</span>
-                </span>
-              </div>
-              <div class="av-edit">
-                <span class="av-big" id="p-av">?</span>
-                <div class="av-edit-actions">
-                  <div class="av-edit-btns">
-                    <button class="btn-sm" id="p-av-up" type="button" data-i18n="profile.photo">Choisir une photo</button>
-                    <button class="btn-sm danger" id="p-av-del" type="button" data-i18n="btn.remove">Retirer</button>
-                  </div>
-                </div>
-                <input type="file" id="p-av-file" accept="image/*" hidden>
-              </div>
-              <div class="field">
-                <label for="p-nom" data-i18n="profile.displayname">Nom affiché</label>
-                <input id="p-nom" type="text" autocomplete="off">
-              </div>
-            </div>
-            <div class="scard-foot">
-              <button class="btn-primary" id="p-save" data-i18n="btn.save">Enregistrer</button>
-            </div>
+          <!-- carte d'identité : qui l'on est, sans réglage à saisir -->
+          <div class="p-carte">
+            <span class="av-big" id="p-av">?</span>
+            <span class="p-carte-tx">
+              <b id="p-ident-nom">—</b>
+              <span class="p-puces">
+                <span class="p-puce" id="p-puce-mdp" hidden><span class="dot"></span><span class="tx"></span></span>
+                <span class="p-puce actif" id="p-puce-actif" hidden></span>
+              </span>
+            </span>
+            <span class="p-carte-btns">
+              <button class="btn-sm" id="p-av-up" type="button" data-i18n="profile.photo">Choisir une photo</button>
+              <button class="btn-sm danger" id="p-av-del" type="button" data-i18n="btn.remove">Retirer</button>
+            </span>
+            <input type="file" id="p-av-file" accept="image/*" hidden>
           </div>
 
           <div class="scard" style="margin-top:22px">
-            <h4 data-i18n="profile.prefs">Préférences</h4>
+            <h4><span data-i18n="profile.idprefs">Identité &amp; préférences</span>
+              <span class="aide" data-i18n="profile.thisdevice">appliqué à cet appareil</span></h4>
             <div class="scard-body">
+              <div class="field">
+                <label for="p-nom" data-i18n="profile.displayname">Nom affiché</label>
+                <span class="fhint" data-i18n="profile.displayname.d">Visible sur l'écran de profils et dans les sessions.</span>
+                <input id="p-nom" type="text" autocomplete="off">
+              </div>
               <div class="opt-row">
                 <span class="opt-tx"><b data-i18n="profile.view">Vue des applications</b>
                   <span data-i18n="profile.view.d">Disposition par défaut de la grille.</span></span>
@@ -1496,6 +1574,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                   <button data-v="last" data-i18n="profile.start.last">Dernière catégorie</button>
                 </span>
               </div>
+            </div>
+            <div class="scard-foot">
+              <span class="fill" id="p-etat"></span>
+              <button class="btn-sm" id="p-reset" type="button" data-i18n="btn.reset">Réinitialiser</button>
+              <button class="btn-primary" id="p-save" data-i18n="btn.save">Enregistrer</button>
             </div>
           </div>
 
@@ -1683,21 +1766,33 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </section>
 
       <!-- APPARENCE -->
-      <section class="spanel sp-inner" id="sp-look" hidden>
+      <section class="spanel" id="sp-look" hidden>
+        <div class="sp-inner">
         <div class="sp-head">
           <div class="sp-title" data-i18n="set.look">Apparence</div>
-          <div class="sp-lead" data-i18n="look.lead">Réglages visuels, propres à cet appareil.</div>
+          <div class="sp-lead" data-i18n="look.lead">Réglages visuels, propres à cet appareil. L'aperçu à droite se met à jour en direct.</div>
         </div>
+        <div class="look-cols">
+        <div class="look-col">
         <div class="scard">
           <h4 data-i18n="look.theme">Thème</h4>
           <div class="scard-body">
             <div class="opt-row">
               <span class="opt-tx"><b data-i18n="look.mode">Mode</b>
                 <span data-i18n="look.mode.d">« Système » suit le réglage de votre appareil.</span></span>
-              <span class="seg" id="look-mode">
-                <button data-v="dark" data-i18n="look.dark">Sombre</button>
-                <button data-v="light" data-i18n="look.light">Clair</button>
-                <button data-v="auto" data-i18n="look.auto">Système</button>
+              <span class="modes" id="look-mode">
+                <button data-v="dark" type="button">
+                  <span class="vign sombre"><i class="b"></i><i class="c"></i><i class="c"></i></span>
+                  <span class="lb" data-i18n="look.dark">Sombre</span>
+                </button>
+                <button data-v="light" type="button">
+                  <span class="vign clair"><i class="b"></i><i class="c"></i><i class="c"></i></span>
+                  <span class="lb" data-i18n="look.light">Clair</span>
+                </button>
+                <button data-v="auto" type="button">
+                  <span class="vign duo"><i class="b"></i><i class="c"></i><i class="c"></i></span>
+                  <span class="lb" data-i18n="look.auto">Système</span>
+                </button>
               </span>
             </div>
             <div class="opt-row">
@@ -1739,6 +1834,14 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             </div>
           </div>
         </div>
+        </div>
+        <aside class="look-apercu">
+          <div class="ap-l" data-i18n="look.preview">Aperçu en direct</div>
+          <div class="ap-box" id="look-apercu"></div>
+          <div class="ap-note" data-i18n="look.preview.d">L'accent et la densité s'appliquent immédiatement à toutes les vues.</div>
+        </aside>
+        </div>
+        </div>
       </section>
 
       <!-- CONNEXIONS -->
@@ -1747,10 +1850,20 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="sp-title" data-i18n="set.conn">Connexions</div>
           <div class="sp-lead" data-i18n="conn.lead">Chaque intégration est optionnelle. Les identifiants se saisissent sur la fiche de l'application correspondante.</div>
         </div>
+        <div class="conn-bilan" id="conn-bilan"></div>
         <div class="scard">
-          <h4 data-i18n="conn.sources">Sources</h4>
+          <h4><span class="pt ok"></span><span data-i18n="conn.sources">Sources actives</span>
+            <button class="btn-sm" id="conn-test" type="button" data-i18n="conn.testall">Tout tester</button></h4>
           <div class="scard-body">
-            <div id="conn-list" style="display:flex;flex-direction:column;gap:9px"></div>
+            <div id="conn-list" style="display:flex;flex-direction:column;gap:2px"></div>
+          </div>
+        </div>
+        <div class="scard" id="conn-dispo-card" style="margin-top:22px" hidden>
+          <h4><span class="pt"></span><span data-i18n="conn.available">Disponibles</span>
+            <span class="n" id="conn-dispo-n"></span>
+            <span class="aide" data-i18n="conn.available.d">une URL suffit pour l'état en ligne</span></h4>
+          <div class="scard-body">
+            <div class="conn-dispo" id="conn-dispo"></div>
           </div>
         </div>
       </section>
@@ -4579,6 +4692,18 @@ $('srv-voir').addEventListener('click', (e) => {
   e.stopPropagation();
   ouvrirServeurs();
 });
+$('conn-test').addEventListener('click', async (e) => {
+  const b = e.currentTarget;
+  b.disabled = true;
+  b.textContent = t('conn.testing');
+  /* On resonde tout : le bilan et chaque ligne se recalculent ensuite depuis
+     les mesures fraîches, sans rien supposer du résultat. */
+  await Promise.all(apps.filter((a) => a.url)
+    .map((a) => sonderMaintenant(a, true).catch(() => {})));
+  b.disabled = false;
+  b.textContent = t('conn.testall');
+  renderConnPanel();
+});
 $('strip-open').addEventListener('click', (e) => {
   e.stopPropagation();
   diagnostiquer();
@@ -5514,7 +5639,80 @@ function bascule(id, actif, action) {
     b.addEventListener('click', () => action(!b.classList.contains('on')));
   }
 }
+/* L'aperçu est bâti avec les vraies applications de l'utilisateur et leurs
+   vraies mesures : il montre ce que les réglages vont donner chez lui, pas une
+   maquette générique. Il hérite des variables CSS, donc l'accent, la densité et
+   le mode s'y appliquent sans une ligne de plus. */
+function peindreApercu() {
+  const box = $('look-apercu');
+  if (!box) return;
+  box.textContent = '';
+
+  const barre = document.createElement('div');
+  barre.className = 'ap-barre';
+  const chip = document.createElement('span');
+  chip.className = 'logo-chip s18';
+  const cl = document.createElement('span');
+  cl.className = 'cl';
+  cl.textContent = 'A';
+  chip.appendChild(cl);
+  const titre = document.createElement('span');
+  titre.className = 't';
+  titre.textContent = 'Atrium';
+  const j = document.createElement('span');
+  j.className = 'j';
+  j.appendChild(document.createElement('i'));
+  barre.appendChild(chip);
+  barre.appendChild(titre);
+  barre.appendChild(j);
+  box.appendChild(barre);
+
+  const grille = document.createElement('div');
+  grille.className = 'ap-grille';
+  /* on prend d'abord celles qui remontent des chiffres : une tuile vide
+     n'apprendrait rien sur l'effet des réglages */
+  const choix = apps.slice().sort((a, b) =>
+    ((STATS[b.nom] || []).length) - ((STATS[a.nom] || []).length)).slice(0, 4);
+  choix.forEach((a) => {
+    const tu = document.createElement('div');
+    tu.className = 'ap-tuile';
+    const h = document.createElement('div');
+    h.className = 'h';
+    const p = document.createElement('span');
+    p.className = 'p logo-chip';
+    mountLogo(p, logoDe(a));
+    const n = document.createElement('span');
+    n.textContent = a.nom;
+    h.appendChild(p);
+    h.appendChild(n);
+    tu.appendChild(h);
+    const mes = (STATS[a.nom] || []).slice(0, 2);
+    if (mes.length) {
+      const ch = document.createElement('div');
+      ch.className = 'ch';
+      mes.forEach((m) => {
+        const v = document.createElement('span');
+        v.textContent = m.val;
+        ch.appendChild(v);
+      });
+      tu.appendChild(ch);
+    }
+    const tr = document.createElement('div');
+    tr.className = 'tr';
+    tu.appendChild(tr);
+    grille.appendChild(tu);
+  });
+  if (!choix.length) {
+    const v = document.createElement('span');
+    v.className = 'hint';
+    v.textContent = t('look.preview.none');
+    grille.appendChild(v);
+  }
+  box.appendChild(grille);
+}
+
 function renderApparence() {
+  peindreApercu();
   segChoisi('look-mode', theme, (v) => {
     theme = v;
     store.set('theme', theme);
@@ -5766,76 +5964,169 @@ function renderConnPanel() {
   if (!list || $('spage').hidden || $('sp-conn').hidden) return;
   list.textContent = '';
 
-  /* Liste construite à partir des applications réellement configurées :
-     rien n'est codé en dur, chaque installation affiche les siennes. */
-  const etat = (kind) => {
+  /* Une source est « branchée » quand elle a effectivement livré des mesures.
+     C'est la seule preuve qui vaille, et elle marche pour les vingt-deux types
+     d'intégration, pas seulement pour ceux qu'on aurait pensé à énumérer.
+     Les quelques cas particuliers ci-dessous ne servent qu'à dire pourquoi ça
+     ne marche pas quand ça ne marche pas. */
+  const detail = (kind, nom) => {
+    const n = (STATS[nom] || []).length;
     if (kind === 'ha') {
-      return { ok: CONN === 'ok', st: CONN === 'ok' ? t('conn.entities', { n: STATES.length }) : (CONN === 'error' ? CONN_ERR : t('conn.notoken')) };
+      return CONN === 'ok' ? t('conn.entities', { n: STATES.length })
+           : (CONN === 'error' ? CONN_ERR : t('conn.notoken'));
     }
-    if (kind === 'plex') {
-      return { ok: !!DIRECT.plexOk, st: DIRECT.plexOk ? t('conn.sessions', { n: PLEX_MEDIAS.length }) : ((DIRECT.err || {}).plex || t('conn.notset')) };
-    }
-    if (kind === 'unraid') {
-      return { ok: !!DIRECT.unraid, st: DIRECT.unraid ? t('conn.connected') : ((DIRECT.err || {}).unraid || t('conn.notset')) };
-    }
-    if (kind === 'unifi') {
-      return { ok: !!DIRECT.unifi, st: DIRECT.unifi ? t('conn.connected') : ((DIRECT.err || {}).unifi || t('conn.notset')) };
-    }
-    return { ok: false, st: '' };
+    if (n) return (STATS[nom] || []).map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
+    const err = (DIRECT.err || {})[kind];
+    return err || t('conn.notset');
   };
-  const rows = apps
-    .map((a) => ({ app: a, kind: kindOfApp(a) }))
-    .filter((x) => x.kind)
-    .map((x) => Object.assign({ nom: x.app.nom, kind: x.kind }, etat(x.kind)));
+  const branchee = (kind, nom) => {
+    if (kind === 'ha') return CONN === 'ok';
+    if ((STATS[nom] || []).length) return true;
+    /* certaines intégrations répondent sans rien à mesurer sur l'instant */
+    return kind === 'plex' ? !!DIRECT.plexOk : !!DIRECT[kind];
+  };
 
-  if (!rows.length) {
+  const sources = apps.map((a) => ({ app: a, kind: kindOfApp(a) })).filter((x) => x.kind);
+  const actives = sources.filter((x) => branchee(x.kind, x.app.nom));
+  const dormantes = sources.filter((x) => !branchee(x.kind, x.app.nom));
+
+  /* --- bilan --- */
+  const bilan = $('conn-bilan');
+  bilan.textContent = '';
+  const carreau = (lab, val, det, alerte) => {
+    const c = document.createElement('div');
+    c.className = 'conn-t';
+    const l = document.createElement('div'); l.className = 'l'; l.textContent = lab;
+    const v = document.createElement('div'); v.className = 'v' + (alerte ? ' warn' : '');
+    v.textContent = val;
+    const d = document.createElement('div'); d.className = 'd'; d.textContent = det;
+    c.appendChild(l); c.appendChild(v); c.appendChild(d);
+    bilan.appendChild(c);
+  };
+  carreau(t('conn.plugged'), String(actives.length), t('conn.outof', { n: sources.length }));
+
+  /* Latence moyenne des seules sources qui répondent : y mêler les injoignables
+     n'aurait pas de sens, elles n'ont pas de temps de réponse. */
+  const lats = actives.map((x) => (SUPER.etats[x.app.nom] || {}).latence_moy)
+    .filter((v) => v != null);
+  carreau(t('conn.latency'),
+          lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) + ' ms' : '—',
+          lats.length ? t('conn.local') : t('conn.nomeasure'));
+
+  /* Dernière erreur : celle qui court en ce moment. Les erreurs passées ne sont
+     pas conservées — annoncer « il y a 2 jours » demanderait un journal. */
+  const souci = SUPER.alertes.alertes
+    .filter((a) => a.niveau !== 'info' && sources.some((x) => x.app.nom === a.service))
+    .sort((a, b) => b.depuis - a.depuis)[0];
+  carreau(t('conn.lasterror'),
+          souci ? ageCourt(souci.depuis) : t('conn.noerror'),
+          souci ? souci.service + ' · ' + texteAlerte(souci) : t('conn.allgood'),
+          !!souci);
+
+  /* --- sources actives --- */
+  if (!actives.length) {
     const v = document.createElement('span');
     v.className = 'hint';
     v.textContent = t('conn.none');
     list.appendChild(v);
-    return;
   }
-  rows.forEach((r) => {
+  actives.forEach((x) => {
+    const a = x.app;
     const row = document.createElement('div');
     row.className = 'conn-row';
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = r.ok ? 'var(--ok)' : 'var(--muted-2)';
     const chip = document.createElement('span');
-    chip.className = 'logo-chip s18';
+    chip.className = 'logo-chip s26';
     const cl = document.createElement('span');
     cl.className = 'cl';
-    cl.textContent = r.nom[0];
+    cl.textContent = (a.nom[0] || '?').toUpperCase();
     chip.appendChild(cl);
-    const app = appByKind(r.kind);
-    if (app) mountLogo(chip, logoDe(app));
-    const nom = document.createElement('span');
-    nom.className = 'cr-nom';
-    nom.textContent = r.nom;
-    const st = document.createElement('span');
-    st.className = 'cr-st';
-    st.textContent = r.st;
-    st.title = r.st;
+    mountLogo(chip, logoDe(a));
+
+    const bloc = document.createElement('span');
+    bloc.className = 'cr-nom';
+    const haut = document.createElement('span');
+    haut.style.display = 'flex';
+    haut.style.alignItems = 'baseline';
+    haut.style.gap = '9px';
+    const nom = document.createElement('b');
+    nom.textContent = a.nom;
+    haut.appendChild(nom);
+    if (a.url) {
+      const h = document.createElement('span');
+      h.className = 'conn-hote';
+      try { h.textContent = new URL(a.url).host; } catch (e) { h.textContent = a.url; }
+      haut.appendChild(h);
+    }
+    const bas = document.createElement('span');
+    bas.className = 'conn-detail';
+    bas.textContent = detail(x.kind, a.nom);
+    bloc.appendChild(haut);
+    bloc.appendChild(bas);
+
+    const mesure = document.createElement('span');
+    mesure.className = 'conn-mesure';
+    const etat = SUPER.etats[a.nom];
+    if (etat) {
+      const trace = courbe(etat.courbe, sante(a.nom) === 'off' ? 'off' : 'on');
+      if (trace) {
+        const z = document.createElement('span');
+        z.className = 'spark on';
+        z.appendChild(trace);
+        mesure.appendChild(z);
+      }
+      if (etat.latence_ms != null) {
+        const l = document.createElement('span');
+        l.className = 'lat';
+        l.textContent = etat.latence_ms + ' ms';
+        mesure.appendChild(l);
+      }
+    }
     const btn = document.createElement('button');
     btn.className = 'btn-ghost';
-    btn.textContent = t(app ? 'conn.configure' : 'conn.addcard');
+    btn.textContent = t('conn.configure');
     btn.addEventListener('click', () => {
-      let i = apps.findIndex((a) => kindOfApp(a) === r.kind);
-      if (i === -1) {
-        apps.push({ nom: r.nom, role: '', cat: 'Serveur', url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '' });
-        saveApps();
-        refresh();
-        i = apps.findIndex((a) => kindOf(a.nom) === r.kind);
-      }
+      const i = apps.indexOf(a);
       closeSettings();
       openAppModal(i);
     });
-    row.appendChild(dot);
     row.appendChild(chip);
-    row.appendChild(nom);
-    row.appendChild(st);
+    row.appendChild(bloc);
+    row.appendChild(mesure);
     row.appendChild(btn);
     list.appendChild(row);
+  });
+
+  /* --- à brancher --- */
+  const zone = $('conn-dispo');
+  zone.textContent = '';
+  $('conn-dispo-card').hidden = !dormantes.length;
+  $('conn-dispo-n').textContent = String(dormantes.length);
+  dormantes.forEach((x) => {
+    const a = x.app;
+    const d = document.createElement('div');
+    d.className = 'conn-d';
+    const chip = document.createElement('span');
+    chip.className = 'logo-chip s26';
+    const cl = document.createElement('span');
+    cl.className = 'cl';
+    cl.textContent = (a.nom[0] || '?').toUpperCase();
+    chip.appendChild(cl);
+    mountLogo(chip, logoDe(a));
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = a.nom;
+    const btn = document.createElement('button');
+    btn.className = 'btn-sm';
+    btn.textContent = t('conn.plug');
+    btn.title = detail(x.kind, a.nom);
+    btn.addEventListener('click', () => {
+      closeSettings();
+      openAppModal(apps.indexOf(a));
+    });
+    d.appendChild(chip);
+    d.appendChild(n);
+    d.appendChild(btn);
+    zone.appendChild(d);
   });
 }
 
@@ -6025,13 +6316,19 @@ function renderProfil() {
   if (!u) return;
   $('p-av').style.overflow = 'hidden';
   peindreAvatar($('p-av'), u);
-  $('p-av-vue').style.overflow = 'hidden';
-  peindreAvatar($('p-av-vue'), u);
   $('p-ident-nom').textContent = u.nom;
-  /* Atrium n'a pas encore de rôles : annoncer « Administrateur » ici serait
-     décrire un droit qui n'existe pas. On dit ce qui est vrai. */
-  $('p-ident-role').textContent = t(u.pwd ? 'profile.protected' : 'profile.open');
+  /* Atrium n'a pas encore de rôles : annoncer « administrateur » ici serait
+     décrire un droit qui n'existe pas. Les deux puces disent ce qui est vrai et
+     vérifiable : ce profil demande-t-il un mot de passe, est-ce celui en cours
+     d'utilisation sur cet appareil. */
+  const mdp = $('p-puce-mdp');
+  mdp.hidden = false;
+  mdp.classList.toggle('sans', !u.pwd);
+  mdp.querySelector('.tx').textContent = t(u.pwd ? 'profile.protected' : 'profile.open');
+  $('p-puce-actif').hidden = false;
+  $('p-puce-actif').textContent = t('profile.current');
   renderPrefs();
+  marquerPropre();
   $('p-av-del').disabled = !u.photo;
   $('p-av-del').style.opacity = u.photo ? '1' : '.45';
   $('p-nom').value = u.nom;
@@ -6044,6 +6341,27 @@ function renderProfil() {
   $('p-pwd-clear').style.opacity = u.pwd ? '1' : '.45';
   syncProfilPwd();
 }
+/* Le pied de carte dit s'il reste des modifications. Le comparatif porte sur
+   le seul champ librement saisi : les segments s'appliquent au clic et sont
+   déjà enregistrés quand on les relâche. */
+let NOM_ENREGISTRE = '';
+function marquerPropre() {
+  NOM_ENREGISTRE = $('p-nom').value;
+  majEtatProfil();
+}
+function majEtatProfil() {
+  const sale = $('p-nom').value !== NOM_ENREGISTRE;
+  const e = $('p-etat');
+  e.textContent = sale ? t('profile.dirty') : '';
+  e.classList.toggle('sale', sale);
+  $('p-reset').hidden = !sale;
+}
+$('p-nom').addEventListener('input', majEtatProfil);
+$('p-reset').addEventListener('click', () => {
+  $('p-nom').value = NOM_ENREGISTRE;
+  majEtatProfil();
+});
+
 function majProfil(modif) {
   const u = userActif();
   if (!u) return;
