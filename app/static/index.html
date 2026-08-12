@@ -441,7 +441,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid{display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start}
 /* les tuiles ordinaires s'étirent un peu pour finir la rangée, sans jamais
    devenir disproportionnées */
-.grid:not(.list) > *{flex:1 1 196px;min-width:0;max-width:248px}
+.grid:not(.list) > *{flex:1 1 210px;min-width:0;max-width:268px}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
 /* Le nom se tient à côté du logo, pas dessous : deux lignes gagnées, que les
    chiffres occupent. La tuile n'a donc plus besoin de s'élargir pour les
@@ -460,11 +460,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-tags .star.on{opacity:1;color:var(--warn)}
 .app-name{font:700 14.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-role{margin-top:3px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
-.app-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--divider)}
+/* Calé en bas : dans une rangée, une tuile sans mesure et une tuile qui en
+   porte quatre ont la même hauteur, et leurs pieds s'alignent au lieu de
+   flotter chacun à sa hauteur. */
+.app-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;
+          margin-top:auto;padding-top:12px;border-top:1px solid var(--hair2)}
 
 /* chiffres remontés du service, sur la tuile */
-.app-stats{display:flex;gap:6px;margin-top:2px}
-.app-stats .st{flex:1;min-width:0;padding:7px 8px;border-radius:8px;background:var(--subtle);text-align:center}
+/* Les pastilles partagent la ligne tant qu'elles y tiennent, et passent à la
+   suivante sinon : deux, trois ou quatre mesures se rangent seules, sans
+   qu'aucune ne soit écartée. */
+.app-stats{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.app-stats .st{flex:1 1 62px;min-width:0;padding:7px 8px;border-radius:10px;
+               background:var(--s3);text-align:center}
 .app-stats .v{font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-stats .l{margin-top:2px;font:600 10px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -491,6 +499,17 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-warn .dot{background:var(--warn)}
 .badge-on .lat:empty{display:none}
 .app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+/* Montrer ou cacher les chiffres de toutes les tuiles d'un geste, là où on les
+   regarde. Le même réglage vit dans Apparence : les deux commandent la même
+   valeur et se suivent. */
+.bascule-stats{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:9px;
+               border:1px solid var(--hair4);background:var(--field);
+               font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--t5);
+               transition:color .15s,border-color .18s,background .15s}
+.bascule-stats:hover{border-color:var(--hairH);color:var(--t3)}
+.bascule-stats[aria-checked="true"]{background:var(--acc-soft);border-color:var(--acc-line);
+                                    color:var(--acc)}
+.bascule-stats .ic{font-size:12px;line-height:1}
 .apps-tally{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .apps-tally:empty{display:none}
 .app-foot{flex-wrap:wrap;row-gap:6px}
@@ -1503,6 +1522,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           </div>
           <button class="btn-sm" id="btn-ranger" type="button" hidden data-i18n="apps.tidy">Ranger par catégorie</button>
           <span class="apps-tally" id="apps-tally"></span>
+          <button class="bascule-stats" id="btn-stats" type="button" role="switch"
+                  data-i18n-title="look.stats" title="Chiffres sur les tuiles">
+            <span class="ic">▦</span><span data-i18n="apps.figures">Chiffres</span>
+          </button>
           <div class="seg" id="seg-view">
             <button data-view="grid" class="on" data-i18n="apps.grid">Grille</button>
             <button data-view="list" data-i18n="apps.list">Liste</button>
@@ -2771,6 +2794,7 @@ function applyTheme() {
   document.documentElement.setAttribute('data-densite', densite);
   document.documentElement.setAttribute('data-anim', animations ? '1' : '0');
   appliquerAccent();
+  majBoutonStats();
   /* C'est le mode effectif qui est marqué : sous « Système », le segment
      montre celui que l'appareil impose. */
   $('theme-seg').querySelectorAll('[data-v]')
@@ -5310,10 +5334,7 @@ function appCard(app, index) {
   const zone = a.querySelector('.app-stats');
   if (chiffres && chiffres.length) {
     zone.hidden = false;
-    /* Deux pastilles, pas davantage : au-delà, la tuile n'a plus la largeur de
-       montrer les libellés, et « BIBLIOTHÈ… » n'apprend rien. Les autres
-       mesures restent lisibles sur la fiche du service et en vue Liste. */
-    chiffres.slice(0, 2).forEach((s) => {
+    chiffres.forEach((s) => {
       const c = document.createElement('div');
       c.className = 'st';
       const v = document.createElement('div');
@@ -5322,6 +5343,7 @@ function appCard(app, index) {
       const l = document.createElement('div');
       l.className = 'l';
       l.textContent = s.lab;
+      l.title = s.lab;
       c.appendChild(v);
       c.appendChild(l);
       zone.appendChild(c);
@@ -5937,6 +5959,7 @@ function renderApparence() {
   bascule('look-stats', voirStats, (v) => {
     voirStats = v;
     store.set('stats', v ? '1' : '0');
+    majBoutonStats();          // l'autre commande suit
     renderApps();
     renderApparence();
   });
@@ -7385,6 +7408,19 @@ window.addEventListener('keydown', (e) => {
 });
 
 /* ---------- vue grille / liste ---------- */
+/* Une seule valeur, deux commandes : le bouton de la barre et l'interrupteur
+   d'Apparence se reflètent l'un l'autre. */
+function majBoutonStats() {
+  const b = $('btn-stats');
+  b.setAttribute('aria-checked', voirStats ? 'true' : 'false');
+}
+$('btn-stats').addEventListener('click', () => {
+  voirStats = !voirStats;
+  store.set('stats', voirStats ? '1' : '0');
+  majBoutonStats();
+  renderApps();
+  if (!$('spage').hidden) renderApparence();
+});
 $('seg-view').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-view]');
   if (!btn) return;
