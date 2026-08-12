@@ -608,6 +608,10 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .u-actif{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
 
 /* champ mot de passe : œil + jauge */
+.spage .scard-body > .field,
+.spage .scard-body > .field .pwd-wrap{max-width:380px}
+.spage .u-addrow{max-width:520px}
+.lang-list{max-width:640px}
 .pwd-wrap{position:relative;flex:1;min-width:0;display:flex}
 .pwd-wrap input{flex:1;min-width:0;padding-right:38px !important}
 .pwd-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--muted);font-size:14px;line-height:1}
@@ -788,9 +792,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srv-note code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:2px 5px;border-radius:4px}
 .health-head{cursor:pointer}
 .health-head:hover{color:var(--accent)}
-.sp-inner{max-width:1120px;padding:30px 36px 60px}
+.sp-inner{max-width:960px;padding:30px 36px 60px}
 /* Apparence tient deux colonnes de front : elle a besoin de plus. */
-#sp-look .sp-inner{max-width:1420px}
+#sp-look .sp-inner{max-width:1280px}
 /* Le texte, lui, garde une mesure lisible : une description étalée sur mille
    pixels se lit mal, même quand la carte, elle, profite de la place. */
 .sp-title{font:700 21px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
