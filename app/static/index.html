@@ -175,17 +175,17 @@ summary:focus-visible,[tabindex]:focus-visible{
 /* ---- bandeau des problèmes en cours ---- */
 /* Trois grandeurs, trois anneaux : la charge se lit sans lire les chiffres.
    Le tracé vient des mêmes mesures que les barres qu'il remplace. */
-.cock-anneaux{display:flex;justify-content:space-around;gap:8px;margin:14px 0 4px}
+.cock-anneaux{flex:1;display:flex;align-items:center;justify-content:space-around;gap:8px;margin:10px 0 4px;min-height:96px}
 .cock-anneaux:empty{display:none}
-.anneau{display:flex;flex-direction:column;align-items:center;gap:7px}
-.anneau svg{width:58px;height:58px;transform:rotate(-90deg)}
+.anneau{display:flex;flex-direction:column;align-items:center;gap:9px}
+.anneau svg{width:76px;height:76px;transform:rotate(-90deg)}
 .anneau .piste{fill:none;stroke:var(--divider);stroke-width:6}
 .anneau .arc{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
              transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1)}
 .anneau.s2 .arc{stroke:var(--warn)}
 .anneau.s3 .arc{stroke:var(--warn)}
 .anneau.s4 .arc{stroke:var(--bad)}
-.anneau .v{position:absolute;font:700 12px/1 'IBM Plex Mono',monospace;color:var(--text-1)}
+.anneau .v{position:absolute;font:700 14px/1 'IBM Plex Mono',monospace;color:var(--text-1)}
 .anneau .rond{position:relative;display:flex;align-items:center;justify-content:center}
 .anneau .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2)}
 .cock-up{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
