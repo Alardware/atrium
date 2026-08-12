@@ -45,6 +45,7 @@ SESSION_FILE = os.path.join(CONFIG_DIR, "sessions.json")
 
 SESSIONS = auth.Sessions(SESSION_FILE)
 LIMITEUR = auth.Limiteur()
+JOURNAL = auth.Journal(os.path.join(CONFIG_DIR, "journal.json"))
 
 FORWARD_HEADERS = ("x-api-key", "authorization", "content-type", "accept", "x-plex-token")
 CORPS_MAX = 8 * 1024 * 1024      # au-dela, la requete est refusee
@@ -350,6 +351,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/sessions":
             if self.exiger_session():
                 self.sessions_get()
+        elif route == "/api/securite":
+            if self.exiger_session():
+                self.securite_get()
         elif route == "/api/diagnostic":
             if self.exiger_session():
                 self.diagnostic_get()
@@ -463,6 +467,54 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         _conteneurs["a"] = 0          # le tableau doit repartir d'une lecture fraiche
         code = 200 if ok else (503 if "socket" in msg else 502)
         self.reply(code, json.dumps({"ok": ok, "error": msg}, ensure_ascii=False).encode())
+
+    def securite_get(self):
+        """Etat de securite reel, tel que le serveur peut le constater.
+
+        Chaque point est verifie ici et non deduit cote navigateur : une page
+        qui s auto-declarerait sure ne prouverait rien. Ce qui n est pas
+        verifiable est rapporte comme inconnu, jamais comme bon.
+        """
+        cfg = self.lire_config()
+        users = cfg.get("users") or []
+        moi = self.session_user()
+        u = next((x for x in users if x.get("nom") == moi), None)
+
+        ip = self.client_address[0]
+        relaye = bool(self.headers.get("X-Forwarded-For"))
+        # Un portail d authentification place devant Atrium annonce l utilisateur
+        # qu il a valide. Ces en-tetes sont la convention d Authelia, d Authentik
+        # et du proxy de Home Assistant.
+        portail = next((h for h in ("Remote-User", "X-Forwarded-User",
+                                    "X-Authentik-Username", "X-Remote-User")
+                        if self.headers.get(h)), None)
+
+        echecs = JOURNAL.echecs()
+        points = [
+            {"cle": "mdp", "ok": bool(u and u.get("pwd"))},
+            {"cle": "auth", "ok": all(x.get("pwd") for x in users) if users else False},
+            {"cle": "limite", "ok": True},
+            {"cle": "relais", "ok": True},
+            {"cle": "journal", "ok": not echecs},
+            {"cle": "local", "ok": (not relaye) and reseau.prive(ip)},
+            {"cle": "portail", "ok": bool(portail)},
+            {"cle": "cookie", "ok": True},
+            {"cle": "entetes", "ok": True},
+        ]
+        self.reply(200, json.dumps({
+            "points": points,
+            "score": sum(1 for p in points if p["ok"]),
+            "total": len(points),
+            "mdp": bool(u and u.get("pwd")),
+            "profils": len(users),
+            "sans_mdp": [x.get("nom") for x in users if not x.get("pwd")],
+            "limiteur": {"essais": LIMITEUR.essais, "fenetre": LIMITEUR.fenetre},
+            "reseaux": list(reseau.NOMS_AUTORISES) or None,
+            "acces": {"ip": ip, "local": (not relaye) and reseau.prive(ip),
+                      "relaye": relaye, "portail": portail or ""},
+            "echecs": echecs[-20:],
+            "iterations": auth.ITERATIONS,
+        }, ensure_ascii=False).encode())
 
     def sessions_get(self):
         """Sessions ouvertes du compte courant. Le jeton n'est jamais renvoye :
@@ -585,6 +637,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             ok = False
         if not ok:
             LIMITEUR.echec(cle)
+            JOURNAL.noter(cle, nom, u is not None)
             self.reply(401, json.dumps({"error": "Nom d'utilisateur ou mot de passe incorrect."}, ensure_ascii=False).encode())
             return
 

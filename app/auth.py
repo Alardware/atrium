@@ -159,6 +159,58 @@ class Sessions:
         self.data = {k: v for k, v in self.data.items() if v.get("exp", 0) > maintenant}
 
 
+class Journal:
+    """Journal des connexions refusees.
+
+    Sert a repondre a une question simple que l interface pose : est-ce que
+    quelqu un a essaye d entrer ? Sans trace, la page Securite ne pourrait
+    qu affirmer que tout va bien, ce qui n est pas la meme chose que le savoir.
+
+    Ce qui est conserve : l instant, l adresse d ou venait la tentative, et le
+    nom saisi s il correspond a un profil existant. Un nom inconnu n est pas
+    retenu — ce serait recopier dans un fichier ce qu un inconnu a tape, sans
+    utilite pour l utilisateur.
+    """
+
+    RETENTION = 7 * 24 * 3600
+    MAX = 200
+
+    def __init__(self, chemin):
+        self.chemin = chemin
+        self.lock = threading.Lock()
+        self.data = []
+        try:
+            with open(chemin, "r", encoding="utf-8") as f:
+                self.data = json.load(f) or []
+        except (OSError, ValueError):
+            self.data = []
+
+    def noter(self, ip, nom, connu):
+        with self.lock:
+            self.data.append({"a": int(time.time()), "ip": ip,
+                              "nom": nom if connu else ""})
+            self._elaguer()
+            self._sauver()
+
+    def echecs(self, depuis=None):
+        limite = time.time() - (depuis or self.RETENTION)
+        with self.lock:
+            return [dict(e) for e in self.data if e.get("a", 0) >= limite]
+
+    def _elaguer(self):
+        limite = time.time() - self.RETENTION
+        self.data = [e for e in self.data if e.get("a", 0) >= limite][-self.MAX:]
+
+    def _sauver(self):
+        try:
+            tmp = self.chemin + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(self.data, f)
+            os.replace(tmp, self.chemin)
+        except OSError:
+            pass
+
+
 class Limiteur:
     """Limite les tentatives de connexion : 8 essais par tranche de 5 minutes."""
 

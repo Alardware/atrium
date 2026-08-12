@@ -653,13 +653,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .opt-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .opt-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .opt-tx span{font:500 11.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
-.sdetails{margin-top:10px}
-.sdetails.plein{margin-top:22px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-.sdetails summary{cursor:pointer;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--accent);list-style:none}
-.sdetails summary::-webkit-details-marker{display:none}
-.sdetails summary::before{content:'▸ ';font-size:10px}
-.sdetails[open] summary::before{content:'▾ '}
-.sdetails[open] summary{margin-bottom:10px}
 .bouton-bascule{width:42px;height:24px;border-radius:99px;background:var(--track);border:1px solid var(--border-2);position:relative;flex:none;transition:background .15s,border-color .15s}
 .bouton-bascule::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:var(--sh-1);transition:transform .15s}
 .bouton-bascule.on{background:var(--accent);border-color:var(--accent)}
@@ -892,6 +885,55 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .p-carte-btns{margin-left:auto;display:flex;flex-direction:column;gap:8px;flex:none}
 .fhint{margin-top:-4px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .scard-foot .fill.sale{color:var(--warn-text);font-weight:600}
+/* Le score n'est pas une note : il compte les garde-fous en place, et son
+   libellé le dit. */
+.sec-score{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;
+           border:1px solid var(--border);background:var(--surface)}
+.sec-score.ok{border-color:var(--ok);background:var(--ok-soft)}
+.sec-score.moyen{border-color:var(--warn-border);background:var(--warn-soft)}
+.sec-score.bas{border-color:var(--bad);background:var(--bad-soft)}
+.sec-score .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+               background:var(--surface);border:1px solid var(--border);font-size:17px;flex:none}
+.sec-score .tx{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sec-score .tx b{font:700 14.5px/1.2 'Plus Jakarta Sans',sans-serif}
+.sec-score.ok .tx b{color:var(--ok-text)}
+.sec-score.moyen .tx b{color:var(--warn-text)}
+.sec-score.bas .tx b{color:var(--bad-text)}
+.sec-score .tx span{font:500 11.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.sec-score .n{margin-left:auto;flex:none}
+.sec-score .n b{font:700 26px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em}
+.etat-v{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--ok-text);white-space:nowrap}
+.etat-v.warn{color:var(--warn-text)}
+.etat-v.off{color:var(--muted-2)}
+.etat-row .btn-sm{margin-left:14px;flex:none}
+.etat-p.off{background:var(--muted-3)}
+.sec-avert{display:flex;align-items:center;gap:11px;margin-top:22px;padding:13px 15px;
+           border-radius:11px;border:1px solid var(--warn-border);border-left:3px solid var(--warn);
+           background:var(--warn-soft)}
+.sec-avert .dot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
+.sec-avert .tx{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.sec-avert .lien{margin-left:auto;white-space:nowrap;font:700 11px/1 'Plus Jakarta Sans',sans-serif;
+                 color:var(--accent)}
+/* Le journal s'ouvre par-dessus : c'est une consultation, pas une navigation. */
+.sp-modale{position:fixed;inset:0;z-index:80;display:grid;place-items:center;
+           background:rgba(0,0,0,.5);padding:20px}
+.sp-modale[hidden]{display:none}
+.sp-modale-box{width:560px;max-width:100%;max-height:70vh;overflow:auto;border-radius:13px;
+               border:1px solid var(--border);background:var(--surface);box-shadow:var(--sh-modal)}
+.sp-modale-h{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:14px 16px;
+             border-bottom:1px solid var(--divider);background:var(--surface-2)}
+.sp-modale-h b{font:700 13px/1 'Plus Jakarta Sans',sans-serif}
+.sp-modale-h .btn-sm{margin-left:auto}
+.jr-l{display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid var(--divider);
+      font:500 11.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
+.jr-l:first-child{border-top:0}
+.jr-l .ip{color:var(--muted-2)}
+.jr-l .n{margin-left:auto;color:var(--muted-2)}
+.jr-vide{padding:22px;text-align:center;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+/* Chaque entrée de navigation annonce ce qu'elle contient. */
+.spage-nav button .q{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
+.spage-nav button .q:empty{display:none}
+.spage-nav button.on .q{color:var(--muted-2)}
 .conn-bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
 .conn-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .conn-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
@@ -918,12 +960,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .conn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .conn-row .cr-nom{flex:1;min-width:0;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
-.sec-l{display:flex;gap:11px;align-items:flex-start}
-.sec-l + .sec-l{padding-top:14px;border-top:1px solid var(--divider)}
-.sec-l b{display:block;font:700 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--text)}
-.sec-l span:not(.sec-i){display:block;margin-top:2px;font:500 11.5px/1.55 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
-.sec-i{width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:10px;font-weight:700}
-.sec-i.ok{background:var(--ok-soft);color:var(--ok-text)}
 code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:2px 5px;border-radius:4px}
 
 /* premier lancement */
@@ -1518,14 +1554,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   <div class="spage-body">
     <nav class="spage-nav" id="sp-nav">
       <div class="grp" data-i18n="set.grp.account">Compte</div>
-      <button data-p="profil" class="on"><span class="ic">👤</span><span data-i18n="set.profile">Mon profil</span></button>
-      <button data-p="users"><span class="ic">👥</span><span data-i18n="set.users">Utilisateurs</span></button>
-      <button data-p="security"><span class="ic">🔐</span><span data-i18n="set.security">Sécurité</span></button>
-      <button data-p="sessions"><span class="ic">💻</span><span data-i18n="set.sessions">Sessions</span></button>
+      <button data-p="profil" class="on"><span class="ic">👤</span><span data-i18n="set.profile">Mon profil</span><span class="q" id="nq-profil"></span></button>
+      <button data-p="security"><span class="ic">🛡</span><span data-i18n="set.security">Sécurité</span><span class="q" id="nq-sec"></span></button>
       <div class="grp" data-i18n="set.grp.app">Application</div>
       <button data-p="look"><span class="ic">🎨</span><span data-i18n="set.look">Apparence</span></button>
-      <button data-p="conn"><span class="ic">🔗</span><span data-i18n="set.conn">Connexions</span></button>
-      <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span></button>
+      <button data-p="conn"><span class="ic">🔗</span><span data-i18n="set.conn">Connexions</span><span class="q" id="nq-conn"></span></button>
+      <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span><span class="q" id="nq-lang"></span></button>
       <button data-p="about"><span class="ic">ℹ</span><span data-i18n="set.about">À propos</span></button>
     </nav>
     <div class="spage-content">
@@ -1592,53 +1626,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             </div>
           </div>
 
-          <div class="scard" style="margin-top:22px">
-            <h4 data-i18n="pwd.change">Changer le mot de passe</h4>
-            <div class="scard-body">
-              <div class="setup-err" id="p-pwd-err" hidden></div>
-              <div class="field" id="p-anc-champ">
-                <label for="p-anc" data-i18n="pwd.current">Mot de passe actuel</label>
-                <span class="pwd-wrap">
-                  <input id="p-anc" type="password" autocomplete="current-password">
-                  <button class="pwd-eye" id="p-anc-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
-                </span>
-              </div>
-              <div class="field">
-                <label for="p-pwd" data-i18n="pwd.new">Nouveau mot de passe</label>
-                <span class="pwd-wrap">
-                  <input id="p-pwd" type="password" autocomplete="new-password">
-                  <button class="pwd-eye" id="p-pwd-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
-                </span>
-                <div class="pwd-meter" id="p-meter" hidden>
-                  <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
-                  <div class="pwd-lab" id="p-meter-lab"></div>
-                </div>
-              </div>
-              <div class="field">
-                <label for="p-pwd2" data-i18n="pwd.confirm">Confirmer le nouveau mot de passe</label>
-                <span class="pwd-wrap">
-                  <input id="p-pwd2" type="password" autocomplete="new-password">
-                  <button class="pwd-eye" id="p-pwd2-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
-                </span>
-              </div>
-            </div>
-            <div class="scard-foot">
-              <span class="fill" id="p-pwd-etat"></span>
-              <button class="btn-sm danger" id="p-pwd-clear" type="button" data-i18n="btn.remove">Retirer</button>
-              <button class="btn-primary" id="p-pwd-save" data-i18n="btn.confirm">Confirmer</button>
-            </div>
-          </div>
+      <div id="sp-users">
+        
         </div>
-      </section>
-
-      <!-- UTILISATEURS -->
-      <section class="spanel sp-inner" id="sp-users" hidden>
-        <div class="sp-head">
-          <div class="sp-title" data-i18n="set.users">Utilisateurs</div>
-          <div class="sp-lead" data-i18n="users.lead">Les profils partagés par tous les appareils qui ouvrent Atrium.</div>
-        </div>
-        <div class="scard">
-          <h4 data-i18n="users.profiles">Profils</h4>
+        <div class="scard" style="margin-top:22px">
+          <h4><span data-i18n="users.profiles">Profils du foyer</span><span class="n" id="spu-n"></span><span class="aide" data-i18n="users.shared">partagés par tous les appareils</span></h4>
           <div class="scard-body">
             <div class="users-list" id="spu-list"></div>
             <div class="u-addrow">
@@ -1694,86 +1686,100 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <button class="btn-danger" id="spu-del" data-i18n="btn.delete">Supprimer</button>
           </div>
         </div>
+      </div>
+          <div class="scard" style="margin-top:22px">
+            <h4 data-i18n="pwd.change">Changer le mot de passe</h4>
+            <div class="scard-body">
+              <div class="setup-err" id="p-pwd-err" hidden></div>
+              <div class="field" id="p-anc-champ">
+                <label for="p-anc" data-i18n="pwd.current">Mot de passe actuel</label>
+                <span class="pwd-wrap">
+                  <input id="p-anc" type="password" autocomplete="current-password">
+                  <button class="pwd-eye" id="p-anc-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
+                </span>
+              </div>
+              <div class="field">
+                <label for="p-pwd" data-i18n="pwd.new">Nouveau mot de passe</label>
+                <span class="pwd-wrap">
+                  <input id="p-pwd" type="password" autocomplete="new-password">
+                  <button class="pwd-eye" id="p-pwd-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
+                </span>
+                <div class="pwd-meter" id="p-meter" hidden>
+                  <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
+                  <div class="pwd-lab" id="p-meter-lab"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="p-pwd2" data-i18n="pwd.confirm">Confirmer le nouveau mot de passe</label>
+                <span class="pwd-wrap">
+                  <input id="p-pwd2" type="password" autocomplete="new-password">
+                  <button class="pwd-eye" id="p-pwd2-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
+                </span>
+              </div>
+            </div>
+            <div class="scard-foot">
+              <span class="fill" id="p-pwd-etat"></span>
+              <button class="btn-sm danger" id="p-pwd-clear" type="button" data-i18n="btn.remove">Retirer</button>
+              <button class="btn-primary" id="p-pwd-save" data-i18n="btn.confirm">Confirmer</button>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <!-- UTILISATEURS -->
 
       <!-- SÉCURITÉ -->
       <section class="spanel sp-inner" id="sp-security" hidden>
         <div class="sp-head">
           <div class="sp-title" data-i18n="set.security">Sécurité</div>
-          <div class="sp-lead" data-i18n="sec.lead">L'état de la protection de votre installation.</div>
+          <div class="sp-lead" data-i18n="sec.lead">Contrôle l'accès à Atrium au chargement de la page. Garde-fou familial, pas une authentification d'entreprise.</div>
         </div>
 
-        <div class="scard">
-          <h4 data-i18n="sec.account">Protection du compte</h4>
-          <div class="scard-body">
-            <div class="etat-row" id="sec-pwd">
-              <span class="etat-p"></span>
-              <span class="etat-tx"><b></b><span></span></span>
-              <button class="btn-sm" id="sec-pwd-go" type="button" data-i18n="pwd.change">Changer le mot de passe</button>
-            </div>
-            <div class="etat-row" id="sec-auth">
-              <span class="etat-p"></span>
-              <span class="etat-tx"><b data-i18n="sec.auth">Authentification</b><span></span></span>
-            </div>
-          </div>
+        <div class="sec-score" id="sec-score">
+          <span class="ic">🛡</span>
+          <span class="tx"><b id="sec-score-t"></b><span id="sec-score-d"></span></span>
+          <span class="n"><b id="sec-score-n">—</b></span>
+        </div>
+
+        <div class="scard" style="margin-top:22px">
+          <h4><span data-i18n="sec.account">Protection du compte</span>
+            <span class="aide" data-i18n="sec.server">vérifiée côté serveur</span></h4>
+          <div class="scard-body" id="sec-compte"></div>
         </div>
 
         <div class="scard" style="margin-top:22px">
           <h4 data-i18n="sec.attacks">Protection contre les attaques</h4>
-          <div class="scard-body">
-            <div class="etat-row">
-              <span class="etat-p ok"></span>
-              <span class="etat-tx"><b data-i18n="sec.rate">Limitation des tentatives</b>
-                <span data-i18n="sec.rate.court">Les connexions répétées sont temporairement bloquées.</span></span>
-            </div>
-            <div class="etat-row">
-              <span class="etat-p ok"></span>
-              <span class="etat-tx"><b data-i18n="sec.relay">Relais restreint au réseau local</b>
-                <span data-i18n="sec.relay.court">Atrium ne peut pas servir de rebond vers Internet.</span></span>
-            </div>
-          </div>
+          <div class="scard-body" id="sec-attaques"></div>
         </div>
 
         <div class="scard" style="margin-top:22px">
           <h4 data-i18n="sec.access">Accès externe</h4>
-          <div class="scard-body">
-            <div class="etat-row" id="sec-expo">
-              <span class="etat-p"></span>
-              <span class="etat-tx"><b></b><span></span></span>
-            </div>
-            <details class="sdetails">
-              <summary data-i18n="sec.expose">Avant d'exposer Atrium sur Internet</summary>
-              <span class="hint" data-i18n="sec.expose.d">L'authentification ci-dessus protège l'accès depuis votre réseau. Pour une exposition publique, ajoutez du HTTPS et de préférence un portail d'authentification en amont (Authelia, Authentik, Cloudflare Access).</span>
-            </details>
-          </div>
+          <div class="scard-body" id="sec-externe"></div>
         </div>
 
-        <details class="sdetails plein">
-          <summary data-i18n="sec.tech">Voir les détails techniques</summary>
-          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.hash">Mots de passe hachés</b><span data-i18n="sec.hash.d">PBKDF2-SHA256, 240 000 itérations, sel unique. Le mot de passe n'est jamais enregistré en clair.</span></div></div>
-          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.session">Session vérifiée par le serveur</b><span data-i18n="sec.session.d">Cookie HttpOnly illisible par JavaScript. Sans session valide, la configuration et les clés API sont refusées.</span></div></div>
-          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.rate">Tentatives limitées</b><span data-i18n="sec.rate.d">Au-delà de 8 essais en 5 minutes, les connexions sont bloquées temporairement.</span></div></div>
-          <div class="sec-l"><span class="sec-i ok">✓</span><div><b data-i18n="sec.relay">Relais restreint</b><span data-i18n="sec.relay.d">Le serveur ne relaie que vers le réseau privé : il ne peut pas servir de rebond vers Internet.</span></div></div>
-        </details>
+        <div class="scard" style="margin-top:22px">
+          <h4><span data-i18n="sec.devices">Appareils connectés</span>
+            <span class="n" id="sec-sess-n"></span>
+            <button class="btn-sm danger" id="sess-fermer" type="button" data-i18n="sess.revokeall">Tout révoquer</button></h4>
+          <div class="scard-body"><div id="sess-liste"></div></div>
+        </div>
+
+        <div class="sec-avert">
+          <span class="dot"></span>
+          <span class="tx" data-i18n="sec.warn">N'exposez pas Atrium directement sur Internet. Passez par Authelia, Authentik ou l'ingress de Home Assistant.</span>
+          <a class="lien" href="https://github.com/Alardware/atrium#exposition" target="_blank" rel="noopener" data-i18n="sec.warn.link">Lire le guide ↗</a>
+        </div>
+
+        <div class="sp-modale" id="sec-journal" hidden>
+          <div class="sp-modale-box">
+            <div class="sp-modale-h"><b data-i18n="sec.log">Journal des accès</b>
+              <button class="btn-sm" id="sec-journal-x" type="button" data-i18n="btn.close">Fermer</button></div>
+            <div id="sec-journal-l"></div>
+          </div>
+        </div>
       </section>
 
       <!-- SESSIONS -->
-      <section class="spanel sp-inner" id="sp-sessions" hidden>
-        <div class="sp-head">
-          <div class="sp-title" data-i18n="set.sessions">Sessions</div>
-          <div class="sp-lead" id="sess-lead" data-i18n="sess.lead">Les appareils actuellement connectés à votre compte.</div>
-        </div>
-        <div id="sess-liste"></div>
-        <div class="scard" style="margin-top:22px" id="sess-fermer-carte" hidden>
-          <h4 data-i18n="sess.closeall">Fermer les autres sessions</h4>
-          <div class="scard-body">
-            <span class="hint" data-i18n="sess.closeall.d">Déconnecte tous les autres appareils. Celui-ci reste connecté.</span>
-          </div>
-          <div class="scard-foot">
-            <button class="btn-sm danger" id="sess-fermer" type="button" data-i18n="sess.closeall.btn">Déconnecter les autres appareils</button>
-          </div>
-        </div>
-      </section>
 
       <!-- APPARENCE -->
       <section class="spanel" id="sp-look" hidden>
@@ -5592,17 +5598,18 @@ function openSettings(section) {
 function closeSettings() { $('spage').hidden = true; }
 function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
-  ['profil', 'users', 'security', 'sessions', 'look', 'conn', 'lang', 'about']
+  /* Six pages : « Utilisateurs » vit dans Mon profil et « Sessions » dans
+     Sécurité — ce sont deux facettes du même sujet, pas deux destinations. */
+  ['profil', 'security', 'look', 'conn', 'lang', 'about']
     .forEach((k) => { $('sp-' + k).hidden = k !== p; });
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
+  majPastillesReglages();
   if (p === 'profil') {
     renderProfil();
-  } else if (p === 'users') {
     renderUsersPage();
   } else if (p === 'security') {
     renderSecurite();
-  } else if (p === 'sessions') {
     renderSessions();
   } else if (p === 'look') {
     renderApparence();
@@ -5780,26 +5787,175 @@ function etatLigne(id, niveau, titre, detail) {
   if (titre) b.textContent = titre;
   r.querySelector('.etat-tx span').textContent = detail;
 }
-function renderSecurite() {
-  const moi = (USERS || []).find((u) => u.nom === (SESSION_USER || ACTIVE));
-  const protege = !!(moi && moi.pwd);
-  etatLigne('sec-pwd', protege ? 'ok' : 'warn',
-            t(protege ? 'sec.pwd.ok' : 'sec.pwd.no'),
-            t(protege ? 'sec.pwd.ok.d' : 'sec.pwd.no.d'));
-  etatLigne('sec-auth', protege ? 'ok' : 'warn', null,
-            t(protege ? 'sec.auth.pwd' : 'sec.auth.none'));
-  /* « exposé » se déduit de l'adresse par laquelle on consulte Atrium :
-     c'est la seule chose que le navigateur puisse constater honnêtement. */
-  const h = location.hostname;
-  /* sans nom d'hôte (page ouverte depuis un fichier), on ne peut rien
-     constater : on ne va pas annoncer une exposition qu'on ignore */
-  const local = !h || /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1)/.test(h)
-    || h.endsWith('.local');
-  etatLigne('sec-expo', local ? 'ok' : 'warn',
-            t(local ? 'sec.expo.local' : 'sec.expo.pub'),
-            t(local ? 'sec.expo.local.d' : 'sec.expo.pub.d', { h }));
+/* ---------- Sécurité ---------- */
+/* Tous les constats viennent du serveur : une page qui s'auto-déclarerait sûre
+   ne prouverait rien. Le navigateur ne fait qu'afficher, et le verrouillage
+   automatique — le seul réglage qui lui appartienne — est signalé comme tel. */
+let SECU = null;
+let SESSIONS_N = 0;
+
+function ligneSecu(zone, cle, etat, valeur, bouton) {
+  const l = document.createElement('div');
+  l.className = 'etat-row';
+  const p = document.createElement('span');
+  p.className = 'etat-p ' + etat;
+  const tx = document.createElement('span');
+  tx.className = 'etat-tx';
+  const b = document.createElement('b');
+  b.textContent = t('sec.' + cle);
+  const sd = document.createElement('span');
+  sd.textContent = t('sec.' + cle + '.d');
+  tx.appendChild(b);
+  tx.appendChild(sd);
+  l.appendChild(p);
+  l.appendChild(tx);
+  if (valeur) {
+    const v = document.createElement('span');
+    v.className = 'etat-v' + (etat === 'warn' ? ' warn' : etat === 'off' ? ' off' : '');
+    v.textContent = valeur;
+    l.appendChild(v);
+  }
+  if (bouton) {
+    const bt = document.createElement('button');
+    bt.className = 'btn-sm';
+    bt.type = 'button';
+    bt.textContent = bouton.lab;
+    bt.addEventListener('click', bouton.fn);
+    l.appendChild(bt);
+  }
+  zone.appendChild(l);
+  return l;
 }
-$('sec-pwd-go').addEventListener('click', () => spNav('profil'));
+
+async function renderSecurite() {
+  try {
+    const r = await relayFetch('/api/securite');
+    if (r.ok) SECU = await r.json();
+  } catch (e) { /* on garde le dernier état connu */ }
+  if (!SECU) return;
+
+  /* Le score compte les garde-fous effectivement en place. Ce n'est pas une
+     note de sécurité absolue, et la page ne le présente pas comme telle. */
+  const part = SECU.score / SECU.total;
+  $('sec-score').className = 'sec-score ' + (part >= 0.85 ? 'ok' : part >= 0.6 ? 'moyen' : 'bas');
+  $('sec-score-t').textContent = t(part >= 0.85 ? 'sec.state.ok'
+    : part >= 0.6 ? 'sec.state.mid' : 'sec.state.low');
+  $('sec-score-n').textContent = SECU.score + '/' + SECU.total;
+  const acquis = [];
+  if (SECU.mdp) acquis.push(t('sec.sum.pwd'));
+  if (SECU.acces.local) acquis.push(t('sec.sum.local'));
+  acquis.push(t('sec.sum.relay'));
+  $('sec-score-d').textContent = acquis.join(', ') + '.';
+
+  const ok = (cle) => (SECU.points.find((x) => x.cle === cle) || {}).ok;
+
+  const zc = $('sec-compte');
+  zc.textContent = '';
+  ligneSecu(zc, 'pwd', ok('mdp') ? 'ok' : 'warn',
+            t(ok('mdp') ? 'sec.on' : 'sec.off'),
+            { lab: t('sec.change'), fn: () => { spNav('profil'); $('p-pwd').focus(); } });
+  ligneSecu(zc, 'auth', ok('auth') ? 'ok' : 'warn',
+            ok('auth') ? t('sec.on')
+              : t('sec.nopwd', { n: SECU.sans_mdp.length, q: SECU.sans_mdp.join(', ') }));
+  ligneSecu(zc, 'autolock', VERROU_MIN ? 'ok' : 'off',
+            VERROU_MIN ? t('sec.min', { n: VERROU_MIN }) : t('sec.never'),
+            { lab: t('sec.modify'), fn: cyclerVerrou });
+
+  const za = $('sec-attaques');
+  za.textContent = '';
+  ligneSecu(za, 'rate', 'ok',
+            SECU.limiteur.essais + ' / ' + Math.round(SECU.limiteur.fenetre / 60) + ' min');
+  ligneSecu(za, 'relay', 'ok', t('sec.privnets'));
+  const ech = SECU.echecs.length;
+  const lj = ligneSecu(za, 'log', ech ? 'warn' : 'ok',
+                       ech ? t('sec.fails', { n: ech }) : t('sec.nofail'),
+                       { lab: t('sec.consult'), fn: ouvrirJournal });
+  lj.querySelector('.etat-tx span').textContent =
+    ech ? t('sec.log.some', { n: ech }) : t('sec.log.none');
+
+  const ze = $('sec-externe');
+  ze.textContent = '';
+  const a = SECU.acces;
+  const quoi = a.relaye ? 'relayed' : a.local ? 'local' : 'public';
+  const l = ligneSecu(ze, 'reach', a.local ? 'ok' : 'warn', t('sec.reach.' + quoi + '.v'));
+  l.querySelector('.etat-tx b').textContent = t('sec.reach.' + quoi);
+  l.querySelector('.etat-tx span').textContent = t('sec.reach.' + quoi + '.d', { ip: a.ip });
+  ligneSecu(ze, 'portal', a.portail ? 'ok' : 'off',
+            a.portail ? a.portail : t('sec.notset'),
+            a.portail ? null : { lab: t('sec.learn'),
+              fn: () => window.open('https://www.authelia.com/', '_blank', 'noopener') });
+}
+
+/* Journal : ce que le serveur a réellement enregistré, rien de plus. */
+function ouvrirJournal() {
+  const z = $('sec-journal-l');
+  z.textContent = '';
+  const liste = (SECU && SECU.echecs) || [];
+  if (!liste.length) {
+    const v = document.createElement('div');
+    v.className = 'jr-vide';
+    v.textContent = t('sec.log.none');
+    z.appendChild(v);
+  }
+  liste.slice().reverse().forEach((e) => {
+    const l = document.createElement('div');
+    l.className = 'jr-l';
+    const q = document.createElement('span');
+    q.className = 'q';
+    q.textContent = new Date(e.a * 1000).toLocaleString(
+      i18n.langue === 'en' ? 'en-GB' : 'fr-FR');
+    const ip = document.createElement('span');
+    ip.className = 'ip';
+    ip.textContent = e.ip;
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = e.nom ? t('sec.log.as', { q: e.nom }) : t('sec.log.unknown');
+    l.appendChild(q);
+    l.appendChild(ip);
+    l.appendChild(n);
+    z.appendChild(l);
+  });
+  $('sec-journal').hidden = false;
+}
+$('sec-journal-x').addEventListener('click', () => { $('sec-journal').hidden = true; });
+
+/* ---------- verrouillage automatique ---------- */
+/* Ce réglage-ci appartient bien au navigateur : il décide quand redemander le
+   profil. Il ne ferme pas la session côté serveur, il la met de côté sur cet
+   appareil — garde-fou contre l'écran resté ouvert, pas contre une attaque. */
+const PALIERS_VERROU = [0, 5, 15, 60];
+let VERROU_MIN = parseInt(store.get('verrou') || '0', 10) || 0;
+let VERROU_T = null;
+
+function armerVerrou() {
+  clearTimeout(VERROU_T);
+  if (!VERROU_MIN || !SESSION_USER) return;
+  VERROU_T = setTimeout(() => {
+    $('lock').hidden = false;
+    renderLockUi();
+  }, VERROU_MIN * 60000);
+}
+['pointerdown', 'keydown', 'wheel'].forEach((ev) =>
+  document.addEventListener(ev, armerVerrou, { passive: true }));
+
+function cyclerVerrou() {
+  const i = PALIERS_VERROU.indexOf(VERROU_MIN);
+  VERROU_MIN = PALIERS_VERROU[(i + 1) % PALIERS_VERROU.length];
+  store.set('verrou', String(VERROU_MIN));
+  armerVerrou();
+  renderSecurite();
+}
+
+/* Pastilles de la navigation : ce que chaque page a d'utile à annoncer. */
+function majPastillesReglages() {
+  const u = userActif();
+  $('nq-profil').textContent = u ? u.nom : '';
+  $('nq-sec').textContent = SESSIONS_N ? t('sess.count', { n: SESSIONS_N }) : '';
+  const types = apps.filter((a) => kindOfApp(a)).length;
+  const vus = apps.filter((a) => kindOfApp(a) && (STATS[a.nom] || []).length).length;
+  $('nq-conn').textContent = types ? vus + '/' + types : '';
+  $('nq-lang').textContent = (i18n.langue || 'fr').toUpperCase();
+}
 
 /* ---------- Sessions ---------- */
 /* L'agent utilisateur n'est pas fiable, mais c'est ce que le navigateur a
@@ -5826,11 +5982,13 @@ async function renderSessions() {
     const v = clone('tpl-empty');
     v.textContent = t('sess.fail');
     zone.appendChild(v);
-    $('sess-fermer-carte').hidden = true;
+    $('sess-fermer').hidden = true;
     return;
   }
   const n = d.sessions.length;
-  $('sess-lead').textContent = t(n > 1 ? 'sess.count.n' : 'sess.count.1', { n });
+  SESSIONS_N = n;
+  $('sec-sess-n').textContent = t('sess.count', { n });
+  majPastillesReglages();
   d.sessions.forEach((x) => {
     const row = clone('tpl-sess');
     row.classList.toggle('actuelle', x.actuelle);
@@ -5838,10 +5996,24 @@ async function renderSessions() {
     row.querySelector('b').textContent = decrireAgent(x.agent);
     row.querySelector('.sess-tx span').textContent =
       [x.ip, x.actuelle ? t('sess.now') : age(x.vue)].filter(Boolean).join(' · ');
-    row.querySelector('.sess-eti').textContent = x.actuelle ? t('sess.this') : '';
+    const eti = row.querySelector('.sess-eti');
+    if (x.actuelle) {
+      eti.textContent = t('sess.this');
+    } else {
+      /* Révoquer une session en particulier n'est pas encore possible côté
+         serveur : la seule action offerte ferme toutes les autres d'un coup.
+         Le bouton le dit, plutôt que de promettre un geste ciblé. */
+      const b = document.createElement('button');
+      b.className = 'btn-sm danger';
+      b.type = 'button';
+      b.textContent = t('sess.revokeall.short');
+      b.title = t('sess.revoke.hint');
+      b.addEventListener('click', () => $('sess-fermer').click());
+      eti.appendChild(b);
+    }
     zone.appendChild(row);
   });
-  $('sess-fermer-carte').hidden = n < 2;
+  $('sess-fermer').hidden = n < 2;
 }
 $('sess-fermer').addEventListener('click', () => {
   openConfirm(t('sess.closeall'), t('sess.closeall.d'), t('sess.closeall.btn'), async () => {
