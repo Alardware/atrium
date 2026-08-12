@@ -150,8 +150,7 @@ summary:focus-visible,[tabindex]:focus-visible{
 .srv-sub{margin-left:auto;font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .srv-head{display:flex;align-items:center;gap:7px}
 .srv-name{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
-.logo-chip.s18{width:18px;height:18px;border-radius:5px;font-size:8px}
-.logo-chip.s18 img{width:12px;height:12px}
+.logo-chip.s18{width:18px;height:18px;border-radius:5px;font-size:8px;--ico:12px}
 
 /* ---- zone centrale (seule à défiler) ---- */
 .main{display:flex;flex-direction:column;min-width:0;height:100vh;overflow-y:auto}
@@ -385,18 +384,18 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .np-body{display:flex;flex-direction:column;flex:1;min-width:0}
 .chip-row{display:flex;align-items:center;gap:8px}
 .logo-chip{position:relative;flex:none;overflow:hidden;border-radius:7px;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
-.logo-chip.s26{width:26px;height:26px}
-.logo-chip.s34{width:34px;height:34px;border-radius:9px;font-size:13px}
-.logo-chip.s40{width:40px;height:40px;border-radius:10px;font-size:15px}
-.logo-chip img{position:absolute;inset:0;margin:auto;object-fit:contain;
-               max-width:100%;max-height:100%}
-.logo-chip.s26 img{width:16px;height:16px}
+.logo-chip.s26{width:26px;height:26px;--ico:16px}
+.logo-chip.s34{width:34px;height:34px;border-radius:9px;font-size:13px;--ico:21px}
+.logo-chip.s40{width:40px;height:40px;border-radius:10px;font-size:15px;--ico:24px}
 /* Une icône de service se suffit : le cadre et le fond ne servaient qu'à
-   soutenir la lettre de secours, seule à en avoir encore besoin. */
-.logo-chip.nu{background:none;border:0}
-.logo-chip.nu img{width:100%;height:100%;padding:1px}
-.logo-chip.s34 img{width:21px;height:21px}
-.logo-chip.s40 img{width:24px;height:24px}
+   soutenir la lettre de secours, seule à en avoir encore besoin. Comme la
+   taille voyage sur la pastille et non dans une règle par variante, « nu »
+   n'a plus à lutter contre .s34 img ou .s40 img à spécificité égale. */
+.logo-chip.nu{background:none;border:0;--ico:100%;--ico-pad:1px}
+.logo-chip img{position:absolute;inset:0;margin:auto;object-fit:contain;
+               max-width:100%;max-height:100%;
+               width:var(--ico,auto);height:var(--ico,auto);
+               padding:var(--ico-pad,0)}
 .chip-name{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
 .badge-live{display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;background:var(--ok-soft);font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--ok-text)}
 .badge-live .dot{width:6px;height:6px;animation:pulse 2.4s ease-in-out infinite}
@@ -1142,8 +1141,8 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 .pick-it{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);cursor:pointer;transition:border-color .13s,background .13s}
 .pick-it:hover{border-color:var(--border-3)}
 .pick-it.on{border-color:var(--accent);background:var(--accent-soft)}
-.pick-it .logo-chip{width:24px;height:24px;border-radius:6px;font-size:9px}
-.pick-it .logo-chip img{width:16px;height:16px}
+.pick-it .logo-chip{width:24px;height:24px;border-radius:6px;font-size:9px;--ico:16px;
+                    background:var(--subtle);border:1px solid var(--border)}
 .pick-n{flex:1;min-width:0;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pick-it.on .pick-n{color:var(--accent-strong)}
 .pick-ck{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border-3);flex:none;display:grid;place-items:center;font-size:9px;color:transparent}
@@ -2725,7 +2724,8 @@ function mountLogo(chip, logoUrl) {
   if (!logoUrl) return;
   const img = new Image();
   img.alt = '';
-  img.onload = () => { if (cl) cl.style.opacity = '0'; };
+  /* Une fois l'icône affichée, la pastille s'efface derrière elle. */
+  img.onload = () => { if (cl) cl.style.opacity = '0'; chip.classList.add('nu'); };
   img.onerror = () => { img.remove(); chip.classList.remove('nu'); };
   img.src = logoUrl;
   chip.appendChild(img);
