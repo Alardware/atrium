@@ -768,7 +768,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* La barre situe la consommation par rapport à la mémoire de la machine, pas
    par rapport au plus gros conteneur : une échelle relative changerait de sens
    à chaque démarrage. */
-.srv-tab td.memc{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.srv-tab td.memc .enveloppe{display:inline-flex;align-items:center;justify-content:flex-end;gap:10px}
+.srv-tab td.memc{white-space:nowrap}
 .srv-tab .barre{width:52px;height:3px;border-radius:2px;background:var(--divider);overflow:hidden;flex:none}
 .srv-tab .barre > i{display:block;height:100%;border-radius:2px;background:var(--accent)}
 .srv-tab .barre.muette{visibility:hidden}
@@ -984,7 +985,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
               font:700 11px/1.3 'IBM Plex Mono',monospace}
 .ap-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .ap-tete .btn-sm{margin-left:auto;flex:none}
-.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:22px}
+.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:22px}
 .ap-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .ap-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
 .ap-t .v{margin-top:9px;font:700 19px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
@@ -2211,7 +2212,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <td class="nom"><span class="dot"></span><span class="t"></span><span class="sante" hidden></span></td>
     <td class="etat"></td>
     <td class="num cpu"></td>
-    <td class="num memc"><span class="barre"><i></i></span><span class="mem"></span></td>
+    <td class="num memc"><span class="enveloppe"><span class="barre"><i></i></span><span class="mem"></span></span></td>
     <td class="num actions">
       <button class="act-btn" data-act="restart" type="button">⟳</button>
       <button class="act-btn" data-act="menu" type="button">⋯</button>
@@ -3769,6 +3770,7 @@ function tableauDocker(bloc, liste, actif, mesure) {
      on n'invente pas un maximum. */
   const totalOctets = (HOTE && HOTE.memoire && HOTE.memoire.total_go)
     ? HOTE.memoire.total_go * 1024 * 1024 * 1024 : null;
+  const plusGros = Math.max(1, ...liste.map((c) => c.memoire || 0));
   const tbody = tab.querySelector('tbody');
   liste.forEach((c) => {
     const tr = clone('tpl-srv-ligne');
@@ -3791,10 +3793,12 @@ function tableauDocker(bloc, liste, actif, mesure) {
     tr.querySelector('.cpu').textContent = c.cpu == null ? '—' : c.cpu.toFixed(1) + ' %';
     tr.querySelector('.mem').textContent = c.memoire == null ? '—' : octets(c.memoire);
     const barre = tr.querySelector('.barre');
-    if (totalOctets && c.memoire) {
+    if (c.memoire) {
       barre.querySelector('i').style.width =
-        Math.max(1, Math.min(100, Math.round(c.memoire / totalOctets * 100))) + '%';
-      barre.title = t('srv.mem.share', { q: (c.memoire / totalOctets * 100).toFixed(1) });
+        Math.max(2, Math.round(c.memoire / plusGros * 100)) + '%';
+      barre.title = totalOctets
+        ? t('srv.mem.share', { q: (c.memoire / totalOctets * 100).toFixed(1) })
+        : t('srv.mem.rel');
     } else {
       barre.classList.add('muette');
     }

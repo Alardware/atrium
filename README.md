@@ -1,11 +1,53 @@
 # Atrium
 
 Tableau de bord auto-hébergé pour votre maison : vos applications, l'état de vos
-serveurs et les lectures en cours, sur une seule page.
+serveurs et ce qui se passe en ce moment, sur une seule page.
 
 Atrium est une **application autonome**. Elle ne dépend d'aucun autre logiciel
 pour fonctionner : chaque intégration (Plex, Unraid, UniFi, Home Assistant…) est
 optionnelle et se branche depuis l'interface.
+
+![Le tableau de bord](docs/accueil.png)
+
+## Ce qu'Atrium fait
+
+**Il surveille.** Le serveur sonde vos services toutes les trente secondes et
+mesure leur temps de réponse. Il ne se contente pas de « en ligne / hors ligne » :
+un service qui répond mais dont une mesure a franchi un seuil est **dégradé**, et
+c'est dit. Les seuils sont déclaratifs — un disque à 95 % est critique, une
+température de grappe à 55 °C mérite un avertissement.
+
+**Il n'invente rien.** Chaque chiffre affiché vient d'une mesure. Pas de courbe
+sans relevés, pas de tendance sans historique assez ancien, pas de barre sans
+échelle. Quand une information n'est pas connue, la page le dit.
+
+**Il continue sans vous.** Les mesures sont prises par le serveur, jamais par le
+navigateur : l'état reste connu même sans onglet ouvert, et un rechargement
+n'attend aucun appel réseau.
+
+### La page Serveurs
+
+CPU, mémoire, stockage et température de la machine, avec la tendance sur le
+dernier quart d'heure et une heure d'historique. Si la socket Docker est montée,
+la liste des conteneurs avec leur consommation et de quoi les redémarrer.
+
+![La page Serveurs](docs/serveurs.png)
+
+### Les connexions
+
+Une source est « branchée » quand elle a effectivement livré des mesures — c'est
+la seule preuve qui vaille. La page donne le temps de réponse de chacune, ce
+qu'elle remonte, et la raison quand ça ne marche pas.
+
+![Les connexions](docs/connexions.png)
+
+### La sécurité
+
+Un état des lieux vérifié **côté serveur** : une page qui s'auto-déclarerait sûre
+ne prouverait rien. Mot de passe, tentatives limitées, relais restreint,
+provenance de la connexion, journal des accès refusés, appareils connectés.
+
+![La page Sécurité](docs/securite.png)
 
 ## Installation
 
@@ -51,12 +93,6 @@ Sinon, en une commande depuis le terminal Unraid :
 docker run -d --name atrium -p 8420:8420 -v /mnt/user/appdata/atrium:/config --restart unless-stopped ghcr.io/alardware/atrium:latest
 ```
 
-### Construire l'image soi-même
-
-```bash
-docker build -t atrium .
-```
-
 ### Add-on Home Assistant
 
 Le dossier `addon/` contient de quoi installer Atrium comme add-on (avec ingress,
@@ -67,13 +103,33 @@ dépôt d'add-ons, puis ajoutez ce dépôt dans **Paramètres → Modules compl�
 C'est une **méthode d'installation**, pas une dépendance : l'application est la
 même et fonctionne sans Home Assistant.
 
+### Construire l'image soi-même
+
+```bash
+docker build -t atrium .
+```
+
+### Voir les conteneurs Docker
+
+La page Serveurs liste les conteneurs si vous montez la socket du démon :
+
+```yaml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+C'est **facultatif**, et ce n'est pas anodin : l'accès à cette socket équivaut à
+un accès root sur la machine hôte. Sans elle, tout le reste fonctionne — seule la
+liste des conteneurs disparaît.
+
 ## Configuration
 
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `ATRIUM_PORT` | `8420` | Port d'écoute |
 | `ATRIUM_CONFIG_DIR` | `/config` | Dossier de la configuration (`atrium.json`) |
-| `ATRIUM_ALLOW_NET` | réseaux privés | Préfixes que le relais a le droit de joindre |
+| `ATRIUM_ALLOW_NET` | réseaux privés | Noms d'hôtes que le relais a le droit de joindre, en plus des réseaux privés |
+| `TZ` | — | Fuseau horaire |
 | `ATRIUM_DEBUG` | — | Journalise les requêtes si défini |
 
 La configuration (applications, utilisateurs, clés) est stockée dans
@@ -81,28 +137,40 @@ La configuration (applications, utilisateurs, clés) est stockée dans
 
 ## Intégrations
 
-Chacune se configure sur la fiche de son application (survolez sa tuile → ✎) :
+Atrium reconnaît le service à partir de son URL, propose la bonne configuration,
+et n'affiche que les mesures qu'il obtient réellement. Chacune se configure sur la
+fiche de son application (mode création → ✎ → **Tester**).
 
-| Service | Ce qu'Atrium en tire | Identifiant requis |
+| Domaine | Services | Ce qu'Atrium en tire |
 |---|---|---|
-| **Plex** | Sessions en cours, pochettes, progression, utilisateur | Token `X-Plex-Token` |
-| **Unraid** | CPU, RAM, remplissage de la grappe | Clé API (Réglages → Management Access) |
-| **UniFi** | CPU/RAM du routeur, appareils connectés | Clé API (Admins & Users → Create API Key) |
-| **Home Assistant** | Domotique, lecteurs, mises à jour, capteurs système | Jeton d'accès longue durée |
-| **N'importe quelle app** | En ligne / hors ligne | URL seule |
+| **Média** | Plex, Jellyfin, Tautulli | Lectures, spectateurs, transcodages, débit, bibliothèques |
+| **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs, débit |
+| **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
+| **Machines** | Unraid | CPU, mémoire, grappe, température, uptime, conteneurs |
+| **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
+| **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |
+| **Outils** | Portainer, Uptime Kuma | Conteneurs actifs, services surveillés |
+| **Toute autre app** | — | En ligne / hors ligne, temps de réponse |
 
 Les API de ces services n'autorisent pas les appels directs depuis un navigateur
 (CORS absent, certificats auto-signés) : le serveur d'Atrium les relaie. Le relais
-n'accepte que des cibles sur le réseau privé.
+résout le nom d'hôte, vérifie que **toutes** les adresses obtenues sont privées,
+puis se connecte à l'adresse validée — il refuse les redirections. Il ne peut pas
+servir de rebond vers Internet.
 
 ## Sécurité
 
-Atrium propose des profils utilisateurs et un verrouillage d'écran. C'est un
-**garde-fou familial**, pas une authentification : tout le contrôle se fait côté
-navigateur. Pour une exposition réelle, placez Atrium derrière un reverse proxy
-authentifiant (Authelia, Authentik) ou derrière l'ingress de Home Assistant.
+Les mots de passe sont dérivés avec PBKDF2-HMAC-SHA256 (240 000 itérations, sel
+par utilisateur) et ne quittent jamais le serveur. Les sessions sont des jetons
+serveur transmis dans un cookie `HttpOnly` + `SameSite=Strict`. Les routes de
+configuration refusent toute requête sans session valide, un profil ne peut
+modifier que son propre mot de passe, et les tentatives de connexion sont
+limitées par adresse.
 
-N'exposez pas Atrium directement sur Internet.
+C'est un **garde-fou familial**, pas une authentification d'entreprise :
+n'exposez pas Atrium directement sur Internet. Placez-le derrière un reverse
+proxy authentifiant (Authelia, Authentik) ou derrière l'ingress de Home
+Assistant. La page Sécurité détecte ces portails et vous dit où vous en êtes.
 
 ## Licence
 
