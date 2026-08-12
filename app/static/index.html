@@ -517,6 +517,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* Les conteneurs intermédiaires s'effacent : leurs enfants deviennent les
    cellules, chacune placée dans sa colonne. */
 .grid.list .app-top,.grid.list .app-foot{display:contents}
+/* « grid-row:1 » sur chaque cellule, sans exception : avec une colonne imposée
+   mais une rangée laissée libre, le curseur de placement automatique avance et
+   ne revient jamais en arrière — chaque élément placé « derrière » lui tombait
+   à la rangée suivante, et la rangée se dépliait sur six lignes. */
+.grid.list .app-card > *,
+.grid.list .app-top > *,
+.grid.list .app-foot > *{grid-row:1}
 .grid.list .logo-chip{grid-column:1}
 .grid.list .app-mid{grid-column:2;min-width:0;display:flex;align-items:baseline;gap:9px}
 .grid.list .app-role{margin-top:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -525,10 +532,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid.list .badge-off,.grid.list .badge-na{grid-column:4}
 .grid.list .spark{grid-column:5;flex:none;width:100%}
 .grid.list .app-stats{display:none}
-.grid.list .app-metric{grid-column:6;display:flex;align-items:baseline;justify-content:flex-end;gap:5px}
-.grid.list .app-metric[hidden]{display:none}
+.grid.list .app-metric:not([hidden]){grid-column:6;display:flex;align-items:baseline;
+                                     justify-content:flex-end;gap:5px}
 .grid.list .lat{grid-column:7;text-align:right;justify-self:end}
 .grid.list .app-seen{display:none}
+/* Cette ligne n'existe que pour le tableau : en grille, les chiffres sont déjà
+   dans les pastilles, elle les répétait. */
+.app-metric{display:none}
 .app-metric b{font:700 12.5px/1 'IBM Plex Mono',monospace;color:var(--text)}
 .app-metric span{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 /* En liste, les commandes ont leur propre colonne, tout à droite : elles ne
@@ -5097,7 +5107,7 @@ function appCard(app, index) {
      la première déclarée sinon. Cinq pastilles dans une rangée de tableau
      seraient illisibles. */
   const mes = STATS[app.nom] || [];
-  if (voirStats && mes.length) {
+  if (view === 'list' && voirStats && mes.length) {
     const enCause = alertesDe(app.nom)
       .map((x) => x.param && x.param.metrique).filter(Boolean);
     const choix = mes.find((x) => enCause.includes(x.id))
