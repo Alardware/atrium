@@ -391,6 +391,10 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .logo-chip img{position:absolute;inset:0;margin:auto;object-fit:contain;
                max-width:100%;max-height:100%}
 .logo-chip.s26 img{width:16px;height:16px}
+/* Une icône de service se suffit : le cadre et le fond ne servaient qu'à
+   soutenir la lettre de secours, seule à en avoir encore besoin. */
+.logo-chip.nu{background:none;border:0}
+.logo-chip.nu img{width:100%;height:100%;padding:1px}
 .logo-chip.s34 img{width:21px;height:21px}
 .logo-chip.s40 img{width:24px;height:24px}
 .chip-name{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
@@ -441,7 +445,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid{display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start}
 /* les tuiles ordinaires s'étirent un peu pour finir la rangée, sans jamais
    devenir disproportionnées */
-.grid:not(.list) > *{flex:1 1 210px;min-width:0;max-width:268px}
+/* Assez large pour que « aucune métrique remontée » tienne d'un tenant :
+   une mention coupée en deux se lit comme un défaut. */
+.grid:not(.list) > *{flex:1 1 248px;min-width:0;max-width:310px}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
 /* Le nom se tient à côté du logo, pas dessous : deux lignes gagnées, que les
    chiffres occupent. La tuile n'a donc plus besoin de s'élargir pour les
@@ -472,12 +478,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    qu'aucune ne soit écartée. */
 /* Une seule zone, quel que soit le nombre de mesures : la carte garde la même
    structure d'un service à l'autre. */
-.app-mes{padding:9px 11px;border-radius:10px;background:var(--s3);
+.app-mes{padding:9px 11px;min-height:38px;display:flex;align-items:center;border-radius:10px;background:var(--s3);
          font:500 11.5px/1.5 'IBM Plex Mono',monospace;color:var(--t2)}
 .app-mes.vide{color:var(--t6)}
-.app-pt{width:8px;height:8px;border-radius:50%;flex:none;background:var(--ok)}
-.app-pt.warn{background:var(--warn)}
-.app-pt.off{background:var(--bad)}
 
 /* écran étroit : une tuile par rangée, disposition verticale */
 /* L'état se lit à la pastille de couleur, pas au fond : trois tuiles vertes
@@ -623,7 +626,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    Le texte des mesures occupe la place que quatre pastilles se disputaient. */
 .grid.list .app-mes{grid-column:4;padding:0;background:none;
                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.grid.list .app-pt{display:none}
 .grid.list .badge-on,.grid.list .badge-warn,
 .grid.list .badge-off,.grid.list .badge-na{grid-column:6}
 .grid.list .spark{grid-column:5;flex:none;width:100%}
@@ -2349,7 +2351,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <span class="badge-alert" hidden>⚠</span>
         <span class="badge-maj" hidden>MAJ</span>
         <button class="star" data-act="fav" data-i18n-title="fav.add" title="Mettre en favori">☆</button>
-        <span class="app-pt" hidden></span>
       </span>
     </div>
     <div class="app-mes" hidden></div>
@@ -2718,13 +2719,14 @@ let COCK_SRV = [];          // les autres serveurs connus, hors machine hôte
 function mountLogo(chip, logoUrl) {
   const old = chip.querySelector('img');
   if (old) old.remove();
+  chip.classList.remove('nu');      // la lettre de secours retrouve son fond
   const cl = chip.querySelector('.cl');
   if (cl) cl.style.opacity = '1';
   if (!logoUrl) return;
   const img = new Image();
   img.alt = '';
   img.onload = () => { if (cl) cl.style.opacity = '0'; };
-  img.onerror = () => img.remove();
+  img.onerror = () => { img.remove(); chip.classList.remove('nu'); };
   img.src = logoUrl;
   chip.appendChild(img);
 }
@@ -5330,13 +5332,6 @@ function appCard(app, index) {
     }
   }
 
-  /* Le point d'état monte dans l'entête : d'un coup d'œil sur la grille, on
-     voit lesquels vont mal sans lire chaque pied de tuile. */
-  const pt = a.querySelector('.app-pt');
-  if (sant !== 'na') {
-    pt.hidden = false;
-    pt.className = 'app-pt ' + sant;
-  }
 
   if (app.url) { a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; }
   a.addEventListener('click', (e) => {
