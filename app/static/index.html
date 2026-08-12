@@ -386,7 +386,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-stats .st{flex:1;min-width:0;padding:7px 8px;border-radius:8px;background:var(--subtle);text-align:center}
 .app-stats .v{font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-stats .l{margin-top:2px;font:600 10px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.grid.list .app-stats{margin-top:0;max-width:290px}
 
 /* Une tuile qui porte des chiffres s'élargit sur deux colonnes au lieu de
    s'allonger : les autres tuiles de la rangée gardent leur hauteur. */
@@ -486,15 +485,54 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* l'étoile permanente ne doit pas recouvrir les pastilles du haut de tuile */
 
 /* list view */
-.grid.list{flex-direction:column;gap:8px}
-.grid.list > *{flex:0 0 auto;max-width:none}
-.grid.list .app-card{flex-direction:row;align-items:center;gap:14px;padding:12px 16px}
-.grid.list .app-mid{flex:1;min-width:0}
-.grid.list .app-foot{border-top:none;padding-top:0;flex:0 0 auto;flex-wrap:nowrap;gap:14px}
-.grid.list .spark{flex:0 0 74px}
-.grid.list .app-role{margin-top:2px}
-.grid.list .app-foot{border-top:0;padding-top:0;gap:14px}
-.grid.list .app-actions{position:static;order:99;margin-left:2px}
+/* Colonnes du tableau, déclarées une fois : l'entête et les rangées lisent la
+   même variable, elles ne peuvent donc pas se désaligner. « nowrap » est
+   indispensable — une colonne flex qui enveloppe se réduit à la largeur de son
+   contenu au lieu de tenir la ligne. */
+.grid.list{--cols:auto minmax(120px,1fr) auto 112px 92px minmax(96px,auto) 58px auto;
+           flex-direction:column;flex-wrap:nowrap;gap:0;
+           border:1px solid var(--border);border-radius:12px;overflow:hidden;
+           background:var(--surface)}
+.grid.list > *{flex:0 0 auto;width:100%;max-width:none}
+.list-head{display:grid;grid-template-columns:var(--cols);align-items:center;column-gap:16px;
+           padding:9px 16px;margin-bottom:-1px;
+           border:1px solid var(--border);border-bottom:0;border-radius:12px 12px 0 0;
+           background:var(--surface-2);
+           font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;color:var(--muted-2)}
+.list-head[hidden]{display:none}
+.list-head > span:first-child{grid-column:1 / 4}
+.list-head .c-etat{grid-column:4}
+.list-head .c-act{grid-column:5}
+.list-head .c-met{grid-column:6;text-align:right}
+.list-head .c-lat{grid-column:7;text-align:right}
+.grid.list + .list-head,.list-head + .grid.list{border-top-left-radius:0;border-top-right-radius:0}
+.grid.list .app-card{display:grid;grid-template-columns:var(--cols);align-items:center;
+                     row-gap:0;column-gap:16px;padding:10px 16px;
+                     border:0;border-bottom:1px solid var(--divider);border-radius:0;
+                     background:none;box-shadow:none}
+.grid.list .app-card:last-child{border-bottom:0}
+.grid.list .app-card:hover{background:var(--subtle)}
+/* Les conteneurs intermédiaires s'effacent : leurs enfants deviennent les
+   cellules, chacune placée dans sa colonne. */
+.grid.list .app-top,.grid.list .app-foot{display:contents}
+.grid.list .logo-chip{grid-column:1}
+.grid.list .app-mid{grid-column:2;min-width:0;display:flex;align-items:baseline;gap:9px}
+.grid.list .app-role{margin-top:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grid.list .app-tags{grid-column:3;margin-left:0}
+.grid.list .badge-on,.grid.list .badge-warn,
+.grid.list .badge-off,.grid.list .badge-na{grid-column:4}
+.grid.list .spark{grid-column:5;flex:none;width:100%}
+.grid.list .app-stats{display:none}
+.grid.list .app-metric{grid-column:6;display:flex;align-items:baseline;justify-content:flex-end;gap:5px}
+.grid.list .app-metric[hidden]{display:none}
+.grid.list .lat{grid-column:7;text-align:right;justify-self:end}
+.grid.list .app-seen{display:none}
+.app-metric b{font:700 12.5px/1 'IBM Plex Mono',monospace;color:var(--text)}
+.app-metric span{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+/* En liste, les commandes ont leur propre colonne, tout à droite : elles ne
+   flottent plus au-dessus d'une rangée haute de quarante pixels, et le menu ⋮
+   — visible même hors mode création — ne recouvre aucun badge. */
+.grid.list .app-actions{position:static;grid-column:8;justify-self:end}
 .grid.list .add-card{min-height:0;flex-direction:row;padding:12px 16px}
 .grid.list .add-ring{width:26px;height:26px;font-size:14px}
 
@@ -818,6 +856,17 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
 /* ---- téléphone ---- */
 @media (max-width:760px){
+  /* Huit colonnes ne tiennent pas sur un téléphone. Plutôt qu'un défilement
+     horizontal sur la liste principale, on retire ce qui se déduit ailleurs :
+     l'activité et le temps de réponse restent lisibles en vue Grille. */
+  .grid.list{--cols:auto minmax(90px,1fr) auto 104px minmax(74px,auto) auto}
+  .grid.list .app-card{column-gap:10px;padding:10px 12px}
+  .grid.list .spark,.grid.list .lat{display:none}
+  .grid.list .app-metric{grid-column:5}
+  .grid.list .app-actions{grid-column:6}
+  .grid.list .app-role{display:none}
+  .list-head .c-act,.list-head .c-lat{display:none}
+  .list-head .c-met{grid-column:5}
   /* La barre de navigation défile horizontalement au lieu de s'empiler sur
      quatre lignes : sur un écran étroit, huit entrées repliées mangeaient la
      moitié de la hauteur utile. */
@@ -1114,6 +1163,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <button data-view="grid" class="on" data-i18n="apps.grid">Grille</button>
             <button data-view="list" data-i18n="apps.list">Liste</button>
           </div>
+        </div>
+        <div class="list-head" id="list-head" hidden>
+          <span data-i18n="col.app">APPLICATION</span>
+          <span class="c-etat" data-i18n="col.state">ÉTAT</span>
+          <span class="c-act" data-i18n="col.activity">ACTIVITÉ</span>
+          <span class="c-met" data-i18n="col.metric">MÉTRIQUE</span>
+          <span class="c-lat" data-i18n="col.latency">LATENCE</span>
         </div>
         <div class="grid" id="apps-grid"></div>
       </section>
@@ -1898,6 +1954,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <div class="app-role"></div>
     </div>
     <div class="app-stats" hidden></div>
+    <div class="app-metric" hidden><b></b><span></span></div>
     <div class="app-foot">
       <span class="badge-on" hidden><span class="dot"></span><span data-i18n="app.online">en ligne</span></span>
       <span class="badge-warn" hidden><span class="dot"></span><span data-i18n="app.degraded">dégradé</span></span>
@@ -4634,6 +4691,22 @@ function appCard(app, index) {
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
 
+  /* En liste, une seule mesure : celle qui pose problème s'il y en a une,
+     la première déclarée sinon. Cinq pastilles dans une rangée de tableau
+     seraient illisibles. */
+  const mes = STATS[app.nom] || [];
+  if (voirStats && mes.length) {
+    const enCause = alertesDe(app.nom)
+      .map((x) => x.param && x.param.metrique).filter(Boolean);
+    const choix = mes.find((x) => enCause.includes(x.id))
+      || mes.find((x) => !cache(cleInfo(x)) && !cache('st:' + x.lab))
+      || mes[0];
+    const z = a.querySelector('.app-metric');
+    z.hidden = false;
+    z.querySelector('b').textContent = choix.val;
+    z.querySelector('span').textContent = choix.lab.toLowerCase();
+  }
+
   /* chiffres du service, quand il en fournit */
   const chiffres = voirStats
     ? (STATS[app.nom] || []).filter((x) => !cache(cleInfo(x)) && !cache('st:' + x.lab))
@@ -4763,6 +4836,9 @@ function renderApps() {
   const grid = $('apps-grid');
   grid.className = 'grid' + (view === 'list' ? ' list' : '')
                  + (apps.length ? '' : ' vide');
+  /* l'entête de colonnes ne vaut que pour le tableau, et seulement s'il a des
+     rangées à coiffer */
+  $('list-head').hidden = view !== 'list' || !apps.length;
   grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
