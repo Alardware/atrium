@@ -11,44 +11,82 @@
 <script src="i18n.js"></script>
 <style>
 :root{
-  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfcfd;
-  --border:#e6e8ec; --border-2:#e0e3e9; --border-3:#c3cbd8;
-  --divider:#f0f2f5; --subtle:#f2f4f7; --track:#eceef2;
-  --text:#101828; --text-2:#475467; --text-3:#667085;
-  --muted:#6f7786; --muted-2:#69778e; --muted-3:#6e7787;
-  --accent:#2f6fed; --accent-strong:#1d55c9; --accent-soft:#eef3ff;
-  --accent-border:#c8d6f7; --avatar-bg:#e8edf7; --on-accent:#fff;
-  --ok:#16a34a; --ok-soft:#eaf7f0; --ok-text:#15803d;
-  --warn:#f59e0b; --warn-soft:#fff5e8; --warn-border:#f6dcbb; --warn-text:#b45309;
-  --bad:#e04f3d; --bad-soft:#fdeeec; --bad-text:#b42318;
-  --dash:#cfd5e0; --ph-1:#dfe4ec; --ph-2:#c8cfda;
-  --header-bg:rgba(255,255,255,.86);
-  --overlay:rgba(16,24,40,.45);
-  --sh-1:0 1px 2px rgba(16,24,40,.05);
-  --sh-btn:0 1px 2px rgba(16,24,40,.12);
-  --sh-hover:0 12px 28px -16px rgba(16,24,40,.22);
-  --sh-modal:0 24px 60px -18px rgba(16,24,40,.35);
+  /* ---- tokens de la maquette (thème clair) ---- */
+  --acc:#5b8cff; --acc2:#2dd4bf; --acc-soft:#5b8cff1f; --acc-line:#5b8cff66;
+  --acc-h:#1d55c9; --on-acc:#ffffff;
+  --bg:#f2f4f7; --rail:#ffffff; --field:#ffffff;
+  --chrome:rgba(255,255,255,.92); --topbar:rgba(246,247,249,.9);
+  --scrim:rgba(16,24,40,.42); --scrim2:rgba(16,24,40,.28);
+  --c1:#ffffff; --c2:#ffffff; --chip:#eef1f5; --chip2:#e8ebf0; --seg:#ffffff;
+  --track:#e4e8ee; --bar1:#cbd3de; --bar2:#e2e7ee;
+  --t1:#101828; --t2:#26303f; --t3:#475467; --t4:#556072;
+  /* t6 et t7 relevés : les valeurs de la maquette (#8a93a1, #a3abb8)
+     donnent 2,8:1 et 2,1:1 sur ce fond, sous le seuil AA de 4,5:1 pour du
+     texte de dix pixels. La teinte est conservée, seule la clarté bouge,
+     et les deux niveaux restent distincts — 5,7:1 et 4,6:1. */
+  --t5:#667085; --t6:#59616f; --t7:#647082;
+  --hair:rgba(16,24,40,.1); --hair2:rgba(16,24,40,.07); --hair3:rgba(16,24,40,.06);
+  --hair4:rgba(16,24,40,.14); --hairH:rgba(16,24,40,.3);
+  --s1:rgba(16,24,40,.022); --s2:rgba(16,24,40,.035);
+  --s3:rgba(16,24,40,.05); --s4:rgba(16,24,40,.07);
+  --ok:#22c55e; --warn:#f5a524; --bad:#f0685a;
+  --ok-soft:rgba(34,197,94,.11); --warn-soft:rgba(245,165,36,.12); --bad-soft:rgba(240,104,90,.13);
+  /* vert d'état assombri : #15803d passait sous le seuil AA sur une
+     pastille neutre, où la pastille « en ligne » se pose justement */
+  --ok-t:#136a33; --warn-t:#b45309; --bad-t:#b42318;
+  --bad-c1:#fdeeec; --bad-c2:#fffaf9;
+  --inv:#101828; --inv-fg:#ffffff; --inv-h:#1d2939;
+  --scroll:#c9d0da; --sh1:rgba(16,24,40,.12); --sh2:rgba(16,24,40,.2);
+  --gap:18px; --tp:16px;
   color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#0e1116; --surface:#151a21; --surface-2:#121821;
-  --border:#242b36; --border-2:#2c3440; --border-3:#3a4351;
-  --divider:#1f2530; --subtle:#1c222b; --track:#252d38;
-  --text:#e9eef5; --text-2:#b6bfcb; --text-3:#9ba5b3;
-  --muted:#7e8896; --muted-2:#7a8492; --muted-3:#79838f;
-  --accent:#5b8cff; --accent-strong:#88abff; --accent-soft:#182643;
-  --accent-border:#31497f; --avatar-bg:#1d2a45; --on-accent:#0b1220;
-  --ok:#22c55e; --ok-soft:#12291d; --ok-text:#6ee7a8;
-  --warn:#f59e0b; --warn-soft:#2a1e0f; --warn-border:#4a3517; --warn-text:#f0b45c;
-  --bad:#f0685a; --bad-soft:#2c1614; --bad-text:#f79c92;
-  --dash:#343d4a; --ph-1:#242c37; --ph-2:#19202a;
-  --header-bg:rgba(21,26,33,.86);
-  --overlay:rgba(0,0,0,.6);
-  --sh-1:0 1px 2px rgba(0,0,0,.45);
-  --sh-btn:0 1px 2px rgba(0,0,0,.55);
-  --sh-hover:0 14px 30px -18px rgba(0,0,0,.8);
-  --sh-modal:0 24px 60px -14px rgba(0,0,0,.85);
+  /* ---- tokens de la maquette (thème sombre) ---- */
+  --acc-soft:#5b8cff22; --acc-line:#5b8cff55; --acc-h:#8fb0ff; --on-acc:#06101f;
+  --bg:#07090d; --rail:#0a0d12; --field:#0d1117;
+  --chrome:rgba(5,7,10,.88); --topbar:rgba(8,10,14,.88);
+  --scrim:rgba(4,6,9,.72); --scrim2:rgba(4,6,9,.55);
+  --c1:#111620; --c2:#0b0f15; --chip:#141a24; --chip2:#161c25; --seg:#1b2230;
+  --track:#1b212b; --bar1:#2a3446; --bar2:#1a2130;
+  --t1:#e9eef5; --t2:#cfd7e2; --t3:#a8b2c1; --t4:#8a929e;
+  /* même relèvement en sombre : 3,4:1 et 2,7:1 devenaient 5,6:1 et 4,5:1 */
+  --t5:#79838f; --t6:#86909f; --t7:#748296;
+  --hair:rgba(255,255,255,.065); --hair2:rgba(255,255,255,.045);
+  --hair3:rgba(255,255,255,.035); --hair4:rgba(255,255,255,.1);
+  --hairH:rgba(255,255,255,.18);
+  --s1:rgba(255,255,255,.02); --s2:rgba(255,255,255,.03);
+  --s3:rgba(255,255,255,.045); --s4:rgba(255,255,255,.07);
+  --ok-soft:rgba(34,197,94,.11); --warn-soft:rgba(245,165,36,.12); --bad-soft:rgba(240,104,90,.13);
+  --ok-t:#5ee089; --warn-t:#f7bd5c; --bad-t:#f79c92;
+  --bad-c1:#1e1210; --bad-c2:#120b0a;
+  --inv:#e9eef5; --inv-fg:#0b0f15; --inv-h:#ffffff;
+  --scroll:#20262f; --sh1:rgba(0,0,0,.45); --sh2:rgba(0,0,0,.65);
   color-scheme:dark;
+}
+
+/* Les noms historiques du projet se rattachent aux tokens de la maquette :
+   une seule ligne chacun, aucune règle à réécrire. Les sept niveaux de texte
+   sont respectés — titre t1, libellé t3, description t5, étiquette mono t6,
+   métadonnée faible t7 — et les traits (hair) restent distincts des
+   remplissages (s1 à s4), comme le demande le handoff. */
+:root{
+  --surface:var(--c1); --surface-2:var(--field); --subtle:var(--s3);
+  --border:var(--hair); --border-2:var(--hair4); --border-3:var(--hairH);
+  --divider:var(--hair2);
+  --text:var(--t1); --text-2:var(--t3); --text-3:var(--t5);
+  --muted:var(--t5); --muted-2:var(--t6); --muted-3:var(--t7);
+  --accent:var(--acc); --accent-strong:var(--acc-h);
+  --accent-soft:var(--acc-soft); --accent-border:var(--acc-line);
+  --on-accent:var(--on-acc); --avatar-bg:var(--chip);
+  --ok-text:var(--ok-t); --warn-text:var(--warn-t); --bad-text:var(--bad-t);
+  --warn-border:var(--warn-soft);
+  --dash:var(--hair4); --ph-1:var(--bar1); --ph-2:var(--bar2);
+  --header-bg:var(--topbar); --overlay:var(--scrim);
+  /* Aucune ombre au repos : seuls le survol d'une tuile et les surcouches en
+     portent une, comme le prescrit le handoff. */
+  --sh-1:none; --sh-btn:none;
+  --sh-hover:0 16px 34px var(--sh1);
+  --sh-modal:0 32px 80px var(--sh2);
 }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
@@ -65,7 +103,7 @@ template{display:none}
 .layout{display:grid;grid-template-columns:252px 1fr;height:100vh;overflow:hidden}
 
 /* ---- sidebar (fixe, scroll interne si besoin) ---- */
-.sidebar{display:flex;flex-direction:column;gap:26px;padding:22px 18px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto}
+.sidebar{display:flex;flex-direction:column;gap:26px;padding:22px 18px;background:var(--rail);border-right:1px solid var(--hair);overflow-y:auto}
 /* Un anneau de focus visible sur tout ce qui se pilote au clavier. Sans lui,
    naviguer à la tabulation revient à avancer les yeux fermés. « :focus-visible »
    ne le montre qu'au clavier, jamais au clic à la souris. */
@@ -334,7 +372,11 @@ summary:focus-visible,[tabindex]:focus-visible{
 .w-choix .nm{display:block;font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .w-choix .ds{display:block;font:500 11px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .w-choix .et{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3);white-space:nowrap}
-.card{border-radius:14px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh-1);color:inherit;transition:box-shadow .2s,transform .2s,border-color .2s}
+/* En clair, c1 et c2 valent tous deux blanc : la carte est plate et c'est le
+   trait qui la détache du fond, jamais une ombre. */
+.card{border-radius:16px;background:linear-gradient(180deg,var(--c1),var(--c2));
+      border:1px solid var(--hair);color:inherit;
+      transition:box-shadow .18s ease,transform .18s ease,border-color .18s ease}
 a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transform:translateY(-2px);color:inherit}
 .now-playing{display:flex;gap:18px;padding:18px}
 /* L'affiche suit la hauteur de la carte au lieu de garder une taille fixe : dans une rangée dont un voisin est haut, un timbre-poste de 96 px flottait au-dessus de deux cents pixels de vide. Le rapport 2/3 donne la largeur ; le plancher garde une affiche lisible quand la rangée est courte. */
@@ -700,8 +742,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .sess-eti{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
 
 /* densité et animations, choisies dans Apparence */
-:root[data-densite="compact"]{--densite:.82}
-:root[data-densite="large"]{--densite:1.16}
+:root[data-densite="compact"]{--densite:.82; --gap:12px; --tp:12px}
+:root[data-densite="large"]{--densite:1.16; --gap:24px; --tp:20px}
 :root[data-densite="compact"] .app-card{padding:11px}
 :root[data-densite="compact"] .app-card .app-foot{padding-top:8px}
 :root[data-densite="compact"] .grid{gap:10px}
@@ -2678,13 +2720,15 @@ const themeEffectif = () => (theme === 'auto' ? (sombreSysteme() ? 'dark' : 'lig
 
 /* Teintes proposées dans Apparence. « strong » sert aux libellés actifs,
    « soft » aux fonds, et diffère selon le mode pour rester lisible. */
+/* Les six teintes de la maquette. « survol » reste distinct par thème : sur
+   fond clair il faut foncer pour rester lisible, sur fond sombre éclaircir. */
 const ACCENTS = {
-  bleu: { c: '#2f6fed', f: '#5b8cff', s: '#1d55c9', sf: '#88abff' },
-  cyan: { c: '#0891b2', f: '#22d3ee', s: '#0e7490', sf: '#67e8f9' },
-  violet: { c: '#7c3aed', f: '#a78bfa', s: '#6d28d9', sf: '#c4b5fd' },
-  vert: { c: '#15803d', f: '#4ade80', s: '#166534', sf: '#86efac' },
-  ambre: { c: '#c2620a', f: '#fbbf24', s: '#9a4b06', sf: '#fcd34d' },
-  rouge: { c: '#dc2626', f: '#f87171', s: '#b91c1c', sf: '#fca5a5' },
+  bleu: { h: '#5b8cff', clair: '#1d55c9', sombre: '#8fb0ff' },
+  cyan: { h: '#2dd4bf', clair: '#0d9488', sombre: '#7fe7d8' },
+  violet: { h: '#a78bfa', clair: '#6d28d9', sombre: '#c9b6fd' },
+  vert: { h: '#22c55e', clair: '#15803d', sombre: '#6ee7a0' },
+  ambre: { h: '#f5a524', clair: '#b45309', sombre: '#f9c469' },
+  rouge: { h: '#f0685a', clair: '#b42318', sombre: '#f6968b' },
 };
 let accent = store.get('accent', 'bleu');
 let densite = store.get('densite', 'normal');
@@ -2698,16 +2742,13 @@ function appliquerAccent() {
   const a = ACCENTS[accent] || ACCENTS.bleu;
   const sombre = themeEffectif() === 'dark';
   const r = document.documentElement.style;
-  if (accent === 'bleu') {
-    /* teinte d'origine : on laisse la feuille de style décider */
-    ['--accent', '--accent-strong', '--accent-soft', '--accent-border']
-      .forEach((v) => r.removeProperty(v));
-    return;
-  }
-  r.setProperty('--accent', sombre ? a.f : a.c);
-  r.setProperty('--accent-strong', sombre ? a.sf : a.s);
-  r.setProperty('--accent-soft', (sombre ? a.c : a.f) + (sombre ? '33' : '22'));
-  r.setProperty('--accent-border', (sombre ? a.f : a.c) + '55');
+  /* On écrit les tokens, pas les noms dérivés : tout ce qui s'appuie dessus
+     suit sans qu'on ait à énumérer les usages. Les alphas diffèrent selon le
+     thème, comme indiqué dans le handoff. */
+  r.setProperty('--acc', a.h);
+  r.setProperty('--acc-soft', a.h + (sombre ? '22' : '1f'));
+  r.setProperty('--acc-line', a.h + (sombre ? '55' : '66'));
+  r.setProperty('--acc-h', sombre ? a.sombre : a.clair);
 }
 
 function appliquerCreatif() {
