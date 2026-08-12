@@ -237,9 +237,17 @@ summary:focus-visible,[tabindex]:focus-visible{
 .strip .s-open{font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent);white-space:nowrap}
 .strip .s-open:hover{text-decoration:underline}
 
-.theme-btn{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:99px;border:1px solid var(--border-2);background:var(--surface);font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);user-select:none;transition:color .15s,border-color .15s}
-.theme-btn:hover{border-color:var(--accent);color:var(--accent)}
-.theme-btn .ti{font-size:13px;line-height:1}
+/* Les deux modes sont montrés, celui qui s'applique est marqué : on voit ce
+   qu'on va obtenir au lieu de deviner ce que la bascule fera. « Système » se
+   choisit toujours dans Apparence — le segment montre alors lequel des deux
+   il a retenu. */
+.theme-seg{display:flex;gap:2px;padding:2px;border-radius:99px;border:1px solid var(--border-2);
+           background:var(--surface-2);user-select:none}
+.theme-seg button{padding:5px 12px;border-radius:99px;
+                  font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2);
+                  transition:background .13s,color .13s}
+.theme-seg button:hover{color:var(--text-2)}
+.theme-seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--sh-btn)}
 .clock{text-align:right}
 .clock-time{font:600 14px/1.1 'IBM Plex Mono',monospace}
 .clock-sub{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
@@ -391,9 +399,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid{display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start}
 /* les tuiles ordinaires s'étirent un peu pour finir la rangée, sans jamais
    devenir disproportionnées */
-.grid:not(.list) > *{flex:1 1 214px;min-width:0;max-width:268px}
+.grid:not(.list) > *{flex:1 1 196px;min-width:0;max-width:248px}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
-.app-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+/* Le nom se tient à côté du logo, pas dessous : deux lignes gagnées, que les
+   chiffres occupent. La tuile n'a donc plus besoin de s'élargir pour les
+   loger, et toutes reprennent la même largeur. */
+.app-top{display:flex;align-items:center;gap:11px}
+.app-top .app-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 /* Pastilles et étoile forment un seul groupe, calé en haut à droite de la
    tuile : dispersés, l'un contre le logo et l'autre au coin, ils donnaient
    l'impression de ne pas appartenir à la même carte. */
@@ -414,18 +426,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-stats .v{font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-stats .l{margin-top:2px;font:600 10px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* Une tuile qui porte des chiffres s'élargit sur deux colonnes au lieu de
-   s'allonger : les autres tuiles de la rangée gardent leur hauteur. */
-/* Colonnes dimensionnées au contenu et calées à gauche : l'écart entre le nom
-   et la première pastille est identique quel que soit leur nombre. */
-/* largeur au contenu : la tuile ne s'étire pas, elle ne se comprime pas */
-.grid:not(.list) .app-card.wide{flex:0 0 auto;max-width:none;display:grid;grid-template-columns:auto auto;grid-template-rows:auto 1fr auto;justify-content:start;gap:12px 18px}
-.grid:not(.list) .app-card.wide .app-mid{min-width:104px;max-width:190px}
-.grid:not(.list) .app-card.wide .app-top{grid-column:1;grid-row:1}
-.grid:not(.list) .app-card.wide .app-mid{grid-column:1;grid-row:2}
-.grid:not(.list) .app-card.wide .app-foot{grid-column:1 / -1;grid-row:3;align-self:end}
-.grid:not(.list) .app-card.wide .app-stats{grid-column:2;grid-row:1 / 4;align-self:center;margin-top:0}
-.grid:not(.list) .app-card.wide .app-stats .st{min-width:72px}
 /* écran étroit : une tuile par rangée, disposition verticale */
 /* L'état se lit à la pastille de couleur, pas au fond : trois tuiles vertes
    côte à côte criaient plus fort que le contenu qu'elles encadrent. */
@@ -451,7 +451,10 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .apps-tally{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .apps-tally:empty{display:none}
-.app-foot{flex-wrap:wrap;row-gap:7px}
+.app-foot{flex-wrap:wrap;row-gap:6px}
+/* La dernière vérification prend la ligne suivante plutôt que de comprimer la
+   courbe : la tuile est étroite, l'état et le temps de réponse passent avant. */
+.grid:not(.list) .app-seen{flex:1 1 100%;text-align:right;margin-top:-2px}
 .app-seen:empty{display:none}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
@@ -1193,9 +1196,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   .grid:not(.list) > *{flex:1 1 100%;max-width:none}
   /* une tuile large ne tient pas en deux colonnes sur 375 px : les chiffres
      passent sous le nom plutôt que de déborder */
-  .grid:not(.list) .app-card.wide{flex:1 1 100%;display:flex;flex-direction:column}
-  .grid:not(.list) .app-card.wide .app-mid{min-width:0;max-width:none}
-  .grid:not(.list) .app-card.wide .app-stats{margin-top:2px}
   .app-stats{flex-wrap:wrap}
 
   .srvpage-body{padding:16px 14px 28px}
@@ -1245,7 +1245,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   /* 44 px : la norme Apple ; Material demande 48 dp. Au doigt, un bouton plus
      grand n'est pas un défaut : on les laisse grandir plutôt que de bricoler
      une zone tactile invisible autour d'un dessin bordé. */
-  .act-btn,.app-tags .star,.wbar button,.pwd-eye,.bell,.theme-btn,.avatar{
+  .act-btn,.app-tags .star,.wbar button,.pwd-eye,.bell,.theme-seg button,.avatar{
     min-width:44px;min-height:44px}
   .app-actions{top:6px;right:6px}
   .qmenu button{padding:13px 12px}
@@ -1329,7 +1329,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <div id="al-list"></div>
           </div>
         </div>
-        <button class="theme-btn" id="theme-btn" data-i18n-title="ti.theme" title="Basculer le thème"><span class="ti" id="theme-ico"></span><span id="theme-lab"></span></button>
+        <div class="theme-seg" id="theme-seg" role="group" data-i18n-title="ti.theme" title="Thème">
+          <button data-v="dark" type="button" data-i18n="look.dark">Sombre</button>
+          <button data-v="light" type="button" data-i18n="look.light">Clair</button>
+        </div>
         <div class="clock">
           <div class="clock-time" id="clock-time">–:–</div>
           <div class="clock-sub" id="clock-sub"></div>
@@ -2277,15 +2280,15 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     </div>
     <div class="app-top">
       <span class="logo-chip s40"><span class="cl"></span></span>
+      <span class="app-mid">
+        <span class="app-name"></span>
+        <span class="app-role"></span>
+      </span>
       <span class="app-tags">
         <span class="badge-alert" hidden>⚠</span>
         <span class="badge-maj" hidden>MAJ</span>
         <button class="star" data-act="fav" data-i18n-title="fav.add" title="Mettre en favori">☆</button>
       </span>
-    </div>
-    <div class="app-mid">
-      <div class="app-name"></div>
-      <div class="app-role"></div>
     </div>
     <div class="app-stats" hidden></div>
     <div class="app-metric" hidden><b></b><span></span></div>
@@ -2727,17 +2730,21 @@ function applyTheme() {
   document.documentElement.setAttribute('data-densite', densite);
   document.documentElement.setAttribute('data-anim', animations ? '1' : '0');
   appliquerAccent();
-  $('theme-ico').textContent = eff === 'dark' ? '☀' : '☾';
-  $('theme-lab').textContent = eff === 'dark' ? 'Clair' : 'Sombre';
+  /* C'est le mode effectif qui est marqué : sous « Système », le segment
+     montre celui que l'appareil impose. */
+  $('theme-seg').querySelectorAll('[data-v]')
+    .forEach((b) => b.classList.toggle('on', b.dataset.v === eff));
 }
 if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)')
     .addEventListener('change', () => { if (theme === 'auto') applyTheme(); });
 }
-$('theme-btn').addEventListener('click', () => {
-  /* la bascule rapide n'alterne que clair et sombre ; « Système » se choisit
-     dans Apparence, et un clic ici en sort volontairement */
-  theme = themeEffectif() === 'dark' ? 'light' : 'dark';
+$('theme-seg').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-v]');
+  if (!b) return;
+  /* Choisir ici sort volontairement du mode « Système » : on a désigné un
+     mode, pas demandé à suivre l'appareil. */
+  theme = b.dataset.v;
   store.set('theme', theme);
   applyTheme();
   if (!$('spage').hidden) renderApparence();
@@ -5262,9 +5269,10 @@ function appCard(app, index) {
   const zone = a.querySelector('.app-stats');
   if (chiffres && chiffres.length) {
     zone.hidden = false;
-    /* la tuile s'élargit juste ce qu'il faut pour ses chiffres */
-    a.classList.add('wide', 'n' + Math.min(3, chiffres.length));
-    chiffres.forEach((s) => {
+    /* Deux pastilles, pas davantage : au-delà, la tuile n'a plus la largeur de
+       montrer les libellés, et « BIBLIOTHÈ… » n'apprend rien. Les autres
+       mesures restent lisibles sur la fiche du service et en vue Liste. */
+    chiffres.slice(0, 2).forEach((s) => {
       const c = document.createElement('div');
       c.className = 'st';
       const v = document.createElement('div');
