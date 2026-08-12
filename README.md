@@ -43,7 +43,8 @@ la liste des conteneurs avec leur consommation et de quoi les redémarrer.
 
 Une source est « branchée » quand elle a effectivement livré des mesures — c'est
 la seule preuve qui vaille. La page donne le temps de réponse de chacune, ce
-qu'elle remonte, et la raison quand ça ne marche pas.
+qu'elle remonte, la raison quand ça ne marche pas, et sa disponibilité des
+vingt-quatre dernières heures, une barre par heure.
 
 ![Les connexions](docs/connexions.png)
 

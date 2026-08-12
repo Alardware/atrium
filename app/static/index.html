@@ -179,33 +179,25 @@ summary:focus-visible,[tabindex]:focus-visible{
    vécu, pas ce qu'elle vaut — vert, aucune sonde en échec ; orange, au moins
    une ; rouge, la majorité. Une heure sans mesure reste creuse : « pas
    observé » et « aucune réponse » ne se ressemblent pas. */
-/* Vingt-quatre barres pour cinq services ne tiennent pas dans une carte de
-   trois cent soixante pixels : celle-ci prend la rangée entière. */
-.featured > .cock[data-w="sante"]{flex:1 1 100%;max-width:none}
+.tete-sante{display:flex;align-items:center;gap:9px;margin-left:9px}
+.tete-sante:empty{display:none}
 .puce-inc{padding:3px 8px;border-radius:6px;background:var(--bad-soft);color:var(--bad-text);
           font:600 10.5px/1.3 'IBM Plex Mono',monospace;white-space:nowrap}
 .sec-echelle{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3);
              white-space:nowrap}
-.sante{display:flex;flex-direction:column;gap:0}
-.sante-l{display:grid;grid-template-columns:26px minmax(84px,150px) 1fr auto;
-         align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--divider)}
-.sante-l:first-child{border-top:0}
-.sante-l .nom{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text-2);
-              overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sante-b{display:flex;gap:3px;min-width:0}
-.sante-b i{flex:1 1 0;min-width:3px;height:20px;border-radius:3px;background:var(--ok)}
+.sante-b{display:flex;gap:2px;min-width:0;margin-top:7px}
+.sante-b i{flex:1 1 0;min-width:3px;height:14px;border-radius:2px;background:var(--ok)}
 .sante-b i.orange{background:var(--warn)}
 .sante-b i.rouge{background:var(--bad)}
 /* Le creux se voit sans se faire passer pour une panne. */
 .sante-b i.creux{background:var(--divider);opacity:.55}
 .sante-pc{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--ok-text);
-          white-space:nowrap;min-width:46px;text-align:right}
+          white-space:nowrap;min-width:44px;text-align:right}
 .sante-pc.moyen{color:var(--warn-text)}
 .sante-pc.bas{color:var(--bad-text)}
 .sante-pc.vide{color:var(--muted-3)}
-.sante-pied{display:flex;align-items:baseline;gap:8px;margin-top:11px;
-            font:500 10.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-3)}
-@media (max-width:760px){ .sante-l{grid-template-columns:22px minmax(70px,1fr) 2fr auto;gap:9px} }
+.sante-pied{margin-top:4px;font:500 10.5px/1.5 'Plus Jakarta Sans',sans-serif;
+            color:var(--muted-3)}
 .cock-anneaux{flex:1;display:flex;align-items:center;justify-content:space-around;gap:8px;margin:10px 0 4px;min-height:96px}
 .cock-anneaux:empty{display:none}
 .anneau{display:flex;flex-direction:column;align-items:center;gap:9px}
@@ -1052,6 +1044,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .scard > h4 .aide{margin-left:auto;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-3)}
 .scard > h4 .btn-sm{margin-left:auto}
 .conn-hote{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
+.conn-row .cr-nom{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .conn-detail{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .conn-mesure{margin-left:auto;display:flex;align-items:center;gap:11px}
 .conn-mesure .spark{width:52px;flex:none}
@@ -1969,9 +1962,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <div class="conn-bilan" id="conn-bilan"></div>
         <div class="scard">
           <h4><span class="pt ok"></span><span data-i18n="conn.sources">Sources actives</span>
+            <span class="tete-sante" id="conn-tete"></span>
             <button class="btn-sm" id="conn-test" type="button" data-i18n="conn.testall">Tout tester</button></h4>
           <div class="scard-body">
             <div id="conn-list" style="display:flex;flex-direction:column;gap:2px"></div>
+            <div class="sante-pied" id="conn-legende" hidden></div>
           </div>
         </div>
         <div class="scard" id="conn-dispo-card" style="margin-top:22px" hidden>
@@ -4100,97 +4095,6 @@ const REGISTRE_W = {
     icone: '🎬', cle: 'w.plex', fixe: 'px-card',
     dispo: () => !!appByKind('plex'),
   },
-  sante: {
-    icone: '📶', cle: 'w.sante',
-    /* Sans service surveillé, il n'y a rien à tracer. */
-    dispo: () => apps.some((a) => a.url),
-    large: true,
-    rendre(carte) {
-      if (!HISTO) { chargerHistorique(); return true; }
-      const noms = Object.keys(HISTO.services || {});
-      if (!noms.length) return false;
-
-      /* Le gabarit a déjà posé l'icône et le titre : on ne complète que la
-         ligne d'entête, avec le nombre d'incidents et l'échelle. */
-      const total = noms.reduce((n, k) => n + (HISTO.services[k].incidents || 0), 0);
-      const ligne = carte.querySelector('.chip-row');
-      if (total) {
-        const p = document.createElement('span');
-        p.className = 'puce-inc';
-        p.textContent = t(total > 1 ? 'sante.incidents' : 'sante.incident', { n: total });
-        ligne.appendChild(p);
-      }
-      const ech = document.createElement('span');
-      ech.className = 'sec-echelle';
-      ech.textContent = t('sante.echelle', { n: HISTO.heures });
-      ligne.appendChild(ech);
-
-      const zone = document.createElement('div');
-      zone.className = 'sante';
-      /* Les services qui vont le moins bien en premier : c'est ce qu'on vient
-         chercher. À égalité, l'ordre de la configuration. */
-      noms.sort((a, b) => (HISTO.services[a].dispo == null ? 101 : HISTO.services[a].dispo)
-                        - (HISTO.services[b].dispo == null ? 101 : HISTO.services[b].dispo));
-      noms.forEach((nom) => {
-        const r = HISTO.services[nom];
-        const app = apps.find((a) => a.nom === nom);
-        const l = document.createElement('div');
-        l.className = 'sante-l';
-
-        const chip = document.createElement('span');
-        chip.className = 'logo-chip s26';
-        const cl = document.createElement('span');
-        cl.className = 'cl';
-        cl.textContent = (nom[0] || '?').toUpperCase();
-        chip.appendChild(cl);
-        if (app) mountLogo(chip, logoDe(app));
-
-        const n = document.createElement('span');
-        n.className = 'nom';
-        n.textContent = nom;
-
-        const barres = document.createElement('span');
-        barres.className = 'sante-b';
-        r.seaux.forEach((seau, i) => {
-          const b = document.createElement('i');
-          const recul = r.seaux.length - 1 - i;
-          if (!seau) {
-            b.className = 'creux';
-            b.title = t('sante.creux', { q: t('sante.ilya', { n: recul }) });
-          } else {
-            const [sondes, echecs] = seau;
-            if (echecs * 2 > sondes) b.className = 'rouge';
-            else if (echecs) b.className = 'orange';
-            b.title = t('sante.detail',
-                        { q: t('sante.ilya', { n: recul }), e: echecs, s: sondes });
-          }
-          barres.appendChild(b);
-        });
-
-        const pc = document.createElement('span');
-        pc.className = 'sante-pc ' + (r.dispo == null ? 'vide'
-          : r.dispo >= 99 ? '' : r.dispo >= 95 ? 'moyen' : 'bas');
-        pc.textContent = r.dispo == null ? '—' : r.dispo + ' %';
-        /* Une disponibilité sur trois heures ne se présente pas comme une
-           disponibilité sur vingt-quatre. */
-        pc.title = r.heures < HISTO.heures
-          ? t('sante.partiel', { n: r.heures }) : t('sante.complet', { n: r.heures });
-
-        l.appendChild(chip);
-        l.appendChild(n);
-        l.appendChild(barres);
-        l.appendChild(pc);
-        zone.appendChild(l);
-      });
-      carte.appendChild(zone);
-
-      const pied = document.createElement('div');
-      pied.className = 'sante-pied';
-      pied.textContent = t('sante.pied');
-      carte.appendChild(pied);
-      return true;
-    },
-  },
   alertes: {
     icone: '🚨', cle: 'w.alertes',
     dispo: () => true,
@@ -4331,7 +4235,7 @@ const REGISTRE_W = {
     },
   },
 };
-const WIDGETS_DEFAUT = ['media', 'maison', 'serveur', 'plex', 'sante'];
+const WIDGETS_DEFAUT = ['media', 'maison', 'serveur', 'plex'];
 const CARTES_FIXES = ['np-card', 'haw-card', 'srv-card', 'px-card'];
 
 /* ---------- disposition automatique ----------
@@ -6437,10 +6341,52 @@ $('np-config').addEventListener('click', (e) => {
 });
 
 /* connexions : état des sources */
+/* La bande des vingt-quatre heures d'un service. Elle vit dans la ligne de
+   Connexions plutôt que dans une carte à part : c'est la même liste, au même
+   grain, et cette bande n'est que la version historique de la courbe de temps
+   de réponse qui se trouve déjà à droite. */
+function bandeSante(nom) {
+  const r = HISTO && HISTO.services && HISTO.services[nom];
+  if (!r || !r.seaux) return null;
+  const bande = document.createElement('span');
+  bande.className = 'sante-b';
+  r.seaux.forEach((seau, i) => {
+    const b = document.createElement('i');
+    const recul = r.seaux.length - 1 - i;
+    if (!seau) {
+      b.className = 'creux';
+      b.title = t('sante.creux', { q: t('sante.ilya', { n: recul }) });
+    } else {
+      const [sondes, echecs] = seau;
+      if (echecs * 2 > sondes) b.className = 'rouge';
+      else if (echecs) b.className = 'orange';
+      b.title = t('sante.detail', { q: t('sante.ilya', { n: recul }), e: echecs, s: sondes });
+    }
+    bande.appendChild(b);
+  });
+  return bande;
+}
+
+function pourcentSante(nom) {
+  const r = HISTO && HISTO.services && HISTO.services[nom];
+  if (!r || r.dispo == null) return null;
+  const pc = document.createElement('span');
+  pc.className = 'sante-pc ' + (r.dispo >= 99 ? '' : r.dispo >= 95 ? 'moyen' : 'bas');
+  pc.textContent = r.dispo + ' %';
+  /* Une disponibilité sur trois heures ne se présente pas comme une
+     disponibilité sur vingt-quatre. */
+  pc.title = r.heures < HISTO.heures
+    ? t('sante.partiel', { n: r.heures }) : t('sante.complet', { n: r.heures });
+  return pc;
+}
+
 function renderConnPanel() {
   const list = $('conn-list');
   if (!list || $('spage').hidden || $('sp-conn').hidden) return;
   list.textContent = '';
+  /* L'historique se charge au premier affichage puis se garde : il change
+     d'une heure à l'autre, pas d'une seconde à l'autre. */
+  if (!HISTO) chargerHistorique().then(renderConnPanel);
 
   /* Une source est « branchée » quand elle a effectivement livré des mesures.
      C'est la seule preuve qui vaille, et elle marche pour les vingt-deux types
@@ -6449,6 +6395,9 @@ function renderConnPanel() {
      ne marche pas quand ça ne marche pas. */
   const detail = (kind, nom) => {
     const n = (STATS[nom] || []).length;
+    /* Sans intégration, il n'y a rien à remonter : on le dit plutôt que de
+       laisser croire à une clé manquante. */
+    if (!kind) return t('conn.urlonly');
     if (kind === 'ha') {
       return CONN === 'ok' ? t('conn.entities', { n: STATES.length })
            : (CONN === 'error' ? CONN_ERR : t('conn.notoken'));
@@ -6458,13 +6407,26 @@ function renderConnPanel() {
     return err || t('conn.notset');
   };
   const branchee = (kind, nom) => {
+    /* Une source déjà branchée qui vient de tomber reste une source branchée.
+       Sans cette mémoire, le seul service en panne serait celui qui disparaît
+       de la liste pour se retrouver parmi ceux « à brancher » — exactement là
+       où on ne le cherche pas, et sans sa bande de disponibilité qui montre
+       pourtant la coupure. */
+    const vu = HISTO && HISTO.services && (HISTO.services[nom] || {}).sondes;
+    if (vu) return true;
+    if (!kind) return false;      // surveillée seule : elle attend son premier relevé
     if (kind === 'ha') return CONN === 'ok';
     if ((STATS[nom] || []).length) return true;
     /* certaines intégrations répondent sans rien à mesurer sur l'instant */
     return kind === 'plex' ? !!DIRECT.plexOk : !!DIRECT[kind];
   };
 
-  const sources = apps.map((a) => ({ app: a, kind: kindOfApp(a) })).filter((x) => x.kind);
+  /* La page ne listait que les intégrations. Maintenant qu'elle porte la
+     disponibilité, elle doit couvrir tout ce qui est surveillé : une
+     application avec une simple URL est sondée comme les autres, elle a une
+     bande, et la cacher reviendrait à perdre son historique. */
+  const sources = apps.map((a) => ({ app: a, kind: kindOfApp(a) }))
+    .filter((x) => x.kind || (x.app.url || '').trim());
   const actives = sources.filter((x) => branchee(x.kind, x.app.nom));
   const dormantes = sources.filter((x) => !branchee(x.kind, x.app.nom));
 
@@ -6508,6 +6470,25 @@ function renderConnPanel() {
     v.textContent = t('conn.none');
     list.appendChild(v);
   }
+  /* L'entête annonce ce que la bande couvre et combien de coupures s'y
+     trouvent ; sans quoi les couleurs ne veulent rien dire. */
+  const tete = $('conn-tete');
+  tete.textContent = '';
+  if (HISTO && HISTO.services) {
+    const inc = actives.reduce(
+      (n, x) => n + (((HISTO.services[x.app.nom] || {}).incidents) || 0), 0);
+    if (inc) {
+      const p = document.createElement('span');
+      p.className = 'puce-inc';
+      p.textContent = t(inc > 1 ? 'sante.incidents' : 'sante.incident', { n: inc });
+      tete.appendChild(p);
+    }
+    const e = document.createElement('span');
+    e.className = 'sec-echelle';
+    e.textContent = t('sante.echelle', { n: HISTO.heures });
+    tete.appendChild(e);
+  }
+
   actives.forEach((x) => {
     const a = x.app;
     const row = document.createElement('div');
@@ -6540,6 +6521,8 @@ function renderConnPanel() {
     bas.textContent = detail(x.kind, a.nom);
     bloc.appendChild(haut);
     bloc.appendChild(bas);
+    const bande = bandeSante(a.nom);
+    if (bande) bloc.appendChild(bande);
 
     const mesure = document.createElement('span');
     mesure.className = 'conn-mesure';
@@ -6559,6 +6542,8 @@ function renderConnPanel() {
         mesure.appendChild(l);
       }
     }
+    const pc = pourcentSante(a.nom);
+    if (pc) mesure.appendChild(pc);
     const btn = document.createElement('button');
     btn.className = 'btn-ghost';
     btn.textContent = t('conn.configure');
@@ -6573,6 +6558,14 @@ function renderConnPanel() {
     row.appendChild(btn);
     list.appendChild(row);
   });
+
+  /* La légende explique les couleurs : sans une seule bande à l'écran, elle
+     n'explique rien. */
+  const avecBande = actives.some(
+    (x) => ((HISTO && HISTO.services && HISTO.services[x.app.nom]) || {}).seaux);
+  const legende = $('conn-legende');
+  legende.hidden = !avecBande;
+  legende.textContent = avecBande ? t('sante.pied') : '';
 
   /* --- à brancher --- */
   const zone = $('conn-dispo');
