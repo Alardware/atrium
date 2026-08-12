@@ -45,6 +45,14 @@ def _prive(ip):
     return a.is_private
 
 
+def prive(ip):
+    """Meme jugement que le filtrage, offert au reste du serveur.
+
+    Sert a dire a l interface si la connexion vient du reseau local ou de
+    l exterieur : la meme regle des deux cotes, pas une seconde definition."""
+    return _prive(ip)
+
+
 def resoudre(hote):
     """Adresses derriere un nom d hote, ou liste vide si la resolution echoue."""
     cle = hote.lower()

@@ -533,9 +533,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """Etat courant : l'interface sait quoi afficher avant tout le reste."""
         cfg = self.lire_config()
         users = cfg.get("users") or []
+        # D ou vient cette connexion : la seule information que le navigateur ne
+        # peut pas etablir lui-meme, et la plus utile a savoir avant de saisir un
+        # mot de passe. Il s agit de sa propre adresse, rien n en fuit.
+        #
+        # Derriere un reverse proxy, l adresse vue est celle du proxy : elle est
+        # privee quelle que soit la provenance reelle. Annoncer « acces local »
+        # dans ce cas serait faux, et faux dans le sens rassurant. On dit alors
+        # qu on ne sait pas, en rapportant ce que le relais pretend — sans le
+        # croire : cet en-tete est fourni par le client autant que par le proxy.
+        ip = self.client_address[0]
+        relaye = bool(self.headers.get("X-Forwarded-For"))
+        pretendue = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
         self.reply(200, json.dumps({
             "installe": bool(users),
             "utilisateur": self.session_user(),
+            "acces": {"ip": pretendue if relaye else ip,
+                      "local": (not relaye) and reseau.prive(ip),
+                      "relaye": relaye},
             "profils": [
                 {"nom": u.get("nom"), "photo": u.get("photo", ""), "protege": bool(u.get("pwd"))}
                 for u in users if u.get("nom")

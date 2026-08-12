@@ -109,7 +109,7 @@ summary:focus-visible,[tabindex]:focus-visible{
 .bar > i.s4{background:var(--bad)}
 .health-foot{margin-top:12px;font:500 11px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .srv-box{padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:9px}
-.srv-sub{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted);margin-top:-4px}
+.srv-sub{margin-left:auto;font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .srv-head{display:flex;align-items:center;gap:7px}
 .srv-name{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .logo-chip.s18{width:18px;height:18px;border-radius:5px;font-size:8px}
@@ -173,11 +173,42 @@ summary:focus-visible,[tabindex]:focus-visible{
 .al-vide{padding:12px 0 2px;font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 
 /* ---- bandeau des problèmes en cours ---- */
-.strip{display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:20px;border-radius:11px;border:1px solid var(--warn-border);background:var(--warn-soft)}
+/* Trois grandeurs, trois anneaux : la charge se lit sans lire les chiffres.
+   Le tracé vient des mêmes mesures que les barres qu'il remplace. */
+.cock-anneaux{display:flex;justify-content:space-around;gap:8px;margin:14px 0 4px}
+.cock-anneaux:empty{display:none}
+.anneau{display:flex;flex-direction:column;align-items:center;gap:7px}
+.anneau svg{width:58px;height:58px;transform:rotate(-90deg)}
+.anneau .piste{fill:none;stroke:var(--divider);stroke-width:6}
+.anneau .arc{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
+             transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1)}
+.anneau.s2 .arc{stroke:var(--warn)}
+.anneau.s3 .arc{stroke:var(--warn)}
+.anneau.s4 .arc{stroke:var(--bad)}
+.anneau .v{position:absolute;font:700 12px/1 'IBM Plex Mono',monospace;color:var(--text-1)}
+.anneau .rond{position:relative;display:flex;align-items:center;justify-content:center}
+.anneau .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2)}
+.cock-up{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.cock-lien{width:100%;margin-top:12px;padding:9px;border-radius:9px;border:1px solid var(--border-2);
+           background:var(--surface-2);font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;
+           color:var(--text-2);transition:border-color .13s,color .13s}
+.cock-lien:hover{border-color:var(--accent);color:var(--accent)}
+.strip{display:flex;align-items:center;gap:14px;padding:11px 14px;margin-bottom:20px;border-radius:11px;
+       border:1px solid var(--warn-border);border-left:3px solid var(--warn);background:var(--warn-soft)}
 .strip[hidden]{display:none}
 .strip.grave{border-color:var(--bad);background:var(--bad-soft)}
-.strip .s-ico{font-size:14px;line-height:1}
-.strip .s-txt{flex:1;min-width:0;font:600 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--warn-text)}
+.strip .s-txt{flex:0 0 auto;min-width:0;font:600 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--warn-text)}
+/* Une puce par problème : le bandeau nomme ce qui ne va pas plutôt que d'en
+   donner le nombre. Cliquer mène à la fiche du service concerné. */
+.s-chips{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px}
+.s-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px 5px 6px;border-radius:8px;
+        border:1px solid var(--border-2);background:var(--surface);white-space:nowrap;
+        font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);
+        transition:border-color .13s}
+.s-chip:hover{border-color:var(--accent)}
+.s-chip .d{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.strip .s-open{padding:6px 11px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface)}
+.strip .s-open:hover{text-decoration:none;border-color:var(--accent)}
 .strip.grave .s-txt{color:var(--bad-text)}
 .strip .s-det{display:block;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip .s-open{font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent);white-space:nowrap}
@@ -376,9 +407,24 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-off .dot{background:var(--bad)}
 .badge-na .dot{background:var(--muted-2)}
 .badge-on[hidden],.badge-off[hidden],.badge-na[hidden]{display:none}
-.badge-on .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.app-foot .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+.app-foot .lat:empty{display:none}
+/* La courbe occupe la place restante entre la pastille et le temps de réponse.
+   Elle est tracée à partir des mesures réellement relevées : pas de courbe,
+   pas de dessin. */
+.spark{flex:1 1 40px;min-width:0;height:18px;display:none;align-items:center}
+.spark.on{display:flex}
+.crb{width:100%;height:18px;overflow:visible}
+.crb polyline{stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.crb.c-on polyline{stroke:var(--ok)}
+.crb.c-warn polyline{stroke:var(--warn)}
+.crb.c-off polyline{stroke:var(--bad)}
+.badge-warn{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text);white-space:nowrap}
+.badge-warn .dot{background:var(--warn)}
 .badge-on .lat:empty{display:none}
 .app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+.apps-tally{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+.apps-tally:empty{display:none}
 .app-foot{flex-wrap:wrap;row-gap:7px}
 .app-seen:empty{display:none}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
@@ -444,6 +490,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid.list > *{flex:0 0 auto;max-width:none}
 .grid.list .app-card{flex-direction:row;align-items:center;gap:14px;padding:12px 16px}
 .grid.list .app-mid{flex:1;min-width:0}
+.grid.list .app-foot{border-top:none;padding-top:0;flex:0 0 auto;flex-wrap:nowrap;gap:14px}
+.grid.list .spark{flex:0 0 74px}
 .grid.list .app-role{margin-top:2px}
 .grid.list .app-foot{border-top:0;padding-top:0;gap:14px}
 .grid.list .app-actions{position:static;order:99;margin-left:2px}
@@ -706,10 +754,34 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
 /* écran de verrouillage */
 .lock{position:fixed;inset:0;background:var(--bg);z-index:100;display:grid;place-items:center}
-.lock-profiles{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-bottom:4px}
-.lock-p{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:8px;border-radius:12px;transition:background .15s}
-.lock-p:hover{background:var(--subtle)}
-.lock-p .u-avatar{width:54px;height:54px;font:700 18px/1 'Plus Jakarta Sans',sans-serif}
+/* Une trame à peine visible : l'écran vide paraissait éteint plutôt que prêt. */
+.lock::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--divider) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--divider) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(ellipse 60% 50% at 50% 42%,#000,transparent 75%);
+          mask-image:radial-gradient(ellipse 60% 50% at 50% 42%,#000,transparent 75%)}
+.lock-box{position:relative}
+.lock-when{margin-top:-8px;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+/* La provenance de la connexion vient du serveur : lui seul voit l'adresse. */
+.lock-acces{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+            border:1px solid var(--border-2);background:var(--surface);
+            font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.lock-acces .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+.lock-acces.distant .dot{background:var(--warn)}
+.lock-profiles{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:4px}
+.lock-p{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;
+        padding:0;border-radius:0;background:none;transition:none}
+.lock-p .rond{position:relative}
+.lock-p .u-avatar{width:78px;height:78px;border-radius:20px;
+                  font:700 30px/1 'Plus Jakarta Sans',sans-serif;
+                  border:2px solid transparent;
+                  transition:transform .16s cubic-bezier(.2,.7,.3,1),border-color .16s}
+.lock-p:hover .u-avatar,.lock-p:focus-visible .u-avatar{transform:translateY(-3px);border-color:var(--accent)}
+/* Le cadenas dit lesquels demanderont un mot de passe, avant de cliquer. */
+.lock-p .cad{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;
+             display:grid;place-items:center;background:var(--surface);border:1px solid var(--border-2);
+             font-size:9px;color:var(--muted-2)}
 .lock-p .n{font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
 .lock-box{display:flex;flex-direction:column;align-items:center;gap:16px;width:300px;max-width:calc(100vw - 40px);animation:pop .3s cubic-bezier(.2,.7,.3,1) both}
 .lock-logo{width:64px;height:64px;border-radius:18px;background:#0d1526;border:1px solid var(--border);display:grid;place-items:center}
@@ -940,9 +1012,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <div class="content">
 
       <div class="strip" id="strip" hidden>
-        <span class="s-ico" id="strip-ico">🔴</span>
-        <span class="s-txt"><span id="strip-titre"></span><span class="s-det" id="strip-det"></span></span>
-        <button class="s-open" id="strip-open" data-i18n="alert.see">Voir</button>
+        <span class="s-txt">
+          <span class="s-titre" id="strip-titre"></span>
+          <span class="s-det" id="strip-sub"></span>
+        </span>
+        <span class="s-chips" id="strip-chips"></span>
+        <button class="s-open" id="strip-open" data-i18n="alert.diag">Diagnostiquer</button>
       </div>
 
       <section class="rise-1" id="sec-featured">
@@ -996,9 +1071,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <div class="chip-row">
               <span class="logo-chip s26" id="srv-chip"><span class="cl">▪</span></span>
               <span class="chip-name" id="srv-name">Serveur</span>
+              <span class="cock-up" id="srv-up"></span>
             </div>
-            <div class="cock-u" id="srv-sub"></div>
+            <div class="cock-anneaux" id="srv-anneaux"></div>
             <div class="cock-rows" id="srv-rows"></div>
+            <button class="cock-lien" id="srv-voir" type="button" data-i18n="srv.see">Voir le serveur</button>
           </div>
 
           <a href="#" class="card cock" id="px-card" hidden>
@@ -1032,6 +1109,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <span class="n" id="apps-count"></span>
           </div>
           <button class="btn-sm" id="btn-ranger" type="button" hidden data-i18n="apps.tidy">Ranger par catégorie</button>
+          <span class="apps-tally" id="apps-tally"></span>
           <div class="seg" id="seg-view">
             <button data-view="grid" class="on" data-i18n="apps.grid">Grille</button>
             <button data-view="list" data-i18n="apps.list">Liste</button>
@@ -1675,7 +1753,8 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <path d="M38 84V50a12 12 0 0 1 24 0v34" fill="none" stroke="url(#atrium-gl)" stroke-width="7" stroke-linecap="round" opacity=".45"/>
       </svg>
     </div>
-    <div class="lock-title" id="lock-title">Atrium</div>
+    <div class="lock-title" id="lock-title" data-i18n="login.who">Qui utilise Atrium ?</div>
+    <div class="lock-when" id="lock-when"></div>
     <div class="lock-profiles" id="lock-profiles"></div>
     <div id="lock-form" style="display:flex;flex-direction:column;gap:14px;width:100%;align-items:center" hidden>
       <div class="setup-err" id="lock-err" hidden style="width:100%"></div>
@@ -1683,6 +1762,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
       <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
     </div>
+    <div class="lock-acces" id="lock-acces" hidden><span class="dot"></span><span class="tx"></span></div>
   </div>
 </div>
 
@@ -1819,9 +1899,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     </div>
     <div class="app-stats" hidden></div>
     <div class="app-foot">
-      <span class="badge-on" hidden><span class="dot"></span><span data-i18n="app.online">en ligne</span><span class="lat"></span></span>
+      <span class="badge-on" hidden><span class="dot"></span><span data-i18n="app.online">en ligne</span></span>
+      <span class="badge-warn" hidden><span class="dot"></span><span data-i18n="app.degraded">dégradé</span></span>
       <span class="badge-off" hidden><span class="dot"></span><span data-i18n="app.offline">hors ligne</span></span>
       <span class="badge-na" hidden><span class="dot"></span><span class="lbl">vérification…</span></span>
+      <span class="spark"></span>
+      <span class="lat"></span>
       <span class="app-seen"></span>
     </div>
   </a>
@@ -2156,7 +2239,8 @@ let statusByName = {};          // true / false / undefined = en cours
 let DIRECT = { unraid: null, unifi: null, clients: null };   // connexions directes via relais
 let HOTE = null;            // mesures de la machine qui héberge Atrium
 let STATS = {};             // chiffres remontés par service, par nom d'app
-let SUPER = { etats: {}, alertes: { total: 0, non_lues: 0, problemes: 0, niveau: '', alertes: [] } };
+let SUPER = { etats: {}, releve: 0,
+              alertes: { total: 0, non_lues: 0, problemes: 0, niveau: '', alertes: [] } };
 let COCK_HOTE = null;       // machine hôte telle qu'affichée, mesures fusionnées
 let COCK_SRV = [];          // les autres serveurs connus, hors machine hôte
 
@@ -2767,11 +2851,9 @@ function renderLive() {
     }
     if (rows.length) {
       let sous = HOTE.os || '';
-      if (HOTE.demarrage) {
-        const j = Math.floor(HOTE.demarrage.secondes / 86400);
-        sous += (sous ? ' · ' : '') + (j >= 1 ? t('host.up.days', { n: j }) : t('host.up.less'));
-      }
-      COCK_HOTE = { titre: HOTE.nom || t('host.self'), sous, rows,
+      const up = HOTE.demarrage ? duree(HOTE.demarrage.secondes) : '';
+      if (up) sous += (sous ? ' · ' : '') + up;
+      COCK_HOTE = { titre: HOTE.nom || t('host.self'), sous, uptime: up, rows,
                     kind: self ? self.kind : '' };
     }
   }
@@ -2804,13 +2886,16 @@ function renderLive() {
       name.textContent = titre;
       head.appendChild(chip);
       head.appendChild(name);
-      box.appendChild(head);
+      /* le complement (disponibilite, uptime, nombre de clients) tient sur la
+         meme ligne que le nom : une ligne de moins par serveur, et le panneau
+         reste lisible quand il y en a plusieurs */
       if (sous) {
-        const s = document.createElement('div');
+        const s = document.createElement('span');
         s.className = 'srv-sub';
         s.textContent = sous;
-        box.appendChild(s);
+        head.appendChild(s);
       }
+      box.appendChild(head);
       hr.appendChild(box);
       return box;
     };
@@ -2981,24 +3066,28 @@ async function copier(texte) {
   }
 }
 
-async function sonderMaintenant(app) {
-  toast(t('qm.refreshing', { nom: app.nom }));
+async function sonderMaintenant(app, discret) {
+  /* « discret » : un diagnostic groupe sonde plusieurs services d'un coup et
+     rend compte une seule fois a la fin, sans empiler les notifications. */
+  if (!discret) toast(t('qm.refreshing', { nom: app.nom }));
   try {
     const r = await relayFetch('/api/sonder', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nom: app.nom }),
     });
-    if (!r.ok) { toast(t('qm.refresh.fail')); return; }
+    if (!r.ok) { if (!discret) toast(t('qm.refresh.fail')); return; }
     const j = await r.json();
     if (j.etat) SUPER.etats[app.nom] = j.etat;
     if (j.stats) STATS[app.nom] = j.stats;
     statusByName[app.nom] = j.etat ? j.etat.en_ligne : statusByName[app.nom];
     renderApps();
-    toast(j.etat && j.etat.en_ligne
-      ? t('qm.refresh.up', { nom: app.nom, ms: j.etat.latence_ms })
-      : t('qm.refresh.down', { nom: app.nom }));
-  } catch (e) { toast(t('qm.refresh.fail')); }
+    if (!discret) {
+      toast(j.etat && j.etat.en_ligne
+        ? t('qm.refresh.up', { nom: app.nom, ms: j.etat.latence_ms })
+        : t('qm.refresh.down', { nom: app.nom }));
+    }
+  } catch (e) { if (!discret) toast(t('qm.refresh.fail')); }
 }
 
 function demanderRedemarrage(app, conteneur) {
@@ -3625,20 +3714,66 @@ function saveWidgets() {
   pushCfg();
 }
 
+/* Un anneau : piste grise complète, arc coloré proportionnel. Le décalage du
+   tiret dessine la portion — pas d'animation par image, le navigateur
+   interpole seul. */
+function anneau(label, pc, detail) {
+  const val = Math.max(0, Math.min(100, pc));
+  const box = document.createElement('div');
+  box.className = 'anneau ' + NIV_JAUGE(val);
+  if (detail) box.title = detail;
+  const rond = document.createElement('div');
+  rond.className = 'rond';
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 58 58');
+  svg.setAttribute('aria-hidden', 'true');
+  const R = 24;
+  const tour = 2 * Math.PI * R;
+  ['piste', 'arc'].forEach((cls) => {
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('cx', '29');
+    c.setAttribute('cy', '29');
+    c.setAttribute('r', String(R));
+    c.setAttribute('class', cls);
+    if (cls === 'arc') {
+      c.setAttribute('stroke-dasharray', tour.toFixed(1));
+      c.setAttribute('stroke-dashoffset', (tour * (1 - val / 100)).toFixed(1));
+    }
+    svg.appendChild(c);
+  });
+  const v = document.createElement('span');
+  v.className = 'v';
+  v.textContent = Math.round(val) + ' %';
+  rond.appendChild(svg);
+  rond.appendChild(v);
+  const l = document.createElement('span');
+  l.className = 'l';
+  l.textContent = label.toUpperCase();
+  box.appendChild(rond);
+  box.appendChild(l);
+  return box;
+}
+
 function renderCockpit() {
   const srv = $('srv-card');
   srv.hidden = !COCK_HOTE;
   if (COCK_HOTE) {
     $('srv-name').textContent = COCK_HOTE.titre;
-    $('srv-sub').textContent = COCK_HOTE.sous || '';
+    $('srv-up').textContent = COCK_HOTE.uptime || '';
     /* logo de l'intégration qui décrit cette machine, quand il y en a une */
     const self = COCK_HOTE.kind ? appByKind(COCK_HOTE.kind) : null;
     $('srv-chip').querySelector('.cl').textContent = self
       ? (self.nom[0] || '▪').toUpperCase() : '▪';
     mountLogo($('srv-chip'), self ? logoDe(self) : '');
+    /* Les pourcentages deviennent des anneaux, le reste garde ses lignes :
+       un uptime ou un « 23 / 24 » ne se met pas en cercle. */
+    const anneaux = $('srv-anneaux');
+    anneaux.textContent = '';
+    COCK_HOTE.rows.filter((r) => r.v != null).slice(0, 3)
+      .forEach((r) => anneaux.appendChild(anneau(r.label, r.v, r.detail)));
     const zone = $('srv-rows');
     zone.textContent = '';
-    COCK_HOTE.rows.forEach((r) => {
+    COCK_HOTE.rows.filter((r) => r.v == null).forEach((r) => {
       if (r.v == null) {
         const p = clone('tpl-cock-row');
         p.querySelector('.cr-l').textContent = r.label;
@@ -3899,7 +4034,8 @@ async function pollSupervision() {
     j = await r.json();
   } catch (e) { return; }
 
-  SUPER = { etats: j.etats || {}, alertes: j.alertes || SUPER.alertes };
+  SUPER = { etats: j.etats || {}, alertes: j.alertes || SUPER.alertes,
+            releve: j.releve || SUPER.releve };
   statusByName = {};
   apps.forEach((a) => {
     if (!a.url) { statusByName[a.nom] = null; return; }
@@ -3987,6 +4123,24 @@ function actionsPour(a) {
 
 function fermerAlertes() { $('al-pop').hidden = true; }
 
+/* « Diagnostiquer » ne se contente pas d'ouvrir la liste : il resonde les
+   services en cause. Une panne déjà résolue disparaît alors sans attendre le
+   prochain cycle de trente secondes. */
+async function diagnostiquer() {
+  const noms = [...new Set(SUPER.alertes.alertes
+    .filter((a) => a.niveau !== 'info').map((a) => a.service))];
+  const cibles = apps.filter((a) => noms.includes(a.nom) && a.url);
+  if (!cibles.length) { $('al-pop').hidden = false; return; }
+  const bouton = $('strip-open');
+  bouton.disabled = true;
+  bouton.textContent = t('alert.diag.run');
+  await Promise.all(cibles.map((a) => sonderMaintenant(a, true).catch(() => {})));
+  bouton.disabled = false;
+  bouton.textContent = t('alert.diag');
+  const reste = SUPER.alertes.alertes.filter((a) => a.niveau !== 'info').length;
+  toast(reste ? t('alert.diag.left', { n: reste }) : t('alert.diag.clear'));
+}
+
 function renderAlertes() {
   const res = SUPER.alertes;
   const rang = { info: 0, surveillance: 1, avertissement: 2, critique: 3 };
@@ -4031,7 +4185,7 @@ function renderAlertes() {
     liste.appendChild(row);
   });
 
-  /* bandeau : ce qui va mal, résumé en une ligne */
+  /* bandeau : ce qui va mal, nommé service par service */
   const graves = res.alertes.filter((a) => a.niveau !== 'info');
   const strip = $('strip');
   /* le bandeau ne double pas le widget Alertes quand celui-ci est à l'écran */
@@ -4039,9 +4193,39 @@ function renderAlertes() {
   strip.hidden = !graves.length || widgetAlertes;
   if (graves.length) {
     strip.classList.toggle('grave', pire >= 3 || graves.some((a) => a.niveau === 'critique'));
-    $('strip-ico').textContent = pire >= 3 ? '🔴' : '🟠';
     $('strip-titre').textContent = t(graves.length > 1 ? 'alert.many' : 'alert.one', { n: graves.length });
-    $('strip-det').textContent = graves.map((a) => a.service + ' — ' + texteAlerte(a)).join(' · ');
+    $('strip-sub').textContent = t('alert.watching', { q: ageCourt(SUPER.releve) });
+    const chips = $('strip-chips');
+    chips.textContent = '';
+    graves.slice(0, 4).forEach((a) => {
+      const app = apps.find((x) => x.nom === a.service);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 's-chip';
+      const chip = document.createElement('span');
+      chip.className = 'logo-chip s18';
+      const cl = document.createElement('span');
+      cl.className = 'cl';
+      cl.textContent = (a.service[0] || '?').toUpperCase();
+      chip.appendChild(cl);
+      if (app) mountLogo(chip, logoDe(app));
+      const nom = document.createElement('span');
+      nom.textContent = a.service;
+      const det = document.createElement('span');
+      det.className = 'd';
+      det.textContent = texteAlerte(a);
+      b.appendChild(chip);
+      b.appendChild(nom);
+      b.appendChild(det);
+      if (app) b.addEventListener('click', () => ouvrirStatut(app));
+      chips.appendChild(b);
+    });
+    if (graves.length > 4) {
+      const reste = document.createElement('span');
+      reste.className = 's-chip';
+      reste.textContent = '+' + (graves.length - 4);
+      chips.appendChild(reste);
+    }
   }
 }
 
@@ -4057,9 +4241,13 @@ $('al-read').addEventListener('click', async () => {
   renderAlertes();
   try { await relayFetch('/api/alertes/lues', { method: 'POST' }); } catch (e) { /* réessayé au cycle suivant */ }
 });
+$('srv-voir').addEventListener('click', (e) => {
+  e.stopPropagation();
+  ouvrirServeurs();
+});
 $('strip-open').addEventListener('click', (e) => {
   e.stopPropagation();
-  $('al-pop').hidden = false;
+  diagnostiquer();
 });
 document.addEventListener('click', () => { $('al-pop').hidden = true; });
 
@@ -4413,16 +4601,14 @@ function appCard(app, index) {
     vu.title = t('app.seen.t');
     vu.textContent = t('app.seen', { q: ageCourt(etat.vu_a) });
   }
+  const sant = sante(app.nom);
   if (cache('etat')) {
     /* rien : ni pastille d'état, ni temps de réponse qu'elle porte */
-  } else if (st === true) {
-    const on = a.querySelector('.badge-on');
-    on.hidden = false;
-    if (etat && etat.latence_ms != null && !cache('latence')) {
-      on.querySelector('.lat').textContent = etat.latence_ms + ' ms';
-      on.title = t('app.moy', { n: etat.latence_moy });
-    }
-  } else if (st === false) {
+  } else if (sant === 'on' || sant === 'warn') {
+    const pastille = a.querySelector(sant === 'warn' ? '.badge-warn' : '.badge-on');
+    pastille.hidden = false;
+    if (sant === 'warn') pastille.title = souci.map(texteAlerte).join(' · ');
+  } else if (sant === 'off') {
     const off = a.querySelector('.badge-off');
     off.hidden = false;
     if (etat) off.title = t('app.since', { q: age(etat.depuis) });
@@ -4430,6 +4616,21 @@ function appCard(app, index) {
     const na = a.querySelector('.badge-na');
     na.hidden = false;
     na.querySelector('.lbl').textContent = t(app.url ? 'app.checking' : 'app.nourl');
+  }
+  if (!cache('etat') && !cache('latence') && etat && etat.latence_ms != null) {
+    const lat = a.querySelector('.lat');
+    lat.textContent = etat.latence_ms + ' ms';
+    lat.title = t('app.moy', { n: etat.latence_moy });
+  }
+  /* l'activité n'a de sens que si l'état est montré : sans pastille, une
+     courbe seule ne se rattache à rien */
+  if (!cache('etat') && etat) {
+    const trace = courbe(etat.courbe, sant === 'na' ? 'on' : sant);
+    if (trace) {
+      const z = a.querySelector('.spark');
+      z.classList.add('on');
+      z.appendChild(trace);
+    }
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
 
@@ -4503,6 +4704,42 @@ function rangerApps() {
 }
 $('btn-ranger').addEventListener('click', rangerApps);
 
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+/* Trace les temps de réponse relevés par le serveur. Rien n'est lissé ni
+   inventé : deux mesures au minimum, sinon pas de courbe du tout. */
+function courbe(points, teinte) {
+  if (!points || points.length < 2) return null;
+  const bas = Math.min.apply(null, points);
+  const haut = Math.max.apply(null, points);
+  const amp = haut - bas || 1;
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 20');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'crb c-' + teinte);
+  const trait = document.createElementNS(SVGNS, 'polyline');
+  trait.setAttribute('fill', 'none');
+  /* sans cela, l'aplatissement du viewBox étirerait aussi l'épaisseur */
+  trait.setAttribute('vector-effect', 'non-scaling-stroke');
+  trait.setAttribute('points', points.map((v, i) =>
+    (i / (points.length - 1) * 100).toFixed(1) + ','
+    + (17 - (v - bas) / amp * 14).toFixed(1)).join(' '));
+  svg.appendChild(trait);
+  return svg;
+}
+
+/* Trois états et non deux : un service qui répond mais dont une mesure a
+   franchi un seuil n'est ni en ligne ni hors ligne. Le dire évite d'afficher
+   une pastille verte sur une machine dont le disque est plein. */
+function sante(nom) {
+  const st = statusByName[nom];
+  if (st === false) return 'off';
+  if (st !== true) return 'na';
+  return alertesDe(nom).some((a) => a.code !== 'hors_ligne' && a.niveau !== 'info')
+    ? 'warn' : 'on';
+}
+
 function renderApps() {
   const q = query.trim().toLowerCase();
   const shown = [];
@@ -4529,6 +4766,15 @@ function renderApps() {
   grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
+  /* Ce que l'on veut savoir d'un coup d'œil n'est pas combien d'applications
+     existent — le compteur à côté du titre le dit déjà — mais combien ne vont
+     pas bien. Les applications sans URL ne comptent ni d'un côté ni de
+     l'autre : elles ne sont pas surveillées. */
+  const jauges = shown.map(([a]) => sante(a.nom)).filter((x) => x !== 'na');
+  const ko = jauges.filter((x) => x !== 'on').length;
+  $('apps-tally').textContent = jauges.length
+    ? t(ko ? 'apps.tally' : 'apps.tally.ok', { on: jauges.length - ko, ko: ko })
+    : '';
   const bouge = aRanger();
   $('btn-ranger').hidden = !bouge.length;
   $('btn-ranger').title = bouge.map((a) => a.nom + ' → ' + CAT_PAR_TYPE[kindOfApp(a)]).join('\n');
@@ -5670,6 +5916,7 @@ $('spu-del').addEventListener('click', () => {
 
 /* ---------- connexion (session vérifiée par le serveur) ---------- */
 let PROFILS = [];        // profils publics renvoyés par /api/session
+let ACCES = null;        // provenance de la connexion, vue par le serveur
 let PENDING_USER = -1;
 let SESSION_USER = null;
 
@@ -5683,21 +5930,52 @@ function renderLockUi() {
   const profs = $('lock-profiles');
   profs.textContent = '';
   lockErr('');
+  /* La date situe l'écran ; la météo n'y figure pas : elle vient de Home
+     Assistant, qu'on ne peut pas interroger avant d'être connecté. */
+  const d = new Date();
+  $('lock-when').textContent = d.toLocaleDateString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR',
+      { weekday: 'long', day: 'numeric', month: 'long' })
+    + ' · ' + d.toLocaleTimeString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR',
+      { hour: '2-digit', minute: '2-digit' });
+  const acces = $('lock-acces');
+  if (ACCES) {
+    acces.hidden = false;
+    acces.classList.toggle('distant', !ACCES.local);
+    const quoi = ACCES.relaye ? 'login.proxied' : ACCES.local ? 'login.local' : 'login.remote';
+    acces.querySelector('.tx').textContent = t(quoi) + (ACCES.ip ? ' · ' + ACCES.ip : '');
+    acces.title = ACCES.relaye ? t('login.proxied.t') : '';
+  } else {
+    acces.hidden = true;
+  }
   const liste = PROFILS.length ? PROFILS : USERS.map((u) => ({ nom: u.nom, photo: u.photo, protege: !!u.pwd }));
   if (liste.length) {
     $('lock-form').hidden = true;
     liste.forEach((u, i) => {
       const p = document.createElement('div');
       p.className = 'lock-p';
+      p.tabIndex = 0;
+      const rond = document.createElement('span');
+      rond.className = 'rond';
       const av = document.createElement('span');
       av.className = 'u-avatar';
       av.style.overflow = 'hidden';
       peindreAvatar(av, u);
+      rond.appendChild(av);
+      if (u.protege) {
+        const cad = document.createElement('span');
+        cad.className = 'cad';
+        cad.textContent = '🔒';
+        cad.title = t('acc.protected');
+        rond.appendChild(cad);
+      }
       const n = document.createElement('span');
       n.className = 'n';
       n.textContent = u.nom;
-      p.appendChild(av);
+      p.appendChild(rond);
       p.appendChild(n);
+      p.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.click(); }
+      });
       p.addEventListener('click', () => {
         PENDING_USER = i;
         if (!u.protege) { seConnecter(u.nom, ''); return; }
@@ -6015,6 +6293,7 @@ async function lireSession() {
     const r = await relayFetch('/api/session', { cache: 'no-store' });
     const j = await r.json();
     PROFILS = Array.isArray(j.profils) ? j.profils : [];
+    ACCES = j.acces || null;
     SESSION_USER = j.utilisateur || null;
     return { serveur: true, installe: !!j.installe };
   } catch (e) {

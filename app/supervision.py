@@ -117,8 +117,18 @@ def sonder_un(app):
 
 
 def etats():
+    """Etat de chaque service, avec la courbe de ses derniers temps de reponse.
+
+    La courbe est deja mesuree pour la moyenne : la joindre ici ne coute qu une
+    liste d entiers, et evite a l interface d inventer une activite qu elle
+    n aurait pas observee."""
     with _lock:
-        return {k: dict(v) for k, v in _etats.items()}
+        sortie = {}
+        for nom, etat in _etats.items():
+            e = dict(etat)
+            e["courbe"] = [v for _, v in _historique.get(nom) or ()]
+            sortie[nom] = e
+        return sortie
 
 
 def historique(nom):
