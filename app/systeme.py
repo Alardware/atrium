@@ -106,30 +106,51 @@ def demarrage():
     return {"secondes": int(secondes), "depuis": int(time.time() - secondes)}
 
 
+_dernier_capteur = {"nom": None}
+
+
 def temperature():
     """Temperature du processeur, en degres. Les noms de capteurs varient d une
     machine a l autre : on prend d abord ceux qui designent explicitement le
     paquet processeur, puis n importe quelle zone thermique credible."""
     candidats = []
     for chemin in glob.glob("/sys/class/hwmon/hwmon*/temp*_input"):
-        etiquette = _lire(chemin.replace("_input", "_label")).strip().lower()
-        nom = _lire(os.path.join(os.path.dirname(chemin), "name")).strip().lower()
-        prioritaire = ("package" in etiquette or "tctl" in etiquette
-                       or nom in ("coretemp", "k10temp", "zenpower", "cpu_thermal"))
-        candidats.append((0 if prioritaire else 1, chemin))
+        etiquette = _lire(chemin.replace("_input", "_label")).strip()
+        nom = _lire(os.path.join(os.path.dirname(chemin), "name")).strip()
+        prioritaire = ("package" in etiquette.lower() or "tctl" in etiquette.lower()
+                       or nom.lower() in ("coretemp", "k10temp", "zenpower", "cpu_thermal"))
+        candidats.append((0 if prioritaire else 1, chemin, etiquette or nom))
     for chemin in glob.glob("/sys/class/thermal/thermal_zone*/temp"):
-        genre = _lire(os.path.join(os.path.dirname(chemin), "type")).strip().lower()
-        candidats.append((0 if "x86_pkg" in genre or "cpu" in genre else 2, chemin))
+        genre = _lire(os.path.join(os.path.dirname(chemin), "type")).strip()
+        g = genre.lower()
+        candidats.append((0 if "x86_pkg" in g or "cpu" in g else 2, chemin, genre))
 
-    for _, chemin in sorted(candidats):
+    for _, chemin, source in sorted(candidats, key=lambda c: (c[0], c[1])):
         brut = _lire(chemin).strip()
         try:
             v = int(brut) / 1000.0
         except ValueError:
             continue
         if 5 <= v <= 125:          # au-dela, ce n est pas une temperature de CPU
+            # Le capteur retenu est rapporte tel quel : « 38 °C » ne dit pas la
+            # meme chose selon qu il vienne du processeur ou d une grappe de
+            # disques, et l interface n a pas a le deviner.
+            _dernier_capteur["nom"] = source or None
             return round(v)
+    _dernier_capteur["nom"] = None
     return None
+
+
+def coeurs():
+    """Nombre de coeurs vus par la machine.
+
+    Depuis un conteneur, os.cpu_count() rapporte ceux de l hote — c est bien ce
+    qu on veut ici : la page decrit la machine, pas la part qu Atrium en a.
+    """
+    try:
+        return os.cpu_count()
+    except Exception:
+        return None
 
 
 def enregistrer(mesure):
@@ -193,5 +214,7 @@ def mesures(chemin_config):
         "memoire": mem,
         "disque": dsk,
         "temperature": temperature(),
+        "capteur": _dernier_capteur["nom"],
+        "coeurs": coeurs(),
         "demarrage": demarrage(),
     }
