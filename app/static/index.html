@@ -175,6 +175,37 @@ summary:focus-visible,[tabindex]:focus-visible{
 /* ---- bandeau des problèmes en cours ---- */
 /* Trois grandeurs, trois anneaux : la charge se lit sans lire les chiffres.
    Le tracé vient des mêmes mesures que les barres qu'il remplace. */
+/* Santé des services : une barre par heure. La couleur dit ce que l'heure a
+   vécu, pas ce qu'elle vaut — vert, aucune sonde en échec ; orange, au moins
+   une ; rouge, la majorité. Une heure sans mesure reste creuse : « pas
+   observé » et « aucune réponse » ne se ressemblent pas. */
+/* Vingt-quatre barres pour cinq services ne tiennent pas dans une carte de
+   trois cent soixante pixels : celle-ci prend la rangée entière. */
+.featured > .cock[data-w="sante"]{flex:1 1 100%;max-width:none}
+.puce-inc{padding:3px 8px;border-radius:6px;background:var(--bad-soft);color:var(--bad-text);
+          font:600 10.5px/1.3 'IBM Plex Mono',monospace;white-space:nowrap}
+.sec-echelle{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3);
+             white-space:nowrap}
+.sante{display:flex;flex-direction:column;gap:0}
+.sante-l{display:grid;grid-template-columns:26px minmax(84px,150px) 1fr auto;
+         align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--divider)}
+.sante-l:first-child{border-top:0}
+.sante-l .nom{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text-2);
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sante-b{display:flex;gap:3px;min-width:0}
+.sante-b i{flex:1 1 0;min-width:3px;height:20px;border-radius:3px;background:var(--ok)}
+.sante-b i.orange{background:var(--warn)}
+.sante-b i.rouge{background:var(--bad)}
+/* Le creux se voit sans se faire passer pour une panne. */
+.sante-b i.creux{background:var(--divider);opacity:.55}
+.sante-pc{font:600 11px/1 'IBM Plex Mono',monospace;color:var(--ok-text);
+          white-space:nowrap;min-width:46px;text-align:right}
+.sante-pc.moyen{color:var(--warn-text)}
+.sante-pc.bas{color:var(--bad-text)}
+.sante-pc.vide{color:var(--muted-3)}
+.sante-pied{display:flex;align-items:baseline;gap:8px;margin-top:11px;
+            font:500 10.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-3)}
+@media (max-width:760px){ .sante-l{grid-template-columns:22px minmax(70px,1fr) 2fr auto;gap:9px} }
 .cock-anneaux{flex:1;display:flex;align-items:center;justify-content:space-around;gap:8px;margin:10px 0 4px;min-height:96px}
 .cock-anneaux:empty{display:none}
 .anneau{display:flex;flex-direction:column;align-items:center;gap:9px}
@@ -2606,6 +2637,21 @@ let HOTE = null;            // mesures de la machine qui héberge Atrium
 let STATS = {};             // chiffres remontés par service, par nom d'app
 let SUPER = { etats: {}, releve: 0,
               alertes: { total: 0, non_lues: 0, problemes: 0, niveau: '', alertes: [] } };
+let HISTO = null;           // disponibilité horaire, servie par /api/historique
+let HISTO_A = 0;            // instant du dernier chargement
+
+/* L'historique change d'une heure à l'autre, pas d'un cycle à l'autre : le
+   redemander toutes les trente secondes n'apprendrait rien. Cinq minutes
+   suffisent à voir la barre courante se remplir. */
+async function chargerHistorique() {
+  if (Date.now() - HISTO_A < 300000) return;
+  HISTO_A = Date.now();
+  try {
+    const r = await relayFetch('/api/historique?h=24', { cache: 'no-store' });
+    if (r.ok) { HISTO = await r.json(); renderCockpit(); }
+  } catch (e) { /* le widget reste en attente, il réessaiera */ }
+}
+
 let COCK_HOTE = null;       // machine hôte telle qu'affichée, mesures fusionnées
 let COCK_SRV = [];          // les autres serveurs connus, hors machine hôte
 
@@ -4054,6 +4100,97 @@ const REGISTRE_W = {
     icone: '🎬', cle: 'w.plex', fixe: 'px-card',
     dispo: () => !!appByKind('plex'),
   },
+  sante: {
+    icone: '📶', cle: 'w.sante',
+    /* Sans service surveillé, il n'y a rien à tracer. */
+    dispo: () => apps.some((a) => a.url),
+    large: true,
+    rendre(carte) {
+      if (!HISTO) { chargerHistorique(); return true; }
+      const noms = Object.keys(HISTO.services || {});
+      if (!noms.length) return false;
+
+      /* Le gabarit a déjà posé l'icône et le titre : on ne complète que la
+         ligne d'entête, avec le nombre d'incidents et l'échelle. */
+      const total = noms.reduce((n, k) => n + (HISTO.services[k].incidents || 0), 0);
+      const ligne = carte.querySelector('.chip-row');
+      if (total) {
+        const p = document.createElement('span');
+        p.className = 'puce-inc';
+        p.textContent = t(total > 1 ? 'sante.incidents' : 'sante.incident', { n: total });
+        ligne.appendChild(p);
+      }
+      const ech = document.createElement('span');
+      ech.className = 'sec-echelle';
+      ech.textContent = t('sante.echelle', { n: HISTO.heures });
+      ligne.appendChild(ech);
+
+      const zone = document.createElement('div');
+      zone.className = 'sante';
+      /* Les services qui vont le moins bien en premier : c'est ce qu'on vient
+         chercher. À égalité, l'ordre de la configuration. */
+      noms.sort((a, b) => (HISTO.services[a].dispo == null ? 101 : HISTO.services[a].dispo)
+                        - (HISTO.services[b].dispo == null ? 101 : HISTO.services[b].dispo));
+      noms.forEach((nom) => {
+        const r = HISTO.services[nom];
+        const app = apps.find((a) => a.nom === nom);
+        const l = document.createElement('div');
+        l.className = 'sante-l';
+
+        const chip = document.createElement('span');
+        chip.className = 'logo-chip s26';
+        const cl = document.createElement('span');
+        cl.className = 'cl';
+        cl.textContent = (nom[0] || '?').toUpperCase();
+        chip.appendChild(cl);
+        if (app) mountLogo(chip, logoDe(app));
+
+        const n = document.createElement('span');
+        n.className = 'nom';
+        n.textContent = nom;
+
+        const barres = document.createElement('span');
+        barres.className = 'sante-b';
+        r.seaux.forEach((seau, i) => {
+          const b = document.createElement('i');
+          const recul = r.seaux.length - 1 - i;
+          if (!seau) {
+            b.className = 'creux';
+            b.title = t('sante.creux', { q: t('sante.ilya', { n: recul }) });
+          } else {
+            const [sondes, echecs] = seau;
+            if (echecs * 2 > sondes) b.className = 'rouge';
+            else if (echecs) b.className = 'orange';
+            b.title = t('sante.detail',
+                        { q: t('sante.ilya', { n: recul }), e: echecs, s: sondes });
+          }
+          barres.appendChild(b);
+        });
+
+        const pc = document.createElement('span');
+        pc.className = 'sante-pc ' + (r.dispo == null ? 'vide'
+          : r.dispo >= 99 ? '' : r.dispo >= 95 ? 'moyen' : 'bas');
+        pc.textContent = r.dispo == null ? '—' : r.dispo + ' %';
+        /* Une disponibilité sur trois heures ne se présente pas comme une
+           disponibilité sur vingt-quatre. */
+        pc.title = r.heures < HISTO.heures
+          ? t('sante.partiel', { n: r.heures }) : t('sante.complet', { n: r.heures });
+
+        l.appendChild(chip);
+        l.appendChild(n);
+        l.appendChild(barres);
+        l.appendChild(pc);
+        zone.appendChild(l);
+      });
+      carte.appendChild(zone);
+
+      const pied = document.createElement('div');
+      pied.className = 'sante-pied';
+      pied.textContent = t('sante.pied');
+      carte.appendChild(pied);
+      return true;
+    },
+  },
   alertes: {
     icone: '🚨', cle: 'w.alertes',
     dispo: () => true,
@@ -4194,7 +4331,7 @@ const REGISTRE_W = {
     },
   },
 };
-const WIDGETS_DEFAUT = ['media', 'maison', 'serveur', 'plex'];
+const WIDGETS_DEFAUT = ['media', 'maison', 'serveur', 'plex', 'sante'];
 const CARTES_FIXES = ['np-card', 'haw-card', 'srv-card', 'px-card'];
 
 /* ---------- disposition automatique ----------

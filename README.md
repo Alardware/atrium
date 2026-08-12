@@ -21,6 +21,12 @@ température de grappe à 55 °C mérite un avertissement.
 sans relevés, pas de tendance sans historique assez ancien, pas de barre sans
 échelle. Quand une information n'est pas connue, la page le dit.
 
+**Il se souvient.** La disponibilité de chaque service est conservée heure par
+heure, sur trente jours : deux entiers par service et par heure, une centaine de
+kilo-octets en tout. Le tableau « Santé des services » en montre les
+vingt-quatre dernières, et distingue une heure sans panne d'une heure sans
+mesure — un service ajouté ce matin n'affiche pas « 100 % sur 24 h ».
+
 **Il continue sans vous.** Les mesures sont prises par le serveur, jamais par le
 navigateur : l'état reste connu même sans onglet ouvert, et un rechargement
 n'attend aucun appel réseau.
@@ -132,8 +138,10 @@ liste des conteneurs disparaît.
 | `TZ` | — | Fuseau horaire |
 | `ATRIUM_DEBUG` | — | Journalise les requêtes si défini |
 
-La configuration (applications, utilisateurs, clés) est stockée dans
-`/config/atrium.json` — montez ce volume pour la conserver entre deux mises à jour.
+Le dossier `/config` contient `atrium.json` (applications, utilisateurs, clés),
+`sessions.json`, `journal.json` (connexions refusées, sept jours) et
+`historique.json` (disponibilité horaire, trente jours). Montez ce volume pour
+les conserver entre deux mises à jour.
 
 ## Intégrations
 

@@ -27,6 +27,7 @@ import urllib.request
 
 import auth
 import conteneurs
+import historique
 import reseau
 import services
 import supervision
@@ -47,6 +48,7 @@ DEMARRE = time.time()
 SESSIONS = auth.Sessions(SESSION_FILE)
 LIMITEUR = auth.Limiteur()
 JOURNAL = auth.Journal(os.path.join(CONFIG_DIR, "journal.json"))
+HISTO = historique.Historique(os.path.join(CONFIG_DIR, "historique.json"))
 
 FORWARD_HEADERS = ("x-api-key", "authorization", "content-type", "accept", "x-plex-token")
 CORPS_MAX = 8 * 1024 * 1024      # au-dela, la requete est refusee
@@ -134,7 +136,15 @@ _deja_lu = set()   # services ayant deja livre leurs donnees au moins une fois
 def _collecter():
     cfg = charger_config()
     apps = cfg.get("apps") or []
-    supervision.sonder_apps(apps)
+    etats_sondes = supervision.sonder_apps(apps)
+    # Seuls les services reellement surveilles entrent dans l historique : une
+    # fiche sans adresse n est pas « hors ligne », elle n est pas sondee.
+    noms = {a.get("nom") for a in apps if a.get("nom") and (a.get("url") or "").strip()}
+    for nom in noms:
+        e = etats_sondes.get(nom)
+        if e:
+            HISTO.noter(nom, e.get("en_ligne"))
+    HISTO.oublier(noms)
     hote = systeme.mesures(CONFIG_DIR)
     systeme.enregistrer(hote)
     etats = supervision.etats()
@@ -371,6 +381,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/securite":
             if self.exiger_session():
                 self.securite_get()
+        elif route == "/api/historique":
+            if self.exiger_session():
+                self.historique_get()
         elif route == "/api/diagnostic":
             if self.exiger_session():
                 self.diagnostic_get()
@@ -484,6 +497,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         _conteneurs["a"] = 0          # le tableau doit repartir d'une lecture fraiche
         code = 200 if ok else (503 if "socket" in msg else 502)
         self.reply(code, json.dumps({"ok": ok, "error": msg}, ensure_ascii=False).encode())
+
+    def historique_get(self):
+        """Disponibilite horaire des services surveilles.
+
+        Le nombre d heures demande est borne : la retention est de trente
+        jours, reclamer davantage ne rendrait que des seaux vides.
+        """
+        try:
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            heures = int(q.get("h", ["24"])[0])
+        except (ValueError, TypeError):
+            heures = 24
+        heures = max(1, min(heures, historique.RETENTION))
+        cfg = self.lire_config()
+        noms = [a.get("nom") for a in (cfg.get("apps") or [])
+                if a.get("nom") and (a.get("url") or "").strip()]
+        self.reply(200, json.dumps({
+            "heures": heures,
+            "services": {n: HISTO.resume(n, heures) for n in noms},
+        }, ensure_ascii=False).encode())
 
     def securite_get(self):
         """Etat de securite reel, tel que le serveur peut le constater.
