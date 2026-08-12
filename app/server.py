@@ -43,6 +43,7 @@ CONFIG_DIR = os.path.abspath(os.environ.get("ATRIUM_CONFIG_DIR", _default_cfg))
 CONFIG_FILE = os.path.join(CONFIG_DIR, "atrium.json")
 SESSION_FILE = os.path.join(CONFIG_DIR, "sessions.json")
 
+DEMARRE = time.time()
 SESSIONS = auth.Sessions(SESSION_FILE)
 LIMITEUR = auth.Limiteur()
 JOURNAL = auth.Journal(os.path.join(CONFIG_DIR, "journal.json"))
@@ -55,6 +56,22 @@ def host_allowed(url):
     """N'autorise le relais que vers le reseau local. La decision porte sur
     l'adresse resolue : voir reseau.py."""
     return reseau.autorise(url)
+
+
+def memoire_atrium():
+    """Memoire residente du processus, en octets, ou None hors Linux.
+
+    C est la consommation d Atrium lui-meme, pas celle de la machine : la page
+    « A propos » decrit l application, la page Serveurs decrit l hote.
+    """
+    try:
+        with open("/proc/self/status", "r") as f:
+            for ligne in f:
+                if ligne.startswith("VmRSS:"):
+                    return int(ligne.split()[1]) * 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
 
 
 def charger_config():
@@ -564,6 +581,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                          "joignables": joignables, "total": avec_url},
             "releve": _releve["a"],
             "cycle": CYCLE,
+            # Description de l installation : tout est constate ici, rien n est
+            # demande a l exterieur. Une version « a jour » supposerait
+            # d interroger Internet, ce que le relais s interdit — la page
+            # renvoie donc vers les publications plutot que de l affirmer.
+            "installe": {
+                "demarre": DEMARRE,
+                "memoire": memoire_atrium(),
+                "port": PORT,
+                "config_dir": CONFIG_DIR,
+                "fuseau": time.strftime("%Z"),
+                "fuseau_nom": os.environ.get("TZ", ""),
+                "reseaux": list(reseau.NOMS_AUTORISES),
+                "image": os.environ.get("ATRIUM_IMAGE", ""),
+                "conteneur": os.path.exists("/.dockerenv"),
+                "python": "%d.%d.%d" % sys.version_info[:3],
+                "apps": len(apps),
+                "integrations": sum(1 for a in apps
+                                    if (a.get("type") or services.deviner_type(a.get("nom") or ""))
+                                    in widgets.REGISTRE),
+            },
         }, ensure_ascii=False).encode())
 
     def supervision_get(self):

@@ -310,11 +310,12 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .np-body{display:flex;flex-direction:column;flex:1;min-width:0}
 .chip-row{display:flex;align-items:center;gap:8px}
-.logo-chip{position:relative;flex:none;border-radius:7px;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.logo-chip{position:relative;flex:none;overflow:hidden;border-radius:7px;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
 .logo-chip.s26{width:26px;height:26px}
 .logo-chip.s34{width:34px;height:34px;border-radius:9px;font-size:13px}
 .logo-chip.s40{width:40px;height:40px;border-radius:10px;font-size:15px}
-.logo-chip img{position:absolute;inset:0;margin:auto;object-fit:contain}
+.logo-chip img{position:absolute;inset:0;margin:auto;object-fit:contain;
+               max-width:100%;max-height:100%}
 .logo-chip.s26 img{width:16px;height:16px}
 .logo-chip.s34 img{width:21px;height:21px}
 .logo-chip.s40 img{width:24px;height:24px}
@@ -666,9 +667,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .sess-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .sess-tx span{font:500 11px/1.45 'IBM Plex Mono',monospace;color:var(--muted)}
 .sess-eti{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
-.about-l{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
-.about-l:first-child{border-top:0;padding-top:0}
-.about-l b{font:600 12.5px/1.35 'IBM Plex Mono',monospace;color:var(--text)}
 
 /* densité et animations, choisies dans Apparence */
 :root[data-densite="compact"]{--densite:.82}
@@ -846,7 +844,11 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .vign.duo{background:linear-gradient(115deg,#131a24 0 50%,#f4f6fa 50% 100%)}
 .vign.duo .b{background:linear-gradient(115deg,#0c1119 0 100%)}
 .vign.duo .c{background:linear-gradient(115deg,#28313f 0 46%,#cfd6e2 46% 100%)}
-.look-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
+.look-cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:26px;align-items:start}
+.look-col .opt-row{flex-wrap:wrap;row-gap:11px}
+.look-col .opt-tx{flex:1 1 190px}
+.look-col .seg,.look-col .modes,.look-col .palette{flex:0 0 auto;max-width:100%}
+.look-col .seg{flex-wrap:wrap}
 .look-col{display:flex;flex-direction:column}
 .look-apercu{position:sticky;top:0}
 .ap-l,.ap-note{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
@@ -861,12 +863,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .ap-grille{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .ap-tuile{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .ap-tuile .h{display:flex;align-items:center;gap:7px;font:700 11px/1 'Plus Jakarta Sans',sans-serif}
-.ap-tuile .p{width:13px;height:13px;border-radius:4px;flex:none}
+.ap-tuile .p{width:14px;height:14px;border-radius:4px;flex:none;border:0;background:var(--subtle)}
+.ap-tuile .p img{width:11px;height:11px}
 .ap-tuile .ch{display:flex;gap:6px;margin-top:9px}
 .ap-tuile .ch span{flex:1;padding:5px 0;border-radius:6px;background:var(--subtle);text-align:center;
                    font:700 10.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
 .ap-tuile .tr{height:2px;margin-top:9px;border-radius:2px;background:var(--accent);opacity:.75}
-@media (max-width:1080px){ .look-cols{grid-template-columns:1fr} .look-apercu{position:static} }
+@media (max-width:1180px){ .look-cols{grid-template-columns:1fr} .look-apercu{position:static} }
 /* L'identité n'est plus un champ parmi d'autres : elle a sa carte, et les
    réglages modifiables sont regroupés dessous, derrière une barre qui dit
    clairement s'il reste quelque chose à enregistrer. */
@@ -934,6 +937,67 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-nav button .q{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
 .spage-nav button .q:empty{display:none}
 .spage-nav button.on .q{color:var(--muted-2)}
+/* Langue : chaque ligne montre ce que le choix change concrètement. */
+.lang-list{display:flex;flex-direction:column;gap:8px}
+.lang-l{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;
+        border:1.5px solid var(--border-2);background:var(--surface-2);cursor:pointer;
+        transition:border-color .13s}
+.lang-l:hover{border-color:var(--muted-3)}
+.lang-l.on{border-color:var(--accent);background:var(--accent-soft)}
+.lang-l .code{width:34px;height:30px;border-radius:7px;display:grid;place-items:center;flex:none;
+              background:var(--surface);border:1px solid var(--border);
+              font:700 10.5px/1 'IBM Plex Mono',monospace;color:var(--text-2);letter-spacing:.05em}
+.lang-l.on .code{border-color:var(--accent);color:var(--accent)}
+.lang-l .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.lang-l .tx b{font:600 13px/1.2 'Plus Jakarta Sans',sans-serif}
+.lang-l .tx span{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.lang-l .demo{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3);
+              white-space:nowrap}
+.lang-l .coche{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+               background:var(--accent);color:var(--on-accent);font-size:11px}
+.note-card{display:flex;gap:12px;padding:15px 17px;border-radius:12px;
+           border:1px solid var(--border);background:var(--surface)}
+.note-card .ic{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
+               background:var(--subtle);color:var(--muted-2);
+               font:700 11px/1 'Plus Jakarta Sans',sans-serif}
+.note-card .tx{display:flex;flex-direction:column;gap:5px}
+.note-card .tx b{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif}
+.note-card .tx span{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+/* À propos : l'application se décrit, sans rien demander à l'extérieur. */
+.ap-tete{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;
+         border:1px solid var(--border);background:var(--surface)}
+.ap-tete .marque{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+                 background:var(--subtle);border:1px solid var(--border)}
+.ap-tete .marque svg{width:30px;height:30px}
+.ap-tete .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ap-tete .nom{display:flex;align-items:center;gap:9px;
+              font:700 19px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.ap-tete .ver{padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
+              font:700 11px/1.3 'IBM Plex Mono',monospace}
+.ap-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.ap-tete .btn-sm{margin-left:auto;flex:none}
+.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:22px}
+.ap-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.ap-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
+.ap-t .v{margin-top:9px;font:700 19px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.ap-t .d{margin-top:5px;font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.ap-r{display:flex;align-items:center;gap:14px;padding:11px 0;border-top:1px solid var(--divider)}
+.ap-r:first-child{border-top:0;padding-top:0}
+.ap-r .l{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
+.ap-r .v{margin-left:auto;font:500 11.5px/1.4 'IBM Plex Mono',monospace;color:var(--muted-2);
+         text-align:right;word-break:break-all}
+.ap-r .cp{flex:none;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+          border:1px solid var(--border-2);background:var(--surface-2);color:var(--muted-2);
+          font-size:11px;transition:border-color .13s,color .13s}
+.ap-r .cp:hover{border-color:var(--accent);color:var(--accent)}
+.ap-liens{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:22px}
+.ap-lien{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;
+         border:1px solid var(--border);background:var(--surface);transition:border-color .13s}
+.ap-lien:hover{border-color:var(--accent)}
+.ap-lien .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ap-lien .tx b{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif}
+.ap-lien .tx span{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.ap-lien .fl{margin-left:auto;color:var(--muted-3);font-size:13px}
 .conn-bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
 .conn-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .conn-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
@@ -959,7 +1023,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .conn-d .btn-sm{margin-left:auto}
 .conn-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .conn-row .cr-nom{flex:1;min-width:0;font:600 13px/1.2 'Plus Jakarta Sans',sans-serif;color:var(--text)}
-.about-txt{font:500 12.5px/1.7 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:2px 5px;border-radius:4px}
 
 /* premier lancement */
@@ -1887,10 +1950,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <div class="sp-lead" data-i18n="set.lang.lead">Langue de l'interface, propre à cet appareil.</div>
         </div>
         <div class="scard">
-          <h4 data-i18n="set.lang">Langue</h4>
+          <h4><span data-i18n="lang.ui">Langue de l'interface</span>
+            <span class="aide" data-i18n="lang.now">appliqué immédiatement</span></h4>
           <div class="scard-body">
-            <div class="users-list" id="lang-list"></div>
+            <div class="lang-list" id="lang-list"></div>
           </div>
+        </div>
+        <div class="note-card" style="margin-top:22px">
+          <span class="ic">i</span>
+          <span class="tx"><b data-i18n="lang.formats">Formats régionaux</b>
+            <span data-i18n="lang.formats.d">Heure, dates, températures et unités de débit suivent la langue choisie. Les noms des services (Plex, Sonarr…) ne sont jamais traduits.</span></span>
         </div>
       </section>
 
@@ -1898,27 +1967,38 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <section class="spanel sp-inner" id="sp-about" hidden>
         <div class="sp-head">
           <div class="sp-title" data-i18n="set.about">À propos</div>
-          <div class="sp-lead" id="about-lead"></div>
+          <div class="sp-lead" data-i18n="about.sub">Tableau de bord auto-hébergé. Application autonome : chaque intégration est optionnelle.</div>
         </div>
-        <div class="scard">
+
+        <div class="ap-tete">
+          <span class="marque" id="about-marque"></span>
+          <span class="tx">
+            <span class="nom">Atrium <b class="ver" id="about-ver">—</b></span>
+            <span class="sous" id="about-lead"></span>
+          </span>
+          <a class="btn-sm" id="about-notes" target="_blank" rel="noopener"
+             href="https://github.com/Alardware/atrium/releases" data-i18n="about.releases">Voir les versions</a>
+        </div>
+
+        <div class="ap-tuiles" id="about-tuiles"></div>
+
+        <div class="scard" style="margin-top:22px">
+          <h4 data-i18n="about.install">Installation</h4>
+          <div class="scard-body" id="about-install"></div>
+        </div>
+
+        <div class="scard" style="margin-top:22px">
           <h4 data-i18n="about.checks">Vérifications</h4>
           <div class="scard-body" id="about-checks"></div>
         </div>
-        <div class="scard" style="margin-top:22px">
-          <h4 data-i18n="about.system">Système</h4>
-          <div class="scard-body" id="about-sys"></div>
-        </div>
-        <div class="scard" style="margin-top:22px">
-          <h4 data-i18n="about.how">Fonctionnement</h4>
-          <div class="scard-body">
-            <div class="about-txt">
-              Application autonome : un conteneur sert l'interface, stocke la configuration et relaie les appels vers les API de vos services.<br><br>
-              <b>Intégrations disponibles</b><br>
-              Plex (sessions en cours) · Unraid (CPU, RAM, grappe) · UniFi (routeur, clients) · Home Assistant (domotique, lecteurs, mises à jour) · sonde HTTP pour l'état en ligne de n'importe quelle application.<br><br>
-              Dépôt : <a href="https://github.com/Alardware/atrium" target="_blank" rel="noopener">github.com/Alardware/atrium</a> ·
-              <a href="https://github.com/Alardware/atrium/issues" target="_blank" rel="noopener" data-i18n="about.issue">Signaler un problème</a>
-            </div>
-          </div>
+
+        <div class="ap-liens">
+          <a class="ap-lien" href="https://github.com/Alardware/atrium" target="_blank" rel="noopener">
+            <span class="tx"><b data-i18n="about.repo">Dépôt GitHub</b><span>Alardware/atrium</span></span><span class="fl">↗</span></a>
+          <a class="ap-lien" href="https://github.com/Alardware/atrium/releases" target="_blank" rel="noopener">
+            <span class="tx"><b data-i18n="about.changelog">Journal des versions</b><span data-i18n="about.changelog.d">nouveautés et correctifs</span></span><span class="fl">↗</span></a>
+          <a class="ap-lien" href="https://github.com/Alardware/atrium/issues/new" target="_blank" rel="noopener">
+            <span class="tx"><b data-i18n="about.lien.issue">Signaler un problème</b><span data-i18n="about.lien.issue.d">ouvrir un ticket</span></span><span class="fl">↗</span></a>
         </div>
       </section>
     </div>
@@ -6024,26 +6104,89 @@ $('sess-fermer').addEventListener('click', () => {
 
 /* ---------- À propos ---------- */
 async function renderAPropos() {
-  const checks = $('about-checks');
-  const sys = $('about-sys');
-  checks.textContent = '';
-  sys.textContent = '';
   let d = null;
   try {
     const r = await relayFetch('/api/diagnostic', { cache: 'no-store' });
     if (r.ok) d = await r.json();
-  } catch (e) { /* rien : on l'annonce ci-dessous */ }
-  /* l'entête ne dépend pas du diagnostic : sans lui, la page garde son titre */
-  const tete = $('about-lead');
-  tete.textContent = '';
-  const av = document.createElement('span');
-  av.id = 'about-ver';
-  av.textContent = d ? d.version : '—';
-  const parts = t('about.lead').split('{v}');
-  tete.appendChild(document.createTextNode(parts[0]));
-  tete.appendChild(av);
-  tete.appendChild(document.createTextNode(parts[1] || ''));
+  } catch (e) { /* annoncé plus bas */ }
 
+  /* La marque reprend le logo de l'écran de verrouillage, sans le dupliquer :
+     un clone suffit. */
+  const marque = $('about-marque');
+  marque.textContent = '';
+  const logo = $('lock').querySelector('.lock-logo svg');
+  if (logo) marque.appendChild(logo.cloneNode(true));
+
+  $('about-ver').textContent = d ? d.version : '—';
+  const inst = (d && d.installe) || {};
+  $('about-lead').textContent = d
+    ? [t('about.napps', { n: inst.apps || 0 }),
+       t('about.nint', { n: inst.integrations || 0 }),
+       t('about.nsrv', { n: 1 + (COCK_SRV || []).length })].join(' · ')
+    : t('about.fail');
+
+  /* --- tuiles --- */
+  const tz = $('about-tuiles');
+  tz.textContent = '';
+  const carreau = (lab, val, det) => {
+    const c = document.createElement('div');
+    c.className = 'ap-t';
+    const l = document.createElement('div'); l.className = 'l'; l.textContent = lab;
+    const v = document.createElement('div'); v.className = 'v'; v.textContent = val;
+    const dd = document.createElement('div'); dd.className = 'd'; dd.textContent = det;
+    c.appendChild(l); c.appendChild(v); c.appendChild(dd);
+    tz.appendChild(c);
+  };
+  if (d) {
+    carreau(t('about.t.version'), d.version, t('about.t.version.d'));
+    carreau(t('about.uptime'), inst.demarre ? duree(Date.now() / 1000 - inst.demarre) : '—',
+            t('about.uptime.d'));
+    /* La mémoire n'est lisible que sous Linux : ailleurs, on le dit. */
+    carreau(t('about.mem'), inst.memoire != null ? octets(inst.memoire) : '—',
+            inst.memoire != null ? t('about.mem.d') : t('about.mem.no'));
+    carreau(t('about.t.cycle'), d.cycle + ' s', t('about.t.cycle.d'));
+  }
+
+  /* --- installation --- */
+  const iz = $('about-install');
+  iz.textContent = '';
+  const rangee = (lab, val, copiable) => {
+    if (!val) return;
+    const r = document.createElement('div');
+    r.className = 'ap-r';
+    const l = document.createElement('span'); l.className = 'l'; l.textContent = lab;
+    const v = document.createElement('span'); v.className = 'v'; v.textContent = val;
+    r.appendChild(l); r.appendChild(v);
+    if (copiable) {
+      const b = document.createElement('button');
+      b.className = 'cp';
+      b.type = 'button';
+      b.textContent = '⧉';
+      b.title = t('qm.copy');
+      b.addEventListener('click', () => copier(val));
+      r.appendChild(b);
+    }
+    iz.appendChild(r);
+  };
+  if (d) {
+    rangee(t('about.row.cfg'), d.config.chemin, true);
+    rangee(t('about.port'), String(inst.port || ''), true);
+    rangee(t('about.tz'), inst.fuseau_nom || inst.fuseau || '', true);
+    /* Les réseaux du relais : ceux ajoutés par variable d'environnement, sinon
+       la règle par défaut. On nomme la règle, on n'invente pas de préfixes. */
+    rangee(t('about.nets'),
+           (inst.reseaux && inst.reseaux.length) ? inst.reseaux.join(' · ') : t('about.nets.d'),
+           false);
+    rangee(t('about.runtime'),
+           (inst.conteneur ? t('about.rt.docker') : t('about.bare')) + ' · Python ' + (inst.python || ''),
+           false);
+    if (inst.image) rangee(t('about.image'), inst.image, true);
+    rangee(t('about.licence'), 'MIT', false);
+  }
+
+  /* --- vérifications --- */
+  const checks = $('about-checks');
+  checks.textContent = '';
   if (!d) {
     const v = clone('tpl-empty');
     v.textContent = t('about.fail');
@@ -6067,63 +6210,70 @@ async function renderAPropos() {
     r.appendChild(tx);
     checks.appendChild(r);
   };
-  ligne('about.cfg', d.config.ok,
-        d.config.ok ? d.config.chemin : t('about.cfg.ko'));
+  ligne('about.cfg.w', d.config.ok,
+        t(d.config.ok ? 'about.cfg.ok' : 'about.cfg.ko', { q: d.config.chemin }));
   ligne('about.mesures', d.mesures.ok,
         t(d.mesures.ok ? 'about.mesures.ok' : 'about.mesures.ko'));
-  ligne('about.services', d.services.ok,
-        t('about.services.d', { n: d.services.joignables, total: d.services.total }));
   ligne('about.docker', d.docker.ok,
         t(d.docker.ok ? 'about.docker.ok' : 'about.docker.ko'));
-
-  const info = (lab, val) => {
-    const r = document.createElement('div');
-    r.className = 'about-l';
-    const l = document.createElement('span');
-    l.textContent = lab;
-    const b = document.createElement('b');
-    b.textContent = val;
-    r.appendChild(l);
-    r.appendChild(b);
-    sys.appendChild(r);
-  };
-  info(t('about.version'), d.version);
-  info(t('about.storage'), t('about.storage.d'));
-  info(t('about.cycle'), t('about.cycle.d', { n: d.cycle }));
-  info(t('about.last'), d.releve ? age(d.releve) : '—');
+  ligne('about.services', d.services.ok,
+        t('about.services.d', { n: d.services.joignables, total: d.services.total }));
+  ligne('about.last', !!d.releve, d.releve ? age(d.releve) : '—');
 }
 
 /* ---------- langue ---------- */
 const LANGUES = [
-  { code: 'fr', drapeau: '🇫🇷', nom: 'Français' },
-  { code: 'en', drapeau: '🇬🇧', nom: 'English' },
+  { code: 'fr', drapeau: '🇫🇷', nom: 'Français', region: 'France', locale: 'fr-FR' },
+  { code: 'en', drapeau: '🇬🇧', nom: 'English', region: 'United Kingdom', locale: 'en-GB' },
 ];
 function renderLangues() {
   const l = $('lang-list');
   if (!l) return;
   l.textContent = '';
+  /* Chaque ligne montre ce que le choix change vraiment : l'heure, la date et
+     la température telles qu'elles s'écriront. Le nom de la langue seul ne dit
+     pas qu'on passe de 22 °C à 72 °F. */
+  const maintenant = new Date();
   LANGUES.forEach((L) => {
     const row = document.createElement('div');
-    row.className = 'user-row' + (i18n.langue === L.code ? ' actif' : '');
-    const d = document.createElement('span');
-    d.style.fontSize = '19px';
-    d.textContent = L.drapeau;
-    const n = document.createElement('span');
-    n.className = 'u-nom';
-    n.textContent = L.nom;
-    row.appendChild(d);
-    row.appendChild(n);
+    row.className = 'lang-l' + (i18n.langue === L.code ? ' on' : '');
+    row.tabIndex = 0;
+    const c = document.createElement('span');
+    c.className = 'code';
+    c.textContent = L.code.toUpperCase();
+    const tx = document.createElement('span');
+    tx.className = 'tx';
+    const b = document.createElement('b');
+    b.textContent = L.nom;
+    const sous = document.createElement('span');
+    sous.textContent = L.region + ' · ' + L.locale;
+    tx.appendChild(b);
+    tx.appendChild(sous);
+    const demo = document.createElement('span');
+    demo.className = 'demo';
+    demo.textContent = [
+      maintenant.toLocaleTimeString(L.locale, { hour: '2-digit', minute: '2-digit' }),
+      maintenant.toLocaleDateString(L.locale),
+      L.code === 'en' ? '72 °F' : '22 °C',
+    ].join(' · ');
+    row.appendChild(c);
+    row.appendChild(tx);
+    row.appendChild(demo);
     if (i18n.langue === L.code) {
-      const b = document.createElement('span');
-      b.className = 'u-actif';
-      b.textContent = '✓';
-      row.appendChild(b);
+      const ok = document.createElement('span');
+      ok.className = 'coche';
+      ok.textContent = '✓';
+      row.appendChild(ok);
     }
-    row.addEventListener('click', () => {
+    const choisir = () => {
       i18n.langue = L.code;
       refresh();
       renderLive();
       spNav('lang');
+    };
+    row.addEventListener('click', choisir);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choisir(); }
     });
     l.appendChild(row);
   });
