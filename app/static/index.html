@@ -6057,13 +6057,40 @@ const PALIERS_VERROU = [0, 5, 15, 60];
 let VERROU_MIN = parseInt(store.get('verrou') || '0', 10) || 0;
 let VERROU_T = null;
 
+/* Verrouiller, c'est fermer la session — pas poser un rideau devant.
+
+   Le premier jet se contentait d'afficher l'écran de profils : la session du
+   serveur restait ouverte, et un simple rechargement de page ramenait au
+   tableau de bord sans redemander quoi que ce soit. Un verrou qu'une touche F5
+   défait n'est pas un verrou, et l'appeler ainsi dans une page nommée Sécurité
+   était le plus grave des deux défauts.
+
+   La marque déposée localement couvre le cas où la requête n'aboutit pas
+   (réseau coupé, serveur en cours de redémarrage) : au prochain chargement,
+   l'écran de profils s'impose quand même et la fermeture est retentée. Elle ne
+   remplace pas la fermeture côté serveur — n'importe qui peut vider un
+   stockage local — elle évite seulement que la panne d'une requête laisse la
+   session ouverte à l'écran. */
+const MARQUE_VERROU = 'verrouille';
+
+async function verrouiller() {
+  clearTimeout(VERROU_T);
+  store.set(MARQUE_VERROU, '1');
+  SESSION_USER = null;
+  ACTIVE = '';
+  $('spage').hidden = true;
+  $('srvpage').hidden = true;
+  $('lock').hidden = false;
+  renderLockUi();
+  try { await relayFetch('/api/logout', { method: 'POST' }); } catch (e) {
+    /* réessayé au prochain chargement grâce à la marque */
+  }
+}
+
 function armerVerrou() {
   clearTimeout(VERROU_T);
   if (!VERROU_MIN || !SESSION_USER) return;
-  VERROU_T = setTimeout(() => {
-    $('lock').hidden = false;
-    renderLockUi();
-  }, VERROU_MIN * 60000);
+  VERROU_T = setTimeout(verrouiller, VERROU_MIN * 60000);
 }
 ['pointerdown', 'keydown', 'wheel'].forEach((ev) =>
   document.addEventListener(ev, armerVerrou, { passive: true }));
@@ -7150,6 +7177,7 @@ async function seConnecter(nom, motdepasse) {
     }
     SESSION_USER = j.utilisateur;
     ACTIVE = j.utilisateur;
+    store.set(MARQUE_VERROU, '');
     store.set('activeUser', ACTIVE);
     $('lock').hidden = true;
     lockErr('');
@@ -7163,6 +7191,17 @@ async function seConnecter(nom, motdepasse) {
     lockErr(t('login.unreachable'));
   }
 }
+/* Une session laissée ouverte par un verrouillage qui n'a pas pu aboutir doit
+   être fermée avant toute chose : sans cela, le rechargement la ressusciterait.
+   Le contrôle a lieu dès la lecture de la session, avant que quoi que ce soit
+   ne décide d'afficher le tableau de bord. */
+function honorerVerrou() {
+  if (store.get(MARQUE_VERROU, '') !== '1' || !SESSION_USER) return;
+  SESSION_USER = null;
+  ACTIVE = '';
+  relayFetch('/api/logout', { method: 'POST' }).catch(() => {});
+}
+
 function applyLock() {
   /* n'affiche l'écran que si le serveur exige une session */
   const besoin = !SESSION_USER && (PROFILS.length > 0);
@@ -7449,6 +7488,7 @@ async function lireSession() {
   i18n.appliquer();          // langue du navigateur, ou celle choisie
   renderAvatar();
   const etat = await lireSession();
+  honorerVerrou();
   $('boot').hidden = true;
 
   if (etat.serveur && !etat.installe) {
