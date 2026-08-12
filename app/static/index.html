@@ -651,7 +651,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .etat-tx span{font:500 11.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .opt-row{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--divider)}
 .opt-row:first-child{border-top:0;padding-top:0}
-.opt-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.opt-tx{flex:1;min-width:0;max-width:62ch;display:flex;flex-direction:column;gap:3px}
 .opt-tx b{font:600 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text)}
 .opt-tx span{font:500 11.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .bouton-bascule{width:42px;height:24px;border-radius:99px;background:var(--track);border:1px solid var(--border-2);position:relative;flex:none;transition:background .15s,border-color .15s}
@@ -788,9 +788,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srv-note code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:2px 5px;border-radius:4px}
 .health-head{cursor:pointer}
 .health-head:hover{color:var(--accent)}
-.sp-inner{max-width:680px;padding:30px 34px 60px}
+.sp-inner{max-width:1120px;padding:30px 36px 60px}
+/* Apparence tient deux colonnes de front : elle a besoin de plus. */
+#sp-look .sp-inner{max-width:1420px}
+/* Le texte, lui, garde une mesure lisible : une description étalée sur mille
+   pixels se lit mal, même quand la carte, elle, profite de la place. */
 .sp-title{font:700 21px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em}
-.sp-lead{margin-top:6px;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
+.sp-lead{margin-top:6px;max-width:78ch;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .sp-head{margin-bottom:24px}
 .spanel{max-width:620px;display:flex;flex-direction:column;gap:22px}
 .spanel h4{margin:10px 0 0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
@@ -848,7 +852,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .look-col .opt-row{flex-wrap:wrap;row-gap:11px}
 .look-col .opt-tx{flex:1 1 190px}
 .look-col .seg,.look-col .modes,.look-col .palette{flex:0 0 auto;max-width:100%}
-.look-col .seg{flex-wrap:wrap}
+.look-col .seg{flex-wrap:nowrap}
 .look-col{display:flex;flex-direction:column}
 .look-apercu{position:sticky;top:0}
 .ap-l,.ap-note{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
@@ -869,7 +873,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .ap-tuile .ch span{flex:1;padding:5px 0;border-radius:6px;background:var(--subtle);text-align:center;
                    font:700 10.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
 .ap-tuile .tr{height:2px;margin-top:9px;border-radius:2px;background:var(--accent);opacity:.75}
-@media (max-width:1180px){ .look-cols{grid-template-columns:1fr} .look-apercu{position:static} }
+@media (max-width:1080px){ .look-cols{grid-template-columns:1fr} .look-apercu{position:static} }
 /* L'identité n'est plus un champ parmi d'autres : elle a sa carte, et les
    réglages modifiables sont regroupés dessous, derrière une barre qui dit
    clairement s'il reste quelque chose à enregistrer. */
@@ -976,7 +980,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
               font:700 11px/1.3 'IBM Plex Mono',monospace}
 .ap-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .ap-tete .btn-sm{margin-left:auto;flex:none}
-.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:22px}
+.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:22px}
 .ap-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .ap-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
 .ap-t .v{margin-top:9px;font:700 19px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
@@ -998,7 +1002,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .ap-lien .tx b{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif}
 .ap-lien .tx span{font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .ap-lien .fl{margin-left:auto;color:var(--muted-3);font-size:13px}
-.conn-bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
+.conn-bilan{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:22px}
 .conn-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .conn-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
 .conn-t .v{margin-top:9px;font:700 21px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
@@ -1015,7 +1019,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .conn-mesure{margin-left:auto;display:flex;align-items:center;gap:11px}
 .conn-mesure .spark{width:52px;flex:none}
 .conn-mesure .lat{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
-.conn-dispo{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.conn-dispo{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px}
 .conn-d{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;
         border:1px solid transparent;transition:border-color .13s}
 .conn-d:hover{border-color:var(--border-2)}
