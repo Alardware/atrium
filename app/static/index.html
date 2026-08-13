@@ -331,11 +331,17 @@ summary:focus-visible,[tabindex]:focus-visible{
 /* La bande des prochaines heures. La barre porte l'ecart de temperature de la
    tranche, pas la temperature absolue : sur cinq relevés qui se tiennent en
    quelques degres, un zero commun ecraserait tout contre le sol. */
-.wx-bande{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
-.wx-c{display:flex;flex-direction:column;align-items:center;gap:5px}
+/* La bande prend la hauteur qui reste. Une tuile s'aligne sur la plus haute de
+   sa rangée : à contenu fixe, la météo laissait un grand vide sous elle. Les
+   barres s'allongent plutôt, jusqu'à une limite au-delà de laquelle elles
+   deviendraient des colonnes. */
+.wx-bande{flex:1 1 auto;display:grid;grid-template-columns:repeat(5,1fr);
+          gap:6px;margin-top:10px;align-items:stretch}
+.wx-c{display:flex;flex-direction:column;align-items:center;
+      justify-content:flex-end;gap:5px}
 .wx-c .h{font:600 10px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
-.wx-c .b{display:flex;align-items:flex-end;height:30px}
-.wx-c .b > i{display:block;width:4px;border-radius:2px;background:var(--acc);
+.wx-c .b{display:flex;align-items:flex-end;flex:1 1 30px;min-height:30px;max-height:104px}
+.wx-c .b > i{display:block;width:6px;border-radius:3px;background:var(--acc);
              transition:height .4s cubic-bezier(.4,0,.2,1)}
 .wx-c .d{font:700 11.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
 .cock-big{display:flex;align-items:baseline;gap:10px}
