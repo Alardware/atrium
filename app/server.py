@@ -629,9 +629,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.reply(200, json.dumps(r, ensure_ascii=False).encode())
 
     def journal_get(self):
-        """Ce qu Atrium a constate sur ce service, du plus recent au plus ancien."""
+        """Ce qu Atrium a constate, du plus recent au plus ancien.
+
+        Sans « service », le journal est commun a toutes les applications : c est
+        la meme matiere, regroupee, et chaque entree dit alors d ou elle vient.
+        """
         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         nom = (q.get("service") or [""])[0]
+        if not nom:
+            try:
+                combien = int((q.get("n") or ["200"])[0])
+            except (ValueError, TypeError):
+                combien = 200
+            self.reply(200, json.dumps(
+                {"evenements": JOURNAL_SRV.tout(max(1, min(combien, 500)))},
+                ensure_ascii=False).encode())
+            return
         if not self._app_nommee(nom):
             self.reply(404, json.dumps({"error": "service inconnu"},
                                        ensure_ascii=False).encode())

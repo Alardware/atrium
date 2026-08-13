@@ -369,6 +369,22 @@ class Evenements:
         with self.lock:
             return [dict(e) for e in (self.data.get(service) or [])[-combien:]][::-1]
 
+    def tout(self, combien=200):
+        """Les evenements de tous les services, du plus recent au plus ancien.
+
+        Chaque entree porte le nom de son service : sans lui, un journal
+        commun ne dirait pas de quoi il parle.
+        """
+        with self.lock:
+            liste = []
+            for service, evs in self.data.items():
+                for e in evs:
+                    ligne = dict(e)
+                    ligne["service"] = service
+                    liste.append(ligne)
+        liste.sort(key=lambda e: e.get("a", 0), reverse=True)
+        return liste[:combien]
+
     def oublier(self, services):
         with self.lock:
             for perdu in [s for s in self.data if s not in services]:

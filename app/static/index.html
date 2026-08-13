@@ -1223,6 +1223,20 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-nav button .q:empty{display:none}
 .spage-nav button.on .q{color:var(--muted-2)}
 /* Langue : chaque ligne montre ce que le choix change concrètement. */
+.jr-filtres{margin-left:14px}
+.jr-jour{margin:16px 0 8px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;
+         text-transform:uppercase;color:var(--t7)}
+.jr-jour:first-child{margin-top:0}
+.jr-e{display:flex;align-items:center;gap:12px;padding:9px 0;
+      border-bottom:1px solid var(--hair)}
+.jr-e:last-child{border-bottom:0}
+.jr-e .h{flex:none;width:46px;font:500 10.5px/1.5 'IBM Plex Mono',monospace;color:var(--t7)}
+.jr-e .srv{flex:none;display:flex;align-items:center;gap:7px;width:172px;min-width:0;
+           font:600 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t3)}
+.jr-e .srv span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jr-e .t{flex:1;min-width:0;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t4)}
+.jr-e.bad .t{color:var(--bad-text)} .jr-e.warn .t{color:var(--warn-text)}
+.jr-vide{padding:16px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
 .sv-averto{margin:2px 0 4px;padding:11px 13px;border-radius:10px;
            border:1px solid var(--warn);background:var(--warn-soft)}
 .sv-averto b{display:block;font:700 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t1)}
@@ -2009,6 +2023,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <button data-p="look"><span class="ic">🎨</span><span data-i18n="set.look">Apparence</span></button>
       <button data-p="conn"><span class="ic">🔗</span><span data-i18n="set.conn">Connexions</span><span class="q" id="nq-conn"></span></button>
       <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span><span class="q" id="nq-lang"></span></button>
+      <button data-p="journal"><span class="ic">🗒</span><span data-i18n="set.journal">Journal</span><span class="q" id="nq-jrn"></span></button>
       <button data-p="sauvegarde"><span class="ic">💾</span><span data-i18n="set.backup">Sauvegarde</span></button>
       <button data-p="about"><span class="ic">ℹ</span><span data-i18n="set.about">À propos</span></button>
     </nav>
@@ -2326,6 +2341,25 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <span class="aide" data-i18n="conn.available.d">une URL suffit pour l'état en ligne</span></h4>
           <div class="scard-body">
             <div class="conn-dispo" id="conn-dispo"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- JOURNAL -->
+      <section class="spanel sp-inner" id="sp-journal" hidden>
+        <div class="sp-head">
+          <div class="sp-title" data-i18n="set.journal">Journal</div>
+          <div class="sp-lead" data-i18n="jr.lead">Ce qu'Atrium a constaté lui-même sur vos services : bascules d'état, seuils franchis, mises en service.</div>
+        </div>
+        <div class="scard">
+          <h4><span data-i18n="jr.titre">Événements</span>
+            <span class="seg jr-filtres" id="jr-filtres">
+              <button data-v="tout" class="on" data-i18n="jr.tout">Tout</button>
+              <button data-v="anomalies" data-i18n="jr.anomalies">Anomalies</button>
+            </span>
+            <span class="aide" id="jr-compte"></span></h4>
+          <div class="scard-body">
+            <div id="jr-liste"></div>
           </div>
         </div>
       </section>
@@ -6632,9 +6666,9 @@ function peindreFiche() {
 
 /* Le serveur envoie un code et ses paramètres ; la phrase est écrite ici, comme
    pour les alertes. */
-function texteEvenement(ev) {
+function texteEvenement(ev, service) {
   const p = ev.param || {};
-  const lab = p.metrique ? (metriqueLab(p.metrique) || p.metrique) : '';
+  const lab = p.metrique ? (metriqueLab(p.metrique, service) || p.metrique) : '';
   if (ev.code === 'suivi') return t('ev.suivi');
   if (ev.code === 'en_ligne') return t('ev.en_ligne');
   if (ev.code === 'hors_ligne') return t('ev.hors_ligne');
@@ -6646,8 +6680,8 @@ function texteEvenement(ev) {
 }
 
 /* Le libellé d'une mesure, s'il est connu de ce service. */
-function metriqueLab(id) {
-  const m = (STATS[AP.nom] || []).find((x) => x.id === id);
+function metriqueLab(id, service) {
+  const m = (STATS[service || AP.nom] || []).find((x) => x.id === id);
   return m ? m.lab.toLowerCase() : '';
 }
 
@@ -7128,6 +7162,93 @@ function openSettings(section) {
   spNav(typeof section === 'string' ? section : 'profil');
 }
 function closeSettings() { $('spage').hidden = true; }
+/* Le journal commun. La matière est la même que celle de chaque fiche : ce
+   qu'Atrium a constaté. Regroupée, elle raconte la nuit plutôt qu'un service. */
+let JRN = { liste: null, filtre: 'tout' };
+
+async function renderJournal() {
+  const zone = $('jr-liste');
+  if (!JRN.liste) {
+    zone.textContent = '';
+    const v = document.createElement('div');
+    v.className = 'jr-vide';
+    v.textContent = t('ap.charge');
+    zone.appendChild(v);
+    try {
+      const r = await relayFetch('/api/journal');
+      JRN.liste = r.ok ? ((await r.json()).evenements || []) : [];
+    } catch (e) { JRN.liste = []; }
+  }
+  zone.textContent = '';
+  const graves = ['hors_ligne', 'seuil'];
+  const vus = JRN.liste.filter((e) => JRN.filtre === 'tout' || graves.includes(e.code));
+  $('jr-compte').textContent = t('jr.compte', { n: vus.length });
+  if (!vus.length) {
+    const v = document.createElement('div');
+    v.className = 'jr-vide';
+    v.textContent = t(JRN.filtre === 'tout' ? 'jr.rien' : 'jr.rien.anomalies');
+    zone.appendChild(v);
+    return;
+  }
+  const langue = i18n.langue === 'en' ? 'en-GB' : 'fr-FR';
+  let jour = '';
+  vus.forEach((ev) => {
+    const d = new Date(ev.a * 1000);
+    /* Un intitulé de jour par groupe : sans lui, une date répétée cent fois
+       occupe la colonne sans rien apprendre. */
+    const j = d.toLocaleDateString(langue, { weekday: 'long', day: 'numeric', month: 'long' });
+    if (j !== jour) {
+      jour = j;
+      const h = document.createElement('div');
+      h.className = 'jr-jour';
+      h.textContent = j;
+      zone.appendChild(h);
+    }
+    const grave = ev.code === 'hors_ligne'
+      || (ev.code === 'seuil' && (ev.param || {}).niveau === 'critique');
+    const l = document.createElement('div');
+    l.className = 'jr-e' + (grave ? ' bad' : ev.code === 'seuil' ? ' warn' : '');
+    const heure = document.createElement('span');
+    heure.className = 'h';
+    heure.textContent = d.toLocaleTimeString(langue, { hour: '2-digit', minute: '2-digit' });
+    const srv = document.createElement('span');
+    srv.className = 'srv';
+    const app = findApp(ev.service);
+    const chip = document.createElement('span');
+    chip.className = 'logo-chip s18';
+    const cl = document.createElement('span');
+    cl.className = 'cl';
+    cl.textContent = (ev.service[0] || '?').toUpperCase();
+    chip.appendChild(cl);
+    if (app) mountLogo(chip, logoDe(app));
+    const nom = document.createElement('span');
+    nom.textContent = ev.service;
+    srv.appendChild(chip);
+    srv.appendChild(nom);
+    /* Le service mène à sa fiche : un journal sans porte de sortie oblige à
+       retrouver la carte à la main. */
+    if (app) {
+      srv.style.cursor = 'pointer';
+      srv.addEventListener('click', () => { closeSettings(); ouvrirFiche(app.nom); });
+    }
+    const tx = document.createElement('span');
+    tx.className = 't';
+    tx.textContent = texteEvenement(ev, ev.service);
+    l.appendChild(heure);
+    l.appendChild(srv);
+    l.appendChild(tx);
+    zone.appendChild(l);
+  });
+}
+
+$('jr-filtres').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  JRN.filtre = b.dataset.v;
+  [...$('jr-filtres').children].forEach((x) => x.classList.toggle('on', x === b));
+  renderJournal();
+});
+
 /* Sauvegarde : le téléchargement passe par le même chemin que le reste, avec
    la session ; on fabrique le fichier depuis la réponse plutôt que d'ouvrir un
    onglet, qui perdrait l'en-tête et se ferait refuser. */
@@ -7187,11 +7308,14 @@ function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
   /* Six pages : « Utilisateurs » vit dans Mon profil et « Sessions » dans
      Sécurité — ce sont deux facettes du même sujet, pas deux destinations. */
-  ['profil', 'security', 'look', 'conn', 'lang', 'sauvegarde', 'about']
+  ['profil', 'security', 'look', 'conn', 'lang', 'journal', 'sauvegarde', 'about']
     .forEach((k) => { $('sp-' + k).hidden = k !== p; });
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
   majPastillesReglages();
+  if (p === 'journal') {
+    renderJournal();
+  }
   if (p === 'profil') {
     renderProfil();
     renderUsersPage();
