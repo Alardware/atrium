@@ -13,6 +13,7 @@ Variables d'environnement :
 """
 import hashlib
 import http.cookies
+import io as _io
 import http.server
 import json
 import os
@@ -24,6 +25,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 
 import auth
 import conteneurs
@@ -320,12 +322,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     # ---------- utilitaires ----------
-    def reply(self, code, data, ctype="application/json; charset=utf-8", cookie=None):
+    def reply(self, code, data, ctype="application/json; charset=utf-8", cookie=None,
+              entetes=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         if cookie:
             self.send_header("Set-Cookie", cookie)
+        for k, v in (entetes or {}).items():
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(data)
 
@@ -455,6 +460,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/journal":
             if self.exiger_session():
                 self.journal_get()
+        elif route == "/api/sauvegarde":
+            if self.exiger_session():
+                self.sauvegarde_get()
         elif route == "/api/capacites":
             # Ne change jamais en cours d'execution : l'interface la demande une
             # fois et s'en sert pour expliquer une tuile sans chiffre.
@@ -500,6 +508,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.changer_mdp()
         elif route == "/api/setup":
             self.installer()
+        elif route == "/api/restauration":
+            if self.exiger_session():
+                self.restauration_post()
         elif route == "/api/alertes/lues":
             if self.exiger_session():
                 supervision.marquer_lues()
@@ -626,6 +637,111 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                                        ensure_ascii=False).encode())
             return
         self.reply(200, json.dumps({"evenements": JOURNAL_SRV.lister(nom, 20)},
+                                   ensure_ascii=False).encode())
+
+    # Ce qui part dans une archive, et ce qui n en part jamais. Les jetons de
+    # session ouvriraient l acces a qui met la main sur le fichier ; le journal
+    # des connexions refusees contient des adresses IP, qui ne regardent
+    # personne d autre. Ni l un ni l autre ne se restaure utilement.
+    SAUVEGARDE = ("atrium.json", "historique.json", "mesures.json", "evenements.json")
+    JAMAIS = ("sessions.json", "journal.json")
+    RESTAURE_MAX = 64 * 1024 * 1024
+
+    def sauvegarde_get(self):
+        """Archive la configuration et les series, telles quelles.
+
+        Le fichier contient les cles d API des services et les empreintes des
+        mots de passe : il vaut la configuration elle-meme, et se range comme
+        tel. L interface le dit avant le telechargement.
+        """
+        tampon = _io.BytesIO()
+        dedans = []
+        with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
+            for nom in self.SAUVEGARDE:
+                chemin = os.path.join(CONFIG_DIR, nom)
+                if os.path.exists(chemin):
+                    z.write(chemin, nom)
+                    dedans.append(nom)
+            z.writestr("LISEZ-MOI.txt", (
+                "Sauvegarde Atrium du %s\r\n\r\n"
+                "Contenu : %s\r\n\r\n"
+                "atrium.json contient les cles d API de vos services et les\r\n"
+                "empreintes des mots de passe de vos profils. Rangez ce fichier\r\n"
+                "comme vous rangeriez ces cles.\r\n\r\n"
+                "Les jetons de session et le journal des connexions refusees\r\n"
+                "n y figurent pas : ils ne se restaurent pas et n ont rien a\r\n"
+                "faire dans une archive.\r\n"
+            ) % (time.strftime("%Y-%m-%d %H:%M"), ", ".join(dedans) or "rien"))
+        corps = tampon.getvalue()
+        self.reply(200, corps, "application/zip", entetes={
+            "Content-Disposition": 'attachment; filename="atrium-%s.zip"'
+                                   % time.strftime("%Y%m%d-%H%M"),
+        })
+
+    def restauration_post(self):
+        """Remplace la configuration par celle d une archive.
+
+        Rien n est ecrit avant que tout ait ete verifie : une archive tronquee
+        ou dont la configuration ne se lit pas laisse l installation intacte.
+        L ancienne configuration est conservee a cote, sous « .avant ».
+        """
+        try:
+            taille = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            taille = 0
+        if taille <= 0 or taille > self.RESTAURE_MAX:
+            self.reply(413, json.dumps({"error": "Archive absente ou trop volumineuse."},
+                                       ensure_ascii=False).encode())
+            return
+        brut = self.rfile.read(taille)
+        try:
+            with zipfile.ZipFile(_io.BytesIO(brut)) as z:
+                noms = [n for n in z.namelist() if n in self.SAUVEGARDE]
+                if "atrium.json" not in noms:
+                    raise ValueError("archive sans configuration")
+                contenus = {}
+                for n in noms:
+                    if z.getinfo(n).file_size > self.RESTAURE_MAX:
+                        raise ValueError("fichier trop volumineux")
+                    contenus[n] = z.read(n)
+                cfg = json.loads(contenus["atrium.json"].decode("utf-8"))
+                if not isinstance(cfg, dict) or not isinstance(cfg.get("users"), list):
+                    raise ValueError("configuration illisible")
+                if not cfg["users"]:
+                    raise ValueError("configuration sans profil")
+        except (zipfile.BadZipFile, ValueError, KeyError, UnicodeDecodeError) as e:
+            self.reply(400, json.dumps({"error": "Archive invalide : %s" % e},
+                                       ensure_ascii=False).encode())
+            return
+
+        try:
+            ancien = os.path.join(CONFIG_DIR, "atrium.json")
+            if os.path.exists(ancien):
+                with open(ancien, "rb") as f:
+                    garde = f.read()
+                with open(ancien + ".avant", "wb") as f:
+                    f.write(garde)
+            for nom, donnees in contenus.items():
+                tmp = os.path.join(CONFIG_DIR, nom + ".tmp")
+                with open(tmp, "wb") as f:
+                    f.write(donnees)
+                os.replace(tmp, os.path.join(CONFIG_DIR, nom))
+            try:
+                os.chmod(os.path.join(CONFIG_DIR, "atrium.json"), 0o600)
+            except OSError:
+                pass
+        except OSError as e:
+            self.reply(500, json.dumps({"error": self.msg_ecriture(e)},
+                                       ensure_ascii=False).encode())
+            return
+        # Les series relisent leur fichier : sans cela, la memoire du processus
+        # ecraserait la restauration a la premiere ecriture.
+        global HISTO, MESURES, JOURNAL_SRV
+        HISTO = historique.Historique(os.path.join(CONFIG_DIR, "historique.json"))
+        MESURES = historique.Mesures(os.path.join(CONFIG_DIR, "mesures.json"))
+        JOURNAL_SRV = historique.Evenements(os.path.join(CONFIG_DIR, "evenements.json"))
+        _vu.clear()
+        self.reply(200, json.dumps({"ok": True, "fichiers": sorted(contenus)},
                                    ensure_ascii=False).encode())
 
     def securite_get(self):

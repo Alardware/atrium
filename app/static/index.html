@@ -885,6 +885,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .fa-tuile .d{margin-top:7px;font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
 .fa-carte{margin-top:20px;border:1px solid var(--hair2);border-radius:12px;background:var(--s2);
           overflow:hidden}
+/* La première carte d'une colonne ne se décale pas : sinon la colonne de droite
+   commence vingt pixels plus bas que les mesures de gauche. */
+.fa-cols > div > .fa-carte:first-child{margin-top:0}
 .fa-carte h4{display:flex;align-items:center;gap:9px;padding:13px 16px;
              border-bottom:1px solid var(--hair2);
              font:700 12.5px/1 'Plus Jakarta Sans',sans-serif}
@@ -1220,6 +1223,11 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-nav button .q:empty{display:none}
 .spage-nav button.on .q{color:var(--muted-2)}
 /* Langue : chaque ligne montre ce que le choix change concrètement. */
+.sv-averto{margin:2px 0 4px;padding:11px 13px;border-radius:10px;
+           border:1px solid var(--warn);background:var(--warn-soft)}
+.sv-averto b{display:block;font:700 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t1)}
+.sv-averto span{display:block;margin-top:4px;
+                font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t4)}
 .lang-list{display:flex;flex-direction:column;gap:8px}
 .lang-l{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;
         border:1.5px solid var(--border-2);background:var(--surface-2);cursor:pointer;
@@ -2001,6 +2009,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <button data-p="look"><span class="ic">🎨</span><span data-i18n="set.look">Apparence</span></button>
       <button data-p="conn"><span class="ic">🔗</span><span data-i18n="set.conn">Connexions</span><span class="q" id="nq-conn"></span></button>
       <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span><span class="q" id="nq-lang"></span></button>
+      <button data-p="sauvegarde"><span class="ic">💾</span><span data-i18n="set.backup">Sauvegarde</span></button>
       <button data-p="about"><span class="ic">ℹ</span><span data-i18n="set.about">À propos</span></button>
     </nav>
     <div class="spage-content">
@@ -2317,6 +2326,41 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <span class="aide" data-i18n="conn.available.d">une URL suffit pour l'état en ligne</span></h4>
           <div class="scard-body">
             <div class="conn-dispo" id="conn-dispo"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAUVEGARDE -->
+      <section class="spanel sp-inner" id="sp-sauvegarde" hidden>
+        <div class="sp-head">
+          <div class="sp-title" data-i18n="set.backup">Sauvegarde</div>
+          <div class="sp-lead" data-i18n="sv.lead">Une archive de votre configuration et de l'historique, à conserver hors du serveur.</div>
+        </div>
+
+        <div class="scard">
+          <h4 data-i18n="sv.export">Télécharger une sauvegarde</h4>
+          <div class="scard-body">
+            <span class="opt-tx"><span data-i18n="sv.export.d">L'archive contient vos applications, vos profils et les séries de mesures.</span></span>
+            <div class="sv-averto">
+              <b data-i18n="sv.warn">Elle contient aussi vos clés d'API et les empreintes de vos mots de passe.</b>
+              <span data-i18n="sv.warn.d">Rangez ce fichier comme vous rangeriez ces clés. Les jetons de session et le journal des connexions refusées n'y figurent pas.</span>
+            </div>
+            <button class="btn-primary" id="sv-telecharger" data-i18n="sv.go">Télécharger la sauvegarde</button>
+            <span class="hint" id="sv-etat"></span>
+          </div>
+        </div>
+
+        <div class="scard" style="margin-top:22px">
+          <h4 data-i18n="sv.import">Restaurer</h4>
+          <div class="scard-body">
+            <span class="opt-tx"><span data-i18n="sv.import.d">Remplace la configuration actuelle par celle de l'archive. L'ancienne est conservée à côté, sous « atrium.json.avant ».</span></span>
+            <input type="file" id="sv-fichier" accept=".zip,application/zip" hidden>
+            <div class="u-addrow">
+              <button class="btn-sm" id="sv-choisir" data-i18n="sv.choose">Choisir une archive…</button>
+              <span class="hint" id="sv-nom"></span>
+            </div>
+            <button class="btn-sm danger" id="sv-restaurer" data-i18n="sv.restore" disabled>Restaurer</button>
+            <span class="hint" id="sv-retour"></span>
           </div>
         </div>
       </section>
@@ -7084,11 +7128,66 @@ function openSettings(section) {
   spNav(typeof section === 'string' ? section : 'profil');
 }
 function closeSettings() { $('spage').hidden = true; }
+/* Sauvegarde : le téléchargement passe par le même chemin que le reste, avec
+   la session ; on fabrique le fichier depuis la réponse plutôt que d'ouvrir un
+   onglet, qui perdrait l'en-tête et se ferait refuser. */
+$('sv-telecharger').addEventListener('click', async () => {
+  const etat = $('sv-etat');
+  etat.textContent = t('sv.encours');
+  try {
+    const r = await relayFetch('/api/sauvegarde');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const nom = 'atrium-' + new Date().toISOString().slice(0, 10) + '.zip';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nom;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    etat.textContent = t('sv.fait', { n: nom, o: Math.max(1, Math.round(blob.size / 1024)) });
+  } catch (e) {
+    etat.textContent = t('sv.echec', { q: String(e.message || e) });
+  }
+});
+
+$('sv-choisir').addEventListener('click', () => $('sv-fichier').click());
+$('sv-fichier').addEventListener('change', () => {
+  const f = $('sv-fichier').files[0];
+  $('sv-nom').textContent = f ? f.name : '';
+  $('sv-restaurer').disabled = !f;
+  $('sv-retour').textContent = '';
+});
+$('sv-restaurer').addEventListener('click', () => {
+  const f = $('sv-fichier').files[0];
+  if (!f) return;
+  /* Remplacer toute la configuration ne se fait pas au premier clic. */
+  openConfirm(t('sv.conf.title'), t('sv.conf.sub'), t('sv.conf.go'), async () => {
+    $('sv-retour').textContent = t('sv.encours');
+    try {
+      const r = await relayFetch('/api/restauration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/zip' },
+        body: await f.arrayBuffer(),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      $('sv-retour').textContent = t('sv.restaure', { q: (j.fichiers || []).join(', ') });
+      /* La page relit tout depuis le serveur plutôt que de fusionner avec ce
+         qu'elle avait en mémoire, qui vient d'être remplacé. */
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      $('sv-retour').textContent = t('sv.echec', { q: String(e.message || e) });
+    }
+  });
+});
+
 function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
   /* Six pages : « Utilisateurs » vit dans Mon profil et « Sessions » dans
      Sécurité — ce sont deux facettes du même sujet, pas deux destinations. */
-  ['profil', 'security', 'look', 'conn', 'lang', 'about']
+  ['profil', 'security', 'look', 'conn', 'lang', 'sauvegarde', 'about']
     .forEach((k) => { $('sp-' + k).hidden = k !== p; });
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
