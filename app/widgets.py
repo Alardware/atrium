@@ -8,6 +8,7 @@ affiche le texte, et aucun des deux n a besoin de connaitre l autre.
 CAPACITES declare, pour chaque type, ce qu il sait lire — de quoi l annoncer
 avant meme la premiere mesure.
 """
+import inspect
 import json
 import re
 import urllib.parse
@@ -482,6 +483,37 @@ CAPACITES = {
 def capacites(type_service):
     """Ce qu une integration sait lire, en clair pour l interface."""
     return [{"id": i, "lab": libelle(i)} for i in CAPACITES.get(type_service, [])]
+
+
+def _demande_une_cle(fn):
+    """Ce lecteur se sert-il d une cle ?
+
+    La reponse se lit dans son code plutot que dans une table tenue a la main :
+    une liste ecrite a cote finirait par mentir le jour ou un lecteur change.
+    On ecarte la ligne de signature, qui nomme « cle » dans tous les cas.
+    """
+    try:
+        corps = inspect.getsource(fn).split("\n", 1)[1]
+    except (OSError, TypeError, IndexError):
+        return False
+    return bool(re.search(r"\bcle\b", corps))
+
+
+def profils():
+    """Pour chaque type : ce qu il sait lire, et s il lui faut une cle.
+
+    L interface s en sert pour expliquer une tuile sans chiffre : rien a
+    configurer quand aucune integration n existe, une cle a fournir quand elle
+    existe et qu il en faut une, une panne a chercher sinon.
+    """
+    sortie = {}
+    for type_service, ids in CAPACITES.items():
+        fn = REGISTRE.get(type_service)
+        sortie[type_service] = {
+            "donnees": [{"id": i, "lab": libelle(i)} for i in ids],
+            "cle": bool(fn) and _demande_une_cle(fn),
+        }
+    return sortie
 
 
 def mesurer(type_service, url, cle):

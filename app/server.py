@@ -387,6 +387,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/diagnostic":
             if self.exiger_session():
                 self.diagnostic_get()
+        elif route == "/api/capacites":
+            # Ne change jamais en cours d'execution : l'interface la demande une
+            # fois et s'en sert pour expliquer une tuile sans chiffre.
+            if self.exiger_session():
+                self.reply(200, json.dumps(widgets.profils(), ensure_ascii=False).encode())
         elif route == "/api/conteneurs":
             if self.exiger_session():
                 self.reply(200, json.dumps({"docker": conteneurs.disponible(),

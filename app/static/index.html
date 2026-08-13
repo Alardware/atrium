@@ -512,7 +512,14 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    structure d'un service à l'autre. */
 .app-mes{padding:9px 11px;min-height:38px;display:flex;align-items:center;border-radius:10px;background:var(--s3);
          font:500 11.5px/1.5 'IBM Plex Mono',monospace;color:var(--t2)}
-.app-mes.vide{color:var(--t6)}
+.app-mes.vide{color:var(--t6);gap:8px;justify-content:space-between}
+.mes-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mes-cog{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+         font-size:11px;line-height:1;color:var(--t6);background:var(--field);
+         border:1px solid var(--hair4);transition:color .15s,border-color .15s}
+.mes-cog:hover{color:var(--acc);border-color:var(--acc-line)}
+/* En liste, la colonne est étroite et la rangée entière est déjà cliquable. */
+.grid.list .mes-cog{display:none}
 
 /* écran étroit : une tuile par rangée, disposition verticale */
 /* L'état se lit à la pastille de couleur, pas au fond : trois tuiles vertes
@@ -2832,6 +2839,23 @@ function mountLogo(chip, logoUrl) {
   chip.appendChild(img);
 }
 const logoDe = (app) => app.logoUrl || icone(app.nom);
+
+/* Ce que chaque type d'intégration sait lire, et s'il lui faut une clé. La
+   table ne change jamais en cours d'exécution : une seule demande, gardée. */
+let CAPA = null;
+let CAPA_A = 0;
+async function chargerCapacites() {
+  /* L'instant est noté avant l'appel : un échec ne doit pas relancer la demande
+     à chaque rendu. La table vide reste possible — au premier affichage on est
+     encore devant l'écran de verrouillage, et la route exige une session — donc
+     on retente, sans insister. */
+  CAPA_A = Date.now();
+  if (CAPA === null) CAPA = {};
+  try {
+    const r = await relayFetch('/api/capacites');
+    if (r.ok) CAPA = await r.json();
+  } catch (e) { /* on s'en passe : les tuiles resteront prudentes */ }
+}
 const findApp = (nom) => apps.find((a) => a.nom.toLowerCase() === nom.toLowerCase());
 
 /* ---------- thème ---------- */
@@ -5603,14 +5627,51 @@ function appCard(app, index) {
   const chiffres = voirStats
     ? (STATS[app.nom] || []).filter((x) => !cache(cleInfo(x)) && !cache('st:' + x.lab))
     : null;
+  let texte = '';
   if (chiffres) {
     const zone = a.querySelector('.app-mes');
     zone.hidden = false;
     if (chiffres.length) {
-      zone.textContent = chiffres.map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
+      texte = chiffres.map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
+      zone.textContent = texte;
     } else {
+      /* Quatre situations, quatre phrases. Dire « aucune métrique remontée »
+         partout laissait croire à un échec là où, le plus souvent, il n'y a
+         simplement rien à remonter. */
+      const brut = STATS[app.nom] || [];
+      const type = kindOfApp(app);
+      const su = CAPA && CAPA[type];
+      const cle = !!(app.token || app.apiKey);
+      let cas;
+      if (brut.length) cas = 'hidden';          // des mesures existent, masquées
+      else if (!su) cas = 'none';               // aucune intégration pour ce type
+      else if (su.cle && !cle) cas = 'todo';    // elle existe, il lui manque la clé
+      else cas = 'ko';                          // branchée, mais rien n'est revenu
+      const dit = { hidden: 'app.mes.hidden', none: 'app.nometric',
+                    todo: 'app.mes.todo', ko: 'app.mes.ko' }[cas];
       zone.classList.add('vide');
-      zone.textContent = t('app.nometric');
+      texte = t(dit);
+      const tx = document.createElement('span');
+      tx.className = 'mes-tx';
+      tx.textContent = texte;
+      zone.appendChild(tx);
+      zone.title = cas === 'hidden' ? t('app.mes.hidden.t', { n: brut.length })
+        : cas === 'none' ? t('app.nometric.t')
+        : cas === 'todo' ? t('app.mes.todo.t', { l: su.donnees.map((d) => d.lab.toLowerCase()).join(', ') })
+        /* Deux lecteurs n'envoient aucune clé : leur dire d'en vérifier une
+           serait un mauvais conseil. */
+        : su.cle ? t('app.mes.ko.t') : t('app.mes.ko.libre.t');
+      /* L'engrenage n'apparaît que là où il y a quelque chose à faire : la
+         fiche du service, où se saisissent l'adresse et la clé. */
+      if (cas === 'todo' || cas === 'ko') {
+        const cog = document.createElement('button');
+        cog.className = 'mes-cog';
+        cog.type = 'button';
+        cog.dataset.act = 'cfg';
+        cog.textContent = '⚙';
+        cog.title = t('app.mes.cfg');
+        zone.appendChild(cog);
+      }
     }
   }
 
@@ -5621,8 +5682,9 @@ function appCard(app, index) {
 
      Puis on classe, plutôt que de poser la largeur au pixel : quatre tailles se
      rangent encore en rangées, une largeur par tuile ferait un escalier. */
-  const ligne = chiffres ? a.querySelector('.app-mes').textContent : '';
-  const besoin = Math.max(54 + Math.ceil(ligne.length * 6.9),
+  const ligne = texte;
+  const besoin = Math.max(54 + Math.ceil(ligne.length * 6.9)
+                             + (a.querySelector('.mes-cog') ? 28 : 0),
                           126 + Math.ceil(app.nom.length * 7.4));
   a.classList.add(besoin <= 206 ? 'tuile-s' : besoin <= 262 ? 'tuile-m'
     : besoin <= 372 ? 'tuile-l' : 'tuile-xl');
@@ -5636,7 +5698,7 @@ function appCard(app, index) {
       e.stopPropagation();
       if (act.dataset.act === 'fav') basculerFavori(index);
       else if (act.dataset.act === 'menu') ouvrirQMenu(act, index);
-      else if (act.dataset.act === 'edit') openAppModal(index);
+      else if (act.dataset.act === 'edit' || act.dataset.act === 'cfg') openAppModal(index);
       else openDelModal(index);
       return;
     }
@@ -5711,6 +5773,12 @@ function sante(nom) {
 }
 
 function renderApps() {
+  /* Les explications des tuiles muettes ont besoin de savoir ce que chaque
+     intégration sait faire. Une demande, puis on redessine ; tant qu'elle n'a
+     rien rapporté, une par minute au plus. */
+  if (!CAPA || !Object.keys(CAPA).length) {
+    if (Date.now() - CAPA_A > 60000) chargerCapacites().then(renderApps);
+  }
   const q = query.trim().toLowerCase();
   const shown = [];
   apps.forEach((a, i) => {
@@ -7535,6 +7603,9 @@ async function seConnecter(nom, motdepasse) {
     }
     SESSION_USER = j.utilisateur;
     ACTIVE = j.utilisateur;
+    /* La table des intégrations a pu être refusée tant qu'on n'était pas
+       connecté : on la redemande tout de suite plutôt qu'à la minute. */
+    CAPA_A = 0;
     store.set(MARQUE_VERROU, '');
     store.set('activeUser', ACTIVE);
     $('lock').hidden = true;
