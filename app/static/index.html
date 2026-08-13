@@ -2853,6 +2853,12 @@ function mountLogo(chip, logoUrl) {
 }
 const logoDe = (app) => app.logoUrl || icone(app.nom);
 
+/* Le libellé d'une mesure s'accorde avec elle : « 1 lecture », « 2 lectures ».
+   Le serveur fournit la forme au singulier quand elle existe — un pourcentage
+   ou un débit n'en ont pas. « lab » reste la forme de référence, notamment
+   comme clé de masquage : seul l'affichage s'accorde. */
+const etiquette = (m) => ((Math.abs(m.num) === 1 && m.lab1) ? m.lab1 : m.lab);
+
 /* Ce que chaque type d'intégration sait lire, et s'il lui faut une clé. La
    table ne change jamais en cours d'exécution : une seule demande, gardée. */
 let CAPA = null;
@@ -5657,18 +5663,18 @@ function appCard(app, index) {
          déclarée sinon. Aucun classement à tenir par intégration — celle-ci
          met déjà en tête ce qu'elle a de plus parlant, et son ordre est le
          même qui range les lignes par famille juste en dessous. */
-      const ennuis = view === 'list' ? [] : alertesDe(app.nom);
+      const ennuis = alertesDe(app.nom);
       const enCause = (niv) => ennuis.filter((x) => (x.niveau === 'critique') === niv)
         .map((x) => x.param && x.param.metrique).filter(Boolean);
       const graves = enCause(true);
       const legeres = enCause(false);
-      /* Le critique passe avant l'avertissement : c'est lui qu'on veut voir en
-         premier, quel que soit l'ordre de déclaration. */
-      const vedette = view === 'list' ? null
-        : (chiffres.find((x) => graves.includes(x.id))
-           || chiffres.find((x) => legeres.includes(x.id))
-           || chiffres[0]);
-      const suite = vedette ? chiffres.filter((x) => x !== vedette) : chiffres;
+      /* La place ne bouge jamais. Une anomalie se signale par la couleur, pas
+         en prenant la première place : si le disque passait devant le
+         processeur en montant à 95 %, la carte changerait de tête au gré du
+         serveur et il faudrait la relire à chaque fois. La position dit ce
+         qu'on regarde, la couleur dit comment ça va. */
+      const vedette = view === 'list' ? null : chiffres[0];
+      const suite = vedette ? chiffres.slice(1) : chiffres;
 
       if (vedette) {
         const v = document.createElement('span');
@@ -5680,7 +5686,7 @@ function appCard(app, index) {
         const gros = document.createElement('b');
         gros.textContent = vedette.val;
         const lab = document.createElement('i');
-        lab.textContent = vedette.lab.toLowerCase();
+        lab.textContent = etiquette(vedette).toLowerCase();
         v.appendChild(gros);
         v.appendChild(lab);
         zone.appendChild(v);
@@ -5714,7 +5720,7 @@ function appCard(app, index) {
           const u = document.createElement('span');
           u.className = graves.includes(mm.id) ? 'm-bad'
             : legeres.includes(mm.id) ? 'm-warn' : '';
-          u.textContent = mm.val + ' ' + mm.lab.toLowerCase();
+          u.textContent = mm.val + ' ' + etiquette(mm).toLowerCase();
           l.appendChild(u);
         });
         zone.appendChild(l);
@@ -6948,7 +6954,7 @@ function renderConnPanel() {
       return CONN === 'ok' ? t('conn.entities', { n: STATES.length })
            : (CONN === 'error' ? CONN_ERR : t('conn.notoken'));
     }
-    if (n) return (STATS[nom] || []).map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
+    if (n) return (STATS[nom] || []).map((m) => m.val + ' ' + etiquette(m).toLowerCase()).join(' · ');
     const err = (DIRECT.err || {})[kind];
     return err || t('conn.notset');
   };

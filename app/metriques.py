@@ -70,6 +70,42 @@ METRIQUES = {
     "utilisateurs": ("UTILISATEURS", NOMBRE),
 }
 
+# Forme au singulier, quand elle differe. « 1 lectures » se voit tout de suite,
+# et se lit comme une interface inachevee. Seules les mesures qui comptent des
+# choses figurent ici : un pourcentage ou un debit ne s accordent pas.
+#
+# Ecrite plutot que devinee : retirer le « s » final marcherait sur cette liste,
+# mais pas sur le premier libelle invariable qu on ajouterait (« temps »,
+# « acces »), et la faute serait alors invisible jusqu a ce qu un utilisateur la
+# voie. Le test verifie qu aucun libelle pluriel n a ete oublie ici.
+SINGULIER = {
+    "lectures": "LECTURE",
+    "spectateurs": "SPECTATEUR",
+    "transcodages": "TRANSCODAGE",
+    "bibliotheques": "BIBLIOTHÈQUE",
+    "series": "SÉRIE",
+    "films": "FILM",
+    "artistes": "ARTISTE",
+    "auteurs": "AUTEUR",
+    "episodes": "ÉPISODE",
+    "indexeurs": "INDEXEUR",
+    "requetes": "REQUÊTE",
+    "bloquees": "BLOQUÉE",
+    "clients": "CLIENT",
+    "equipements": "ÉQUIPEMENT",
+    "bornes": "BORNE WIFI",
+    "actifs": "ACTIF",
+    "arretes": "ARRÊTÉ",
+    "lumieres": "LUMIÈRE",
+    "ouvertures": "OUVERTURE",
+    "presents": "PRÉSENT",
+    "photos": "PHOTO",
+    "videos": "VIDÉO",
+    "documents": "DOCUMENT",
+    "fichiers": "FICHIER",
+    "utilisateurs": "UTILISATEUR",
+}
+
 # Seuils par metrique, du plus grave au plus calme. Ajouter une surveillance
 # tient desormais en une ligne : plus aucune analyse de texte.
 SEUILS = {
@@ -121,12 +157,17 @@ def M(ident, num, libre=None):
     connaitre le registre ; « id » et « num » servent aux regles.
     """
     libelle, nature = METRIQUES.get(ident, (ident.upper(), NOMBRE))
-    return {
+    mesure = {
         "id": ident,
         "lab": libelle,
         "num": num,
         "val": libre if libre is not None else texte(nature, num),
     }
+    # « lab » reste la forme de reference — c est elle qui sert de cle aux
+    # masques — et « lab1 » n apparait que la ou l accord existe.
+    if ident in SINGULIER:
+        mesure["lab1"] = SINGULIER[ident]
+    return mesure
 
 
 def niveau(ident, num):
