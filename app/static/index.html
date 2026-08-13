@@ -618,6 +618,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 
 /* ---- fiche de statut ---- */
 .st-head{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.hi-plages{margin-bottom:14px}
+.hi-vide{padding:14px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
+.hi-note{margin-top:12px;font:500 11px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
 .st-head .n{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .st-head .r{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .st-rows{display:flex;flex-direction:column}
@@ -1812,6 +1815,28 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <div id="st-corps"></div>
     <div class="modal-foot">
       <button class="btn-ghost" id="st-close" data-i18n="btn.close">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ov-histo" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="st-head">
+      <span class="logo-chip s40" id="hi-chip"><span class="cl">?</span></span>
+      <span>
+        <span class="n" id="hi-nom"></span><br>
+        <span class="r" data-i18n="hi.titre">Historique de disponibilité</span>
+      </span>
+    </div>
+    <div class="seg hi-plages" id="hi-plages">
+      <button data-v="1" data-i18n="hi.1h">1 h</button>
+      <button data-v="24" data-i18n="hi.24h">24 h</button>
+      <button data-v="168" data-i18n="hi.7j">7 j</button>
+      <button data-v="720" data-i18n="hi.30j">30 j</button>
+    </div>
+    <div id="hi-corps"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="hi-close" data-i18n="btn.close">Fermer</button>
     </div>
   </div>
 </div>
@@ -5630,6 +5655,18 @@ function appCard(app, index) {
       const z = a.querySelector('.spark');
       z.classList.add('on');
       z.appendChild(trace);
+      /* Une courbe sans légende ne fait que meubler. Elle dit maintenant ce
+         qu'elle trace, sur quelle durée, et ce qu'on y lit. */
+      const c = etat.courbe;
+      z.title = t('crb.t', {
+        n: c.length,
+        min: Math.min.apply(null, c),
+        moy: Math.round(c.reduce((x, y) => x + y, 0) / c.length),
+        max: Math.max.apply(null, c),
+      });
+      z.dataset.act = 'histo';
+      z.setAttribute('role', 'button');
+      z.tabIndex = 0;
     }
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
@@ -5792,6 +5829,7 @@ function appCard(app, index) {
       if (act.dataset.act === 'fav') basculerFavori(index);
       else if (act.dataset.act === 'menu') ouvrirQMenu(act, index);
       else if (act.dataset.act === 'edit' || act.dataset.act === 'cfg') openAppModal(index);
+      else if (act.dataset.act === 'histo') ouvrirHistorique(app.nom);
       else openDelModal(index);
       return;
     }
@@ -5830,6 +5868,67 @@ function rangerApps() {
 $('btn-ranger').addEventListener('click', rangerApps);
 
 const SVGNS = 'http://www.w3.org/2000/svg';
+
+/* Historique d'un service : disponibilité et temps de réponse sur la plage
+   demandée. Tout vient du serveur, qui seul garde ces heures ; le navigateur
+   ne conserve rien et ne recalcule rien. */
+let HI_NOM = '';
+let HI_H = 24;
+async function ouvrirHistorique(nom) {
+  HI_NOM = nom;
+  $('ov-histo').hidden = false;
+  const app = findApp(nom);
+  $('hi-nom').textContent = nom;
+  $('hi-chip').querySelector('.cl').textContent = (nom[0] || '?').toUpperCase();
+  mountLogo($('hi-chip'), app ? logoDe(app) : '');
+  peindreHistorique();
+}
+
+async function peindreHistorique() {
+  const corps = $('hi-corps');
+  corps.textContent = '';
+  [...$('hi-plages').children].forEach((b) => {
+    b.classList.toggle('on', Number(b.dataset.v) === HI_H);
+  });
+  let r = null;
+  try {
+    const rep = await relayFetch('/api/historique?h=' + HI_H);
+    if (rep.ok) r = (await rep.json()).services[HI_NOM] || null;
+  } catch (e) { /* hors ligne : on le dira plutôt que d'afficher des zéros */ }
+  if (!r) {
+    const v = document.createElement('div');
+    v.className = 'hi-vide';
+    v.textContent = t('hi.rien');
+    corps.appendChild(v);
+    return;
+  }
+  const z = cListe(corps);
+  const nb = (x, u) => (x == null ? '—' : x + (u || ''));
+  cRow(z, t('hi.dispo'), r.dispo == null ? '—' : r.dispo + ' %');
+  cRow(z, t('hi.moy'), nb(r.lat_moy, ' ms'));
+  cRow(z, t('hi.max'), nb(r.lat_max, ' ms'));
+  cRow(z, t('hi.incidents'), String(r.incidents));
+  /* Ce que la plage couvre réellement : un service ajouté ce matin n'a pas
+     trente jours derrière lui, et sa disponibilité ne porte pas dessus. */
+  const note = document.createElement('div');
+  note.className = 'hi-note';
+  note.textContent = r.heures
+    ? t('hi.couvre', { h: r.heures, s: r.sondes })
+    + (r.releves ? ' ' + t('hi.releves', { n: r.releves }) : ' ' + t('hi.sansreleve'))
+    : t('hi.rien');
+  corps.appendChild(note);
+}
+
+$('hi-plages').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  HI_H = Number(b.dataset.v);
+  peindreHistorique();
+});
+$('hi-close').addEventListener('click', () => { $('ov-histo').hidden = true; });
+$('ov-histo').addEventListener('click', (e) => {
+  if (e.target === $('ov-histo')) $('ov-histo').hidden = true;
+});
 
 /* Trace les temps de réponse relevés par le serveur. Rien n'est lissé ni
    inventé : deux mesures au minimum, sinon pas de courbe du tout. */

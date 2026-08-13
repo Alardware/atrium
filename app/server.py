@@ -143,7 +143,7 @@ def _collecter():
     for nom in noms:
         e = etats_sondes.get(nom)
         if e:
-            HISTO.noter(nom, e.get("en_ligne"))
+            HISTO.noter(nom, e.get("en_ligne"), e.get("latence_ms"))
     HISTO.oublier(noms)
     hote = systeme.mesures(CONFIG_DIR)
     systeme.enregistrer(hote)
