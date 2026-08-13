@@ -1819,18 +1819,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                 <input id="spu-nom" type="text" autocomplete="off">
               </div>
               <div class="field">
-                <label for="spu-pwd" data-i18n="setup.pwd">Mot de passe</label>
+                <label data-i18n="setup.pwd">Mot de passe</label>
+                <!-- Un mot de passe ne se pose que depuis son propre profil :
+                     c'est la seule route que le serveur accepte. Ce panneau en
+                     montre l'état et mène là-bas. -->
                 <div class="u-addrow">
-                  <span class="pwd-wrap">
-                    <input id="spu-pwd" type="password" placeholder="aucun — taper pour définir" autocomplete="new-password">
-                    <button class="pwd-eye" id="spu-pwd-eye" type="button" title="Afficher le mot de passe">👁</button>
-                  </span>
-                  <button class="btn-sm danger" id="spu-pwd-clear" type="button" data-i18n="btn.remove">Retirer</button>
+                  <span class="u-tag" id="spu-pwd-etat"></span>
+                  <button class="btn-sm" id="spu-pwd-go" type="button"
+                          data-i18n="users.pwd.change">Modifier dans Mon profil</button>
                 </div>
-                <div class="pwd-meter" id="spu-meter" hidden>
-                  <div class="pwd-bars"><i></i><i></i><i></i><i></i></div>
-                  <div class="pwd-lab" id="spu-meter-lab"></div>
-                </div>
+                <div class="hint" id="spu-pwd-hint"></div>
               </div>
             </div>
             <div class="scard-foot">
@@ -2588,14 +2586,8 @@ function loadUsers() {
 let USERS = loadUsers();
 let ACTIVE = store.get('activeUser', '');
 
-function hashPwd(p) {
-  const s = p + '::atrium';
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  let h2 = 5381;
-  for (let i = s.length - 1; i >= 0; i--) { h2 = (Math.imul(h2, 33) ^ s.charCodeAt(i)) >>> 0; }
-  return h.toString(16) + '-' + h2.toString(16);
-}
+/* Aucune empreinte n'est calculée ici. Le navigateur ne connaît des mots de
+   passe que leur existence : /api/config renvoie « 1 » ou rien. */
 const AV_COLORS = ['#2f6fed', '#16a34a', '#f59e0b', '#e04f3d', '#8b5cf6', '#0ea5e9', '#db2777'];
 const avColor = (nom) => {
   let h = 0;
@@ -6850,7 +6842,6 @@ let SEL_USER = -1;
 function renderUsers() {
   if (!$('spage').hidden && !$('sp-users').hidden) renderUsersPage();
 }
-const syncUserPwd = bindPwd('spu-pwd', 'spu-pwd-eye', 'spu-meter', 'spu-meter-lab');
 const syncProfilPwd = bindPwd('p-pwd', 'p-pwd-eye', 'p-meter', 'p-meter-lab');
 
 /* ---------- page « Mon profil » ---------- */
@@ -7013,13 +7004,13 @@ function fillFiche() {
   peindreAvatar($('spu-av'), u);
   $('spu-av-del').disabled = !u.photo;
   $('spu-av-del').style.opacity = u.photo ? '1' : '.45';
-  $('spu-pwd').value = '';
-  $('spu-pwd').type = 'password';
-  $('spu-pwd-eye').textContent = '👁';
-  $('spu-pwd').placeholder = u.pwd ? 'défini — taper pour le changer' : 'aucun — taper pour définir';
-  $('spu-pwd-clear').disabled = !u.pwd;
-  $('spu-pwd-clear').style.opacity = u.pwd ? '1' : '.45';
-  syncUserPwd();
+  /* « 1 » ou rien : le navigateur sait qu'un mot de passe existe, jamais
+     lequel. Le bouton n'apparaît que pour le profil connecté, parce que le
+     serveur refuse tout autre cas. */
+  const mien = !!SESSION_USER && u.nom === SESSION_USER;
+  $('spu-pwd-etat').textContent = t(u.pwd ? 'users.protected' : 'users.nopwd');
+  $('spu-pwd-go').hidden = !mien;
+  $('spu-pwd-hint').textContent = mien ? '' : t('users.pwd.other', { q: u.nom });
 }
 $('spu-av-up').addEventListener('click', () => $('spu-av-file').click());
 $('spu-av-file').addEventListener('change', async (e) => {
@@ -7108,20 +7099,14 @@ $('spu-save').addEventListener('click', () => {
     if (ACTIVE === u.nom) { ACTIVE = nv; store.set('activeUser', nv); }
     u.nom = nv;
   }
-  const p = $('spu-pwd').value;
-  if (p.trim()) u.pwd = hashPwd(p.trim());
   saveUsersLocal();
   pushCfg();
   renderUsersPage();
   renderAvatar();
 });
-$('spu-pwd-clear').addEventListener('click', () => {
-  const u = USERS[SEL_USER];
-  if (!u) return;
-  u.pwd = '';
-  saveUsersLocal();
-  pushCfg();
-  renderUsersPage();
+$('spu-pwd-go').addEventListener('click', () => {
+  spNav('profil');
+  $('p-pwd').focus();
 });
 $('spu-activate').addEventListener('click', () => {
   const u = USERS[SEL_USER];
