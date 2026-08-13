@@ -325,6 +325,73 @@ class Mesures:
             pass
 
 
+class Evenements:
+    """Le journal d Atrium, service par service.
+
+    Ce qu Atrium a lui-meme constate : une bascule d etat, un seuil franchi puis
+    rentre dans l ordre, une premiere apparition. Pas les evenements du service
+    — Atrium ne lit pas les journaux de Plex ou de Home Assistant, et pretendre
+    le contraire remplirait la page de choses inventees.
+
+    Chaque entree porte un instant, un code et ses parametres ; le texte est
+    traduit par l interface, comme pour les alertes. Cinquante entrees par
+    service : au-dela, ce n est plus un journal, c est une archive, et ce n est
+    pas ce qu on vient y chercher.
+    """
+
+    GARDE = 50
+
+    def __init__(self, chemin):
+        self.chemin = chemin
+        self.lock = threading.Lock()
+        self.data = {}
+        self._dernier_ecrit = 0
+        self._sale = False
+        try:
+            with open(chemin, "r", encoding="utf-8") as f:
+                brut = json.load(f) or {}
+            self.data = {nom: [dict(e) for e in liste][-self.GARDE:]
+                         for nom, liste in brut.items()}
+        except (OSError, ValueError, AttributeError, TypeError):
+            self.data = {}
+
+    def noter(self, service, code, param=None):
+        if not service or not code:
+            return
+        with self.lock:
+            liste = self.data.setdefault(service, [])
+            liste.append({"a": int(time.time()), "code": code, "param": param or {}})
+            del liste[:-self.GARDE]
+            self._sale = True
+        self._peut_etre_ecrire()
+
+    def lister(self, service, combien=20):
+        with self.lock:
+            return [dict(e) for e in (self.data.get(service) or [])[-combien:]][::-1]
+
+    def oublier(self, services):
+        with self.lock:
+            for perdu in [s for s in self.data if s not in services]:
+                del self.data[perdu]
+                self._sale = True
+
+    def _peut_etre_ecrire(self):
+        maintenant = time.time()
+        with self.lock:
+            if not self._sale or maintenant - self._dernier_ecrit < ECRITURE:
+                return
+            self._dernier_ecrit = maintenant
+            self._sale = False
+            copie = {nom: list(liste) for nom, liste in self.data.items()}
+        try:
+            tmp = self.chemin + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(copie, f, separators=(",", ":"), ensure_ascii=False)
+            os.replace(tmp, self.chemin)
+        except OSError:
+            pass
+
+
 def _court(x):
     """Un entier reste un entier : « 95 » plutot que « 95.0 » dans le fichier.
 

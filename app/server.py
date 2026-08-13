@@ -51,6 +51,9 @@ LIMITEUR = auth.Limiteur()
 JOURNAL = auth.Journal(os.path.join(CONFIG_DIR, "journal.json"))
 HISTO = historique.Historique(os.path.join(CONFIG_DIR, "historique.json"))
 MESURES = historique.Mesures(os.path.join(CONFIG_DIR, "mesures.json"))
+JOURNAL_SRV = historique.Evenements(os.path.join(CONFIG_DIR, "evenements.json"))
+# Dernier etat connu de chaque service, pour ne noter que les bascules.
+_vu = {}
 
 FORWARD_HEADERS = ("x-api-key", "authorization", "content-type", "accept", "x-plex-token")
 CORPS_MAX = 8 * 1024 * 1024      # au-dela, la requete est refusee
@@ -207,6 +210,46 @@ def _collecter():
 
     _releve.update(widgets=tuiles, hote=hote, maj=maj, a=time.time())
     supervision.evaluer(apps, hote, maj, erreurs, tuiles)
+    _noter_evenements(noms, etats_sondes)
+
+
+def _noter_evenements(noms, etats_sondes):
+    """Consigne ce qui a change, et seulement ce qui a change.
+
+    Un journal qui reciterait chaque sonde toutes les trente secondes serait
+    illisible : mille lignes par nuit disant que tout va bien. On n y garde que
+    les bascules d etat, les seuils franchis et rentres dans l ordre, et la
+    premiere apparition d un service.
+    """
+    graves = {}
+    for a in supervision.alertes():
+        if a.get("code") == "seuil" and a.get("service"):
+            graves.setdefault(a["service"], {})[a["param"].get("metrique")] = a["niveau"]
+
+    for nom in noms:
+        e = etats_sondes.get(nom)
+        if not e:
+            continue
+        avant = _vu.get(nom)
+        if avant is None:
+            JOURNAL_SRV.noter(nom, "suivi")
+        elif avant.get("en_ligne") != e.get("en_ligne"):
+            JOURNAL_SRV.noter(nom, "en_ligne" if e.get("en_ligne") else "hors_ligne",
+                              {"echecs": e.get("echecs", 0)})
+        # Seuils : franchi, aggrave, ou rentre dans l ordre.
+        anciens = (avant or {}).get("seuils") or {}
+        courants = graves.get(nom, {})
+        for mes, niveau in courants.items():
+            if anciens.get(mes) != niveau:
+                JOURNAL_SRV.noter(nom, "seuil", {"metrique": mes, "niveau": niveau})
+        for mes in anciens:
+            if mes not in courants:
+                JOURNAL_SRV.noter(nom, "seuil_fin", {"metrique": mes})
+        _vu[nom] = {"en_ligne": e.get("en_ligne"), "seuils": courants}
+
+    for perdu in [n for n in _vu if n not in noms]:
+        del _vu[perdu]
+    JOURNAL_SRV.oublier(noms)
 
 
 def boucle_collecte():
@@ -409,6 +452,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/mesure":
             if self.exiger_session():
                 self.mesure_get()
+        elif route == "/api/journal":
+            if self.exiger_session():
+                self.journal_get()
         elif route == "/api/capacites":
             # Ne change jamais en cours d'execution : l'interface la demande une
             # fois et s'en sert pour expliquer une tuile sans chiffre.
@@ -570,6 +616,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         r["agregats"] = list(metriques.agregats(ident))
         r["lab"] = metriques.libelle(ident)
         self.reply(200, json.dumps(r, ensure_ascii=False).encode())
+
+    def journal_get(self):
+        """Ce qu Atrium a constate sur ce service, du plus recent au plus ancien."""
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        nom = (q.get("service") or [""])[0]
+        if not self._app_nommee(nom):
+            self.reply(404, json.dumps({"error": "service inconnu"},
+                                       ensure_ascii=False).encode())
+            return
+        self.reply(200, json.dumps({"evenements": JOURNAL_SRV.lister(nom, 20)},
+                                   ensure_ascii=False).encode())
 
     def securite_get(self):
         """Etat de securite reel, tel que le serveur peut le constater.

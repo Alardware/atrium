@@ -640,19 +640,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .st-head .n{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .st-head .r{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .st-rows{display:flex;flex-direction:column}
-/* La mesure d'où l'on vient, désignée sans bruit. */
-.st-vise{border-radius:8px;background:var(--acc-soft);
-         box-shadow:inset 0 0 0 1px var(--acc-line)}
-.st-rows [data-mes]{cursor:pointer}
-#st-histo{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair2)}
-.mh-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
-.mh-lab{font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;color:var(--t4)}
-.mh-now{font:700 17px/1 'IBM Plex Mono',monospace;color:var(--t1)}
-.mh-graf{height:62px;margin:2px 0 12px}
-.mh-graf svg{width:100%;height:62px;overflow:visible}
-.mh-graf polyline{fill:none;stroke:var(--acc);stroke-width:1.6;stroke-linecap:round;
-                  stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.mh-vide{padding:10px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
+
 .st-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .st-row:first-child{border-top:0}
 .st-row b{font:600 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text);text-align:right}
@@ -858,6 +846,86 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 
 /* ---- page Serveurs ---- */
 .srvpage-body{flex:1;overflow-y:auto;padding:24px 26px 40px}
+
+/* ---- fiche d'application ---- */
+.ap-switch{margin-left:auto;display:flex;align-items:center;gap:9px;min-width:0}
+.ap-switch-l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.12em;
+             text-transform:uppercase;color:var(--t7);white-space:nowrap}
+#ap-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.ap-chip{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+         font:700 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--t4);
+         background:var(--s3);border:1px solid var(--hair2);overflow:hidden}
+.ap-chip.on{border-color:var(--acc);color:var(--acc)}
+.ap-chip img{width:100%;height:100%;object-fit:contain;padding:1px}
+.ap-cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;
+         align-items:start}
+@media (max-width:1080px){ .ap-cols{grid-template-columns:1fr} }
+.ap-tete{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
+.ap-tete .logo-chip{width:56px;height:56px;border-radius:14px;font-size:20px}
+.ap-tete h3{font:700 24px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.ap-sous{margin-top:5px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t5)}
+.ap-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ap-badge{padding:4px 9px;border-radius:7px;background:var(--s3);border:1px solid var(--hair2);
+          font:600 10.5px/1 'IBM Plex Mono',monospace;color:var(--t5)}
+.ap-badge.alerte{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text)}
+.ap-actions{margin-left:auto;display:flex;gap:8px;flex:none}
+.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.ap-tuile{padding:14px 15px 16px;border:1px solid var(--hair2);border-radius:12px;
+          background:var(--s2);text-align:left;transition:border-color .15s}
+.ap-tuile[data-mes]{cursor:pointer}
+.ap-tuile[data-mes]:hover{border-color:var(--hairH)}
+.ap-tuile.on{border-color:var(--acc);background:var(--acc-soft)}
+.ap-tuile .k{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;
+             text-transform:uppercase;color:var(--t7)}
+.ap-tuile .v{margin-top:9px;font:700 23px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.ap-tuile .v.warn{color:var(--warn)} .ap-tuile .v.bad{color:var(--bad)}
+.ap-tuile .d{margin-top:7px;font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
+.ap-carte{margin-top:20px;border:1px solid var(--hair2);border-radius:12px;background:var(--s2);
+          overflow:hidden}
+.ap-carte h4{display:flex;align-items:center;gap:9px;padding:13px 16px;
+             border-bottom:1px solid var(--hair2);
+             font:700 12.5px/1 'Plus Jakarta Sans',sans-serif}
+.ap-carte h4 .aide{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--t7)}
+.ap-corps{padding:16px}
+.ap-plages{margin-left:auto}
+.ap-barres{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;align-items:end;
+           min-height:132px}
+/* Au-delà d'une douzaine de colonnes, les valeurs ne tiennent plus : la barre
+   parle seule et le détail passe au survol. */
+.ap-barres.dense{gap:3px}
+.ap-barres.dense .n{display:none}
+.ap-barres.dense .j{font-size:8.5px}
+.ap-b{display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;
+      justify-content:flex-end}
+.ap-b .n{font:600 10.5px/1 'IBM Plex Mono',monospace;color:var(--t5)}
+.ap-b .j{font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
+.ap-b .z{width:100%;border-radius:7px 7px 3px 3px;background:var(--s4);
+         border:1px solid var(--hair2);min-height:4px;transition:height .35s}
+.ap-b.haut .z{background:var(--acc-soft);border-color:var(--acc-line)}
+.ap-b.creux .z{background:none;border-style:dashed}
+.ap-b.creux .n{color:var(--t7)}
+.ap-vide{padding:18px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6);
+         text-align:center}
+.ap-ban{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;margin-bottom:18px;
+        border:1px solid var(--bad);border-radius:12px;background:var(--bad-soft)}
+.ap-ban.warn{border-color:var(--warn);background:var(--warn-soft)}
+.ap-ban .tx b{display:block;font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t1)}
+.ap-ban .tx span{display:block;margin-top:4px;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;
+                 color:var(--t4)}
+.ap-conn{display:flex;flex-direction:column;gap:0}
+.ap-conn .r{display:flex;align-items:baseline;gap:12px;padding:10px 0;
+            border-bottom:1px solid var(--hair)}
+.ap-conn .r:last-child{border-bottom:0}
+.ap-conn .r .l{flex:none;width:104px;font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;
+               letter-spacing:.08em;text-transform:uppercase;color:var(--t7)}
+.ap-conn .r .v{flex:1;min-width:0;font:500 12px/1.4 'IBM Plex Mono',monospace;color:var(--t2);
+               overflow:hidden;text-overflow:ellipsis}
+.ap-jrn{display:flex;flex-direction:column}
+.ap-jrn .e{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--hair)}
+.ap-jrn .e:last-child{border-bottom:0}
+.ap-jrn .h{flex:none;font:500 10.5px/1.5 'IBM Plex Mono',monospace;color:var(--t7)}
+.ap-jrn .t{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t3)}
+.ap-jrn .e.bad .t{color:var(--bad-text)} .ap-jrn .e.warn .t{color:var(--warn-text)}
 .srv-bloc{max-width:1100px;margin:0 auto 26px;scroll-margin-top:16px}
 /* Un raccourci vers chaque machine : la page reste une seule colonne, mais on
    n'a plus à la parcourir pour atteindre la troisième. */
@@ -1842,19 +1910,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </span>
     </div>
     <div id="st-corps"></div>
-    <div id="st-histo" hidden>
-      <div class="mh-head">
-        <span class="mh-lab" id="mh-lab"></span>
-        <span class="mh-now" id="mh-now"></span>
-      </div>
-      <div class="seg hi-plages" id="mh-plages">
-        <button data-v="24" data-i18n="hi.24h">24 h</button>
-        <button data-v="168" data-i18n="hi.7j">7 j</button>
-        <button data-v="720" data-i18n="hi.30j">30 j</button>
-      </div>
-      <div class="mh-graf" id="mh-graf"></div>
-      <div id="mh-chiffres"></div>
-    </div>
+
     <div class="modal-foot">
       <button class="btn-ghost" id="st-close" data-i18n="btn.close">Fermer</button>
     </div>
@@ -1881,6 +1937,18 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <button class="btn-ghost" id="hi-close" data-i18n="btn.close">Fermer</button>
     </div>
   </div>
+</div>
+
+<!-- fiche d'une application -->
+<div class="spage" id="apppage" hidden>
+  <div class="spage-head">
+    <button class="btn-ghost" id="ap-back" data-i18n="btn.back">← Retour</button>
+    <h2 id="ap-nom"></h2>
+    <span id="ap-etat"></span>
+    <div class="ap-switch"><span class="ap-switch-l" data-i18n="ap.switch">Changer d'application</span>
+      <span id="ap-chips"></span></div>
+  </div>
+  <div class="srvpage-body" id="apppage-body"></div>
 </div>
 
 <!-- page Serveurs -->
@@ -3755,7 +3823,7 @@ async function ouvrirQMenu(bouton, index) {
   }, { inactif: !app.url });
   qitem(menu, '⟳', t('qm.refresh'), () => sonderMaintenant(app));
   qitem(menu, '⧉', t('qm.copy'), () => copier(app.url), { inactif: !app.url });
-  qitem(menu, '◉', t('qm.status'), () => ouvrirStatut(app));
+  qitem(menu, '◉', t('qm.status'), () => ouvrirFiche(app.nom));
 
   if (kindOfApp(app) === 'ha') {
     qsep(menu);
@@ -3857,67 +3925,7 @@ function stRow(zone, libelle, valeur, classe, id) {
   return r;
 }
 
-let ST_APP = null;
-function viserMesure(ident) {
-  const zone = $('st-corps').querySelector('.st-rows');
-  if (!zone) return;
-  zone.querySelectorAll('.st-vise').forEach((r) => r.classList.remove('st-vise'));
-  const cible = zone.querySelector('[data-mes="' + ident + '"]');
-  if (!cible) return;
-  cible.classList.add('st-vise');
-  if (cible.scrollIntoView) cible.scrollIntoView({ block: 'nearest' });
-  const mes = (STATS[ST_APP.nom] || []).find((m) => m.id === ident);
-  /* « hist » vient du serveur : lui seul sait si cette mesure a une série. Un
-     uptime n'en a pas, et on ne montre pas un cadre vide pour autant. */
-  if (mes && mes.hist) ouvrirMesure(ST_APP.nom, ident, mes.val, mes.lab);
-  else $('st-histo').hidden = true;
-}
 
-function ouvrirStatut(app, vise) {
-  ST_APP = app;
-  $('st-histo').hidden = true;
-  $('st-nom').textContent = app.nom;
-  $('st-role').textContent = [app.role, app.cat].filter(Boolean).join(' · ');
-  $('st-chip').querySelector('.cl').textContent = (app.nom[0] || '?').toUpperCase();
-  mountLogo($('st-chip'), logoDe(app));
-
-  const corps = $('st-corps');
-  corps.textContent = '';
-  const zone = document.createElement('div');
-  zone.className = 'st-rows';
-  corps.appendChild(zone);
-
-  const e = SUPER.etats[app.nom];
-  if (!app.url) {
-    stRow(zone, t('st.state'), t('app.nourl'));
-  } else if (!e) {
-    stRow(zone, t('st.state'), t('app.checking'));
-  } else {
-    stRow(zone, t('st.state'), t(e.en_ligne ? 'app.online' : 'app.offline'),
-          e.en_ligne ? 'ok' : 'bad');
-    if (e.latence_ms != null) stRow(zone, t('st.latency'), e.latence_ms + ' ms', 'mono');
-    if (e.latence_moy != null) stRow(zone, t('st.latency.avg'), e.latence_moy + ' ms', 'mono');
-    if (e.vu_a) stRow(zone, t('app.seen.t'), age(e.vu_a), 'mono');
-    if (e.depuis) stRow(zone, t(e.en_ligne ? 'st.up.since' : 'st.down.since'), age(e.depuis), 'mono');
-  }
-  if (app.url) stRow(zone, 'URL', app.url, 'mono');
-  const type = kindOfApp(app);
-  if (type) stRow(zone, t('st.integration'), TYPES[type] || type);
-
-  (STATS[app.nom] || []).forEach((s) => stRow(zone, s.lab, s.val, 'mono', s.id));
-
-  const soucis = alertesDe(app.nom);
-  soucis.forEach((a) => stRow(zone, t('st.alert'), texteAlerte(a),
-                              a.niveau === 'critique' ? 'bad' : 'warn'));
-
-  const c = DOCKER.actif ? conteneurDe(app) : null;
-  if (c) stRow(zone, t('st.container'), c.nom + ' · ' + c.etat, 'mono');
-
-  $('ov-statut').hidden = false;
-  /* Venir d'une mesure précise : on la désigne plutôt que de laisser chercher
-     dans une liste de huit lignes. */
-  if (vise) viserMesure(vise);
-}
 $('st-close').addEventListener('click', () => { $('ov-statut').hidden = true; });
 $('ov-statut').addEventListener('click', (e) => {
   if (e.target === $('ov-statut')) $('ov-statut').hidden = true;
@@ -5053,7 +5061,7 @@ function actionsPour(a) {
       liste.push({ lab: t('qm.open'), fn: () => window.open(app.url, '_blank', 'noopener') });
     }
     liste.push({ lab: t('qm.refresh'), fn: () => sonderMaintenant(app) });
-    liste.push({ lab: t('qm.status'), fn: () => ouvrirStatut(app) });
+    liste.push({ lab: t('qm.status'), fn: () => ouvrirFiche(app.nom) });
     const c = DOCKER.actif ? conteneurDe(app) : null;
     if (c) {
       liste.push({ lab: t('qm.restart.go'), chaud: true,
@@ -5170,7 +5178,7 @@ function renderAlertes() {
       b.appendChild(chip);
       b.appendChild(nom);
       b.appendChild(det);
-      if (app) b.addEventListener('click', () => ouvrirStatut(app));
+      if (app) b.addEventListener('click', () => ouvrirFiche(app.nom));
       chips.appendChild(b);
     });
     if (graves.length > 4) {
@@ -5925,8 +5933,8 @@ function appCard(app, index) {
       else if (act.dataset.act === 'menu') ouvrirQMenu(act, index);
       else if (act.dataset.act === 'edit' || act.dataset.act === 'cfg') openAppModal(index);
       else if (act.dataset.act === 'histo') ouvrirHistorique(app.nom);
-      else if (act.dataset.act === 'etat') ouvrirStatut(app);
-      else if (act.dataset.act === 'mes') ouvrirStatut(app, act.dataset.mes);
+      else if (act.dataset.act === 'etat') ouvrirFiche(app.nom);
+      else if (act.dataset.act === 'mes') ouvrirFiche(app.nom, act.dataset.mes);
       else openDelModal(index);
       return;
     }
@@ -5966,93 +5974,514 @@ $('btn-ranger').addEventListener('click', rangerApps);
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
-/* Histoire d'une mesure. Le serveur en garde une série horaire ; ce qu'on en
-   retient dépend de ce qu'elle mesure, et c'est lui qui le dit : une occupation
-   se résume par sa moyenne et son pire, un compteur par ses extrêmes. */
-let MH = { service: '', id: '', h: 24, val: '' };
+/* ---------- fiche d'une application ---------- */
+/* Une page plutôt qu'une fenêtre : c'est ici qu'on vient comprendre un service,
+   et une modale ne peut pas porter un graphique, un journal et un panneau de
+   connexion sans devenir un écran dans l'écran.
 
-function courbeSerie(points) {
-  const vus = points.map((p) => (p ? p.moy : null));
-  const connus = vus.filter((v) => v != null);
-  if (connus.length < 2) return null;
-  const bas = Math.min.apply(null, connus);
-  const haut = Math.max.apply(null, connus);
-  const amp = haut - bas || 1;
-  const svg = document.createElementNS(SVGNS, 'svg');
-  svg.setAttribute('viewBox', '0 0 100 40');
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('aria-hidden', 'true');
-  const x = (i) => (i / (vus.length - 1) * 100);
-  const y = (v) => (36 - (v - bas) / amp * 32);
-  /* Les heures sans relevé coupent le trait : relier deux bords éloignés
-     inventerait une évolution qui n'a pas été observée. */
-  let seg = [];
-  const poser = () => {
-    if (seg.length >= 2) {
-      const l = document.createElementNS(SVGNS, 'polyline');
-      l.setAttribute('points', seg.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' '));
-      svg.appendChild(l);
-    }
-    seg = [];
-  };
-  vus.forEach((v, i) => { if (v == null) poser(); else seg.push([x(i), y(v)]); });
-  poser();
-  return svg;
+   Tout ce qui s'y affiche est mesuré. Les listes de détail — bibliothèques,
+   pièces, disques — demanderaient une collecte par intégration qui n'existe
+   pas : elles ne sont pas dessinées plutôt qu'inventées. */
+let AP = { nom: '', mes: '', h: 168, points: null, journal: null };
+
+function ouvrirFiche(nom, mes) {
+  const app = findApp(nom);
+  if (!app) return;
+  AP = { nom: nom, mes: mes || '', jours: null, journal: null };
+  $('ov-statut').hidden = true;
+  $('spage').hidden = true;
+  $('srvpage').hidden = true;
+  $('apppage').hidden = false;
+  peindreFiche();
+  chargerJournal();
+  majJours();
 }
 
-async function peindreMesure() {
-  const boite = $('st-histo');
-  const graf = $('mh-graf');
-  const chiffres = $('mh-chiffres');
-  graf.textContent = '';
-  chiffres.textContent = '';
-  [...$('mh-plages').children].forEach((b) => {
-    b.classList.toggle('on', Number(b.dataset.v) === MH.h);
-  });
-  let r = null;
+function fermerFiche() { $('apppage').hidden = true; }
+
+/* Les mesures visibles de ce service, dans l'ordre de l'intégration. */
+const mesuresDe = (nom) => (STATS[nom] || []);
+
+async function chargerJournal() {
+  const nom = AP.nom;
   try {
-    const rep = await relayFetch('/api/mesure?service=' + encodeURIComponent(MH.service)
-      + '&id=' + encodeURIComponent(MH.id) + '&h=' + MH.h);
-    if (rep.ok) r = await rep.json();
-  } catch (e) { /* hors ligne */ }
-  if (!r || !r.releves) {
-    const v = document.createElement('div');
-    v.className = 'mh-vide';
-    v.textContent = t('mh.rien');
-    graf.appendChild(v);
-    return;
-  }
-  const trace = courbeSerie(r.points);
-  if (trace) graf.appendChild(trace);
-  else {
-    const v = document.createElement('div');
-    v.className = 'mh-vide';
-    v.textContent = t('mh.court');
-    graf.appendChild(v);
-  }
-  /* Seuls les résumés que le serveur juge pertinents pour cette nature. */
-  const z = cListe(chiffres);
-  const nombre = (x) => (Math.round(x) === x ? String(x) : String(Math.round(x * 10) / 10));
-  (r.agregats || []).forEach((k) => {
-    if (r[k] == null) return;
-    cRow(z, t('mh.' + k), nombre(r[k]) + (r.nature === 'pourcent' ? ' %'
-      : r.nature === 'temperature' ? ' °C' : ''));
-  });
-  cRow(z, t('mh.releves'), String(r.releves));
-  const note = document.createElement('div');
-  note.className = 'hi-note';
-  note.textContent = t('hi.couvre', { h: r.heures, s: r.releves });
-  chiffres.appendChild(note);
-  boite.hidden = false;
+    const r = await relayFetch('/api/journal?service=' + encodeURIComponent(nom));
+    if (r.ok && AP.nom === nom) { AP.journal = (await r.json()).evenements || []; peindreFiche(); }
+  } catch (e) { /* la carte le dira */ }
 }
 
-function ouvrirMesure(nom, ident, valeur, lab) {
-  MH = { service: nom, id: ident, h: MH.h || 24, val: valeur || '' };
-  $('mh-lab').textContent = lab || ident;
-  $('mh-now').textContent = MH.val ? t('mh.now', { v: MH.val }) : '';
-  $('st-histo').hidden = false;
-  peindreMesure();
+/* Le graphe : une colonne par heure sur vingt-quatre, par jour au-delà.
+
+   Ce qu'une colonne montre dépend de la mesure : une occupation se résume par
+   sa moyenne — 80 % pendant six heures et 20 % pendant dix-huit ne font pas
+   « 95 % toute la journée » — et un compteur par son maximum, parce que c'est
+   le pic qui raconte quelque chose. Le serveur dit lequel des deux. */
+const PLAGES = [24, 168, 720];
+
+function grouper(points, parPaquet, compteur) {
+  const paquets = [];
+  /* On découpe en partant de la fin : le dernier paquet doit être l'heure ou
+     le jour en cours, même si la série ne commence pas sur une frontière. */
+  for (let fin = points.length; fin > 0; fin -= parPaquet) {
+    const tranche = points.slice(Math.max(0, fin - parPaquet), fin).filter(Boolean);
+    const n = tranche.reduce((a, x) => a + x.n, 0);
+    paquets.unshift(!tranche.length || !n ? null : {
+      v: compteur ? Math.max.apply(null, tranche.map((x) => x.max))
+        : tranche.reduce((a, x) => a + x.moy * x.n, 0) / n,
+      n: n,
+    });
+  }
+  return paquets;
 }
+
+async function majJours() {
+  const nom = AP.nom;
+  const mes = AP.mes || (mesuresDe(nom).find((m) => m.hist) || {}).id || '';
+  AP.mes = mes;
+  AP.points = null;
+  if (!mes) { peindreFiche(); return; }
+  peindreFiche();
+  try {
+    const r = await relayFetch('/api/mesure?service=' + encodeURIComponent(nom)
+      + '&id=' + encodeURIComponent(mes) + '&h=' + AP.h);
+    if (!r.ok || AP.nom !== nom) return;
+    const d = await r.json();
+    const compteur = (d.agregats || []).indexOf('min') >= 0;
+    const parPaquet = AP.h <= 24 ? 1 : 24;
+    const cols = grouper(d.points || [], parPaquet, compteur);
+    AP.points = { nature: d.nature, lab: d.lab, compteur: compteur,
+                  pas: parPaquet, cols: cols.slice(-(AP.h <= 24 ? 24 : AP.h / 24)) };
+  } catch (e) { /* la carte le dira */ }
+  peindreFiche();
+}
+
+/* L'étiquette sous une colonne : l'heure sur vingt-quatre, le jour sinon. */
+function etiquetteCol(recul, pas) {
+  const d = new Date();
+  if (pas === 1) {
+    d.setHours(d.getHours() - recul);
+    return i18n.langue === 'en'
+      ? d.toLocaleTimeString('en-GB', { hour: 'numeric', hour12: true }).replace(/\s/g, '')
+      : String(d.getHours()).padStart(2, '0') + 'h';
+  }
+  d.setDate(d.getDate() - recul);
+  return d.toLocaleDateString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR',
+    AP.h > 168 ? { day: 'numeric', month: 'numeric' } : { weekday: 'short' });
+}
+
+function fmtMesure(v, nature) {
+  const n = Math.round(v * 10) / 10;
+  const txt = (Math.round(n) === n ? String(Math.round(n)) : String(n));
+  return nature === 'pourcent' ? txt + ' %' : nature === 'temperature' ? txt + ' °C' : txt;
+}
+
+function peindreFiche() {
+  const app = findApp(AP.nom);
+  if (!app) { fermerFiche(); return; }
+  const nom = app.nom;
+  const e = SUPER.etats[nom];
+  const sant = sante(nom);
+  const ennuis = alertesDe(nom);
+  const graves = ennuis.filter((x) => x.niveau === 'critique')
+    .map((x) => x.param && x.param.metrique).filter(Boolean);
+  const legeres = ennuis.filter((x) => x.niveau !== 'critique')
+    .map((x) => x.param && x.param.metrique).filter(Boolean);
+
+  $('ap-nom').textContent = nom;
+  const et = $('ap-etat');
+  et.className = 'ap-badge' + (sant === 'off' ? ' alerte' : '');
+  et.textContent = t(sant === 'off' ? 'app.offline' : sant === 'warn' ? 'app.degraded'
+    : sant === 'on' ? 'app.online' : 'app.checking');
+
+  /* Passer d'une application à l'autre sans repasser par le tableau de bord. */
+  const chips = $('ap-chips');
+  chips.textContent = '';
+  apps.forEach((a) => {
+    const b = document.createElement('button');
+    b.className = 'ap-chip' + (a.nom === nom ? ' on' : '');
+    b.type = 'button';
+    b.title = a.nom;
+    b.textContent = (a.nom[0] || '?').toUpperCase();
+    mountLogo(b, logoDe(a));
+    b.addEventListener('click', () => ouvrirFiche(a.nom));
+    chips.appendChild(b);
+  });
+
+  const body = $('apppage-body');
+  body.textContent = '';
+  const cols = document.createElement('div');
+  cols.className = 'ap-cols';
+  const gauche = document.createElement('div');
+  const droite = document.createElement('div');
+  cols.appendChild(gauche);
+  cols.appendChild(droite);
+  body.appendChild(cols);
+
+  /* --- identité --- */
+  const tete = document.createElement('div');
+  tete.className = 'ap-tete';
+  const chip = document.createElement('span');
+  chip.className = 'logo-chip s40';
+  const cl = document.createElement('span');
+  cl.className = 'cl';
+  cl.textContent = (nom[0] || '?').toUpperCase();
+  chip.appendChild(cl);
+  mountLogo(chip, logoDe(app));
+  const ident = document.createElement('div');
+  const h3 = document.createElement('h3');
+  h3.textContent = nom;
+  const sous = document.createElement('div');
+  sous.className = 'ap-sous';
+  sous.textContent = [app.role, app.url, app.version].filter(Boolean).join(' · ');
+  const badges = document.createElement('div');
+  badges.className = 'ap-badges';
+  const badge = (txt, alerte) => {
+    const b = document.createElement('span');
+    b.className = 'ap-badge' + (alerte ? ' alerte' : '');
+    b.textContent = txt;
+    badges.appendChild(b);
+  };
+  const type = kindOfApp(app);
+  const su = CAPA && CAPA[type];
+  /* TYPES ne nomme que les quatre intégrations historiques ; pour les autres,
+     l'identifiant fait l'affaire, avec une majuscule. */
+  if (type) badge(TYPES[type] || (type[0].toUpperCase() + type.slice(1)));
+  if (app.token || app.apiKey) badge(t('ap.cle.ok'));
+  else if (su && su.cle) badge(t('ap.cle.non'));
+  else if (!su) badge(t('ap.etatseul'));
+  if (viaRelais(app.url || 'http://x')) badge(t('ap.relais'));
+  if (ennuis.length) badge(t(ennuis.length > 1 ? 'ap.alertes' : 'ap.alerte',
+                             { n: ennuis.length }), true);
+  ident.appendChild(h3);
+  ident.appendChild(sous);
+  ident.appendChild(badges);
+  const actions = document.createElement('div');
+  actions.className = 'ap-actions';
+  if (app.url) {
+    const ouvrir = document.createElement('a');
+    ouvrir.className = 'btn-primary';
+    ouvrir.href = app.url;
+    ouvrir.target = '_blank';
+    ouvrir.rel = 'noopener';
+    ouvrir.textContent = t('ap.ouvrir');
+    actions.appendChild(ouvrir);
+  }
+  /* Le bouton de redémarrage n'apparaît que si un conteneur porte ce nom :
+     ailleurs il ne ferait qu'annoncer une action impossible. */
+  const cont = DOCKER.actif ? conteneurDe(app) : null;
+  if (cont) {
+    const rest = document.createElement('button');
+    rest.className = 'btn-sm';
+    rest.type = 'button';
+    rest.textContent = t('qm.restart');
+    rest.addEventListener('click', () => demanderRedemarrage(app, cont));
+    actions.appendChild(rest);
+  }
+  const modif = document.createElement('button');
+  modif.className = 'btn-sm';
+  modif.type = 'button';
+  modif.textContent = t('ti.edit');
+  modif.addEventListener('click', () => openAppModal(apps.indexOf(app)));
+  actions.appendChild(modif);
+  tete.appendChild(chip);
+  tete.appendChild(ident);
+  tete.appendChild(actions);
+  gauche.appendChild(tete);
+
+  /* --- bandeau d'anomalie --- */
+  if (sant === 'off' || (e && e.echecs)) {
+    const ban = document.createElement('div');
+    ban.className = 'ap-ban' + (sant === 'off' ? '' : ' warn');
+    const tx = document.createElement('div');
+    tx.className = 'tx';
+    const b = document.createElement('b');
+    b.textContent = t(sant === 'off' ? 'ap.ban.off' : 'ap.ban.echecs');
+    const d = document.createElement('span');
+    d.textContent = t('ap.ban.d', { q: e && e.depuis ? age(e.depuis) : '—',
+                                    n: (e && e.echecs) || 0 });
+    tx.appendChild(b);
+    tx.appendChild(d);
+    ban.appendChild(tx);
+    gauche.appendChild(ban);
+  }
+
+  /* --- tuiles de mesures --- */
+  const mesures = mesuresDe(nom);
+  const tuiles = document.createElement('div');
+  tuiles.className = 'ap-tuiles';
+  /* Toutes les mesures, pas les trois premières : la fiche est l'endroit où
+     l'on vient tout voir, et la grille se replie d'elle-même. */
+  mesures.forEach((m) => {
+    const tu = document.createElement('div');
+    tu.className = 'ap-tuile' + (m.id === AP.mes ? ' on' : '');
+    if (m.hist) tu.dataset.mes = m.id;
+    const k = document.createElement('div');
+    k.className = 'k';
+    k.textContent = etiquette(m);
+    const v = document.createElement('div');
+    v.className = 'v' + (graves.includes(m.id) ? ' bad' : legeres.includes(m.id) ? ' warn' : '');
+    v.textContent = m.val;
+    const d = document.createElement('div');
+    d.className = 'd';
+    d.textContent = m.hist ? t('ap.suivie') : t('ap.instant');
+    tu.appendChild(k);
+    tu.appendChild(v);
+    tu.appendChild(d);
+    if (m.hist) tu.addEventListener('click', () => { AP.mes = m.id; majJours(); });
+    tuiles.appendChild(tu);
+  });
+  const tl = document.createElement('div');
+  tl.className = 'ap-tuile';
+  const tlk = document.createElement('div');
+  tlk.className = 'k';
+  tlk.textContent = t('st.latency');
+  const tlv = document.createElement('div');
+  tlv.className = 'v';
+  tlv.textContent = e && e.latence_ms != null ? e.latence_ms + ' ms' : '—';
+  const tld = document.createElement('div');
+  tld.className = 'd';
+  tld.textContent = e && e.latence_moy != null ? t('app.moy', { n: e.latence_moy }) : t('ap.sansreponse');
+  tl.appendChild(tlk);
+  tl.appendChild(tlv);
+  tl.appendChild(tld);
+  tuiles.appendChild(tl);
+  gauche.appendChild(tuiles);
+
+  /* --- sept jours --- */
+  const carte = document.createElement('div');
+  carte.className = 'ap-carte';
+  const h4 = document.createElement('h4');
+  const titre = document.createElement('span');
+  const choisie = mesures.find((m) => m.id === AP.mes);
+  titre.textContent = choisie ? t('ap.7j', { q: etiquette(choisie).toLowerCase() }) : t('ap.7j.rien');
+  h4.appendChild(titre);
+  const corps = document.createElement('div');
+  corps.className = 'ap-corps';
+  carte.appendChild(h4);
+  carte.appendChild(corps);
+  if (choisie) {
+    const seg = document.createElement('span');
+    seg.className = 'seg ap-plages';
+    PLAGES.forEach((h) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = h === AP.h ? 'on' : '';
+      b.textContent = t(h === 24 ? 'hi.24h' : h === 168 ? 'hi.7j' : 'hi.30j');
+      b.addEventListener('click', () => { AP.h = h; majJours(); });
+      seg.appendChild(b);
+    });
+    h4.appendChild(seg);
+  }
+  if (!AP.points) {
+    const v = document.createElement('div');
+    v.className = 'ap-vide';
+    v.textContent = t(choisie ? 'ap.charge' : 'ap.7j.aucune');
+    corps.appendChild(v);
+  } else if (!AP.points.cols.filter(Boolean).length) {
+    const v = document.createElement('div');
+    v.className = 'ap-vide';
+    v.textContent = t('mh.rien');
+    corps.appendChild(v);
+  } else {
+    const cols = AP.points.cols;
+    const pas = AP.points.pas;
+    const vus = cols.filter(Boolean).map((x) => x.v);
+    const haut = Math.max.apply(null, vus);
+    const ipic = cols.reduce((meilleur, x, i) =>
+      (x && (meilleur < 0 || x.v > cols[meilleur].v) ? i : meilleur), -1);
+    const aide = document.createElement('span');
+    aide.className = 'aide';
+    aide.textContent = t('ap.pic', { q: etiquetteCol(cols.length - 1 - ipic, pas),
+                                     v: fmtMesure(cols[ipic].v, AP.points.nature) });
+    h4.appendChild(aide);
+    const bandes = document.createElement('div');
+    bandes.className = cols.length > 12 ? 'ap-barres dense' : 'ap-barres';
+    bandes.style.gridTemplateColumns = 'repeat(' + cols.length + ',1fr)';
+    cols.forEach((j, i) => {
+      const col = document.createElement('div');
+      /* Écrites en toutes lettres : une classe construite par concaténation
+         passe pour morte à la relecture qui traque les règles inutilisées. */
+      col.className = !j ? 'ap-b creux' : i === ipic ? 'ap-b haut' : 'ap-b';
+      const etq = etiquetteCol(cols.length - 1 - i, pas);
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = j ? fmtMesure(j.v, AP.points.nature) : '\u2014';
+      const z = document.createElement('span');
+      z.className = 'z';
+      /* Une tranche sans relevé garde sa colonne, en pointillé : elle n'a pas
+         valu zéro, elle n'a pas été observée. */
+      z.style.height = j && haut ? Math.max(4, Math.round(j.v / haut * 86)) + 'px' : '4px';
+      const jr = document.createElement('span');
+      jr.className = 'j';
+      jr.textContent = etq;
+      col.title = etq + (j ? ' \u00b7 ' + fmtMesure(j.v, AP.points.nature)
+        + ' \u00b7 ' + t('mh.releves').toLowerCase() + ' ' + j.n : ' \u00b7 ' + t('ap.creux'));
+      col.appendChild(n);
+      col.appendChild(z);
+      col.appendChild(jr);
+      bandes.appendChild(col);
+    });
+    corps.appendChild(bandes);
+  }
+  gauche.appendChild(carte);
+
+  /* --- alertes en cours --- */
+  if (ennuis.length) {
+    const ac = document.createElement('div');
+    ac.className = 'ap-carte';
+    const ah = document.createElement('h4');
+    ah.textContent = t('st.alert');
+    const acc = document.createElement('div');
+    acc.className = 'ap-corps';
+    const zone = document.createElement('div');
+    zone.className = 'ap-jrn';
+    ennuis.forEach((al) => {
+      const l = document.createElement('div');
+      l.className = 'e ' + (al.niveau === 'critique' ? 'bad' : 'warn');
+      const h = document.createElement('span');
+      h.className = 'h';
+      h.textContent = age(al.depuis);
+      const tx = document.createElement('span');
+      tx.className = 't';
+      tx.textContent = texteAlerte(al);
+      l.appendChild(h);
+      l.appendChild(tx);
+      zone.appendChild(l);
+    });
+    acc.appendChild(zone);
+    ac.appendChild(ah);
+    ac.appendChild(acc);
+    gauche.appendChild(ac);
+  }
+
+  /* --- source non branchée --- */
+  if (!mesures.length && su) {
+    const nb = document.createElement('div');
+    nb.className = 'ap-carte';
+    const nh = document.createElement('h4');
+    nh.textContent = t('ap.nonbranchee');
+    const nc = document.createElement('div');
+    nc.className = 'ap-corps';
+    const tx = document.createElement('div');
+    tx.className = 'ap-sous';
+    tx.textContent = t('ap.nonbranchee.d');
+    const l = document.createElement('div');
+    l.className = 'ap-badges';
+    su.donnees.forEach((d) => {
+      const b = document.createElement('span');
+      b.className = 'ap-badge';
+      b.textContent = d.lab.toLowerCase();
+      l.appendChild(b);
+    });
+    nc.appendChild(tx);
+    nc.appendChild(l);
+    nb.appendChild(nh);
+    nb.appendChild(nc);
+    gauche.appendChild(nb);
+  }
+
+  /* --- connexion --- */
+  const cx = document.createElement('div');
+  cx.className = 'ap-carte';
+  const cxh = document.createElement('h4');
+  cxh.textContent = t('ap.connexion');
+  const cxc = document.createElement('div');
+  cxc.className = 'ap-corps';
+  const liste = document.createElement('div');
+  liste.className = 'ap-conn';
+  const ligne = (lab, val) => {
+    const r = document.createElement('div');
+    r.className = 'r';
+    const l = document.createElement('span');
+    l.className = 'l';
+    l.textContent = lab;
+    const v = document.createElement('span');
+    v.className = 'v';
+    v.textContent = val;
+    r.appendChild(l);
+    r.appendChild(v);
+    liste.appendChild(r);
+  };
+  ligne(t('ap.url'), app.url || '—');
+  /* La clé n'est jamais réaffichée : le serveur ne la renvoie pas au navigateur
+     et la fiche n'en garde que l'existence. */
+  ligne(t('ap.cle'), (app.token || app.apiKey) ? t('ap.cle.enreg') : t('ap.cle.aucune'));
+  ligne(t('ap.cycle'), t('ap.cycle.v'));
+  if (e && e.vu_a) ligne(t('app.seen.t'), age(e.vu_a));
+  if (cont) ligne(t('st.container'), cont.nom + ' \u00b7 ' + cont.etat);
+  cxc.appendChild(liste);
+  cx.appendChild(cxh);
+  cx.appendChild(cxc);
+  droite.appendChild(cx);
+
+  /* --- journal --- */
+  const jr = document.createElement('div');
+  jr.className = 'ap-carte';
+  const jh = document.createElement('h4');
+  jh.textContent = t('ap.journal');
+  const ja = document.createElement('span');
+  ja.className = 'aide';
+  ja.textContent = t('ap.journal.src');
+  jh.appendChild(ja);
+  const jc = document.createElement('div');
+  jc.className = 'ap-corps';
+  jr.appendChild(jh);
+  jr.appendChild(jc);
+  if (!AP.journal || !AP.journal.length) {
+    const v = document.createElement('div');
+    v.className = 'ap-vide';
+    v.textContent = t(AP.journal ? 'ap.journal.rien' : 'ap.charge');
+    jc.appendChild(v);
+  } else {
+    const zone = document.createElement('div');
+    zone.className = 'ap-jrn';
+    AP.journal.forEach((ev) => {
+      const l = document.createElement('div');
+      const grave = ev.code === 'hors_ligne'
+        || (ev.code === 'seuil' && (ev.param || {}).niveau === 'critique');
+      l.className = 'e' + (grave ? ' bad' : ev.code === 'seuil' ? ' warn' : '');
+      const h = document.createElement('span');
+      h.className = 'h';
+      h.textContent = new Date(ev.a * 1000).toLocaleTimeString(
+        i18n.langue === 'en' ? 'en-GB' : 'fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const tx = document.createElement('span');
+      tx.className = 't';
+      tx.textContent = texteEvenement(ev);
+      l.title = new Date(ev.a * 1000).toLocaleString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR');
+      l.appendChild(h);
+      l.appendChild(tx);
+      zone.appendChild(l);
+    });
+    jc.appendChild(zone);
+  }
+  droite.appendChild(jr);
+}
+
+/* Le serveur envoie un code et ses paramètres ; la phrase est écrite ici, comme
+   pour les alertes. */
+function texteEvenement(ev) {
+  const p = ev.param || {};
+  const lab = p.metrique ? (metriqueLab(p.metrique) || p.metrique) : '';
+  if (ev.code === 'suivi') return t('ev.suivi');
+  if (ev.code === 'en_ligne') return t('ev.en_ligne');
+  if (ev.code === 'hors_ligne') return t('ev.hors_ligne');
+  if (ev.code === 'seuil') {
+    return t(p.niveau === 'critique' ? 'ev.seuil.crit' : 'ev.seuil', { q: lab });
+  }
+  if (ev.code === 'seuil_fin') return t('ev.seuil.fin', { q: lab });
+  return ev.code;
+}
+
+/* Le libellé d'une mesure, s'il est connu de ce service. */
+function metriqueLab(id) {
+  const m = (STATS[AP.nom] || []).find((x) => x.id === id);
+  return m ? m.lab.toLowerCase() : '';
+}
+
+$('ap-back').addEventListener('click', fermerFiche);
+
+
+
 
 /* Historique d'un service : disponibilité et temps de réponse sur la plage
    demandée. Tout vient du serveur, qui seul garde ces heures ; le navigateur
@@ -6103,18 +6532,6 @@ async function peindreHistorique() {
     : t('hi.rien');
   corps.appendChild(note);
 }
-
-$('mh-plages').addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  MH.h = Number(b.dataset.v);
-  peindreMesure();
-});
-$('st-corps').addEventListener('click', (e) => {
-  const r = e.target.closest('[data-mes]');
-  if (!r || !ST_APP) return;
-  viserMesure(r.dataset.mes);
-});
 
 $('hi-plages').addEventListener('click', (e) => {
   const b = e.target.closest('button');
@@ -6307,6 +6724,12 @@ async function detecterEtTester() {
   if (editIndex === null && CAT_PAR_TYPE[d.type]) $('m-cat').value = CAT_PAR_TYPE[d.type];
   if (d.cle_libelle) $('m-key-label').textContent = d.cle_libelle;
 
+  /* La version est relevée par la sonde de détection ; sans être conservée
+     ici, elle disparaissait avec la fenêtre. */
+  if (editIndex !== null && apps[editIndex] && d.version) {
+    apps[editIndex].version = d.version;
+    saveApps();
+  }
   const nom = d.nom + (d.version ? ' ' + d.version : '');
   if (!d.cle_requise) { majTest('ok', t('f.test.detected', { nom })); return; }
   if (!$('m-key').value.trim()) { majTest('na', t('f.test.detected.nokey', { nom })); return; }
