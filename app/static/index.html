@@ -466,10 +466,14 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    quatre mesures a besoin de la ligne entière ; un service muet n'a besoin de
    rien, et lui donner la même place étirait son vide. Quatre tailles plutôt
    qu'une mesure au pixel : la rangée reste une rangée, pas un escalier. */
-.grid:not(.list) > .tuile-s{flex:1 1 206px;max-width:250px}
-.grid:not(.list) > .tuile-m{flex:1 1 262px;max-width:320px}
-.grid:not(.list) > .tuile-l{flex:1 1 330px;max-width:392px}
-.grid:not(.list) > .tuile-xl{flex:1 1 424px;max-width:504px}
+/* La marge de croissance reste courte. Une rangée incomplète — la dernière —
+   se partage tout l'espace qui reste : à deux tuiles, chacune doublait et la
+   taille ne disait plus rien du contenu. Huit pour cent suffisent à ce que les
+   rangées pleines finissent au bord sans que la dernière enfle. */
+.grid:not(.list) > .tuile-s{flex:1 1 206px;max-width:222px}
+.grid:not(.list) > .tuile-m{flex:1 1 262px;max-width:283px}
+.grid:not(.list) > .tuile-l{flex:1 1 372px;max-width:402px}
+.grid:not(.list) > .tuile-xl{flex:1 1 476px;max-width:514px}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
 /* Le nom se tient à côté du logo, pas dessous : deux lignes gagnées, que les
    chiffres occupent. La tuile n'a donc plus besoin de s'élargir pour les
@@ -5537,13 +5541,20 @@ function appCard(app, index) {
       zone.classList.add('vide');
       zone.textContent = t('app.nometric');
     }
-    /* La ligne est en chasse fixe : sa longueur en caractères dit sa largeur.
-       On classe plutôt qu'on ne mesure au pixel — quatre largeurs se rangent
-       encore en rangées, une largeur par tuile ferait un escalier. */
-    const n = zone.textContent.length;
-    a.classList.add(n <= 16 ? 'tuile-s' : n <= 30 ? 'tuile-m'
-      : n <= 46 ? 'tuile-l' : 'tuile-xl');
   }
+
+  /* La largeur suit ce que la tuile a à écrire, et deux choses peuvent se faire
+     couper : la ligne de mesures — en chasse fixe, donc sa longueur en
+     caractères donne sa largeur — et le nom du service, qui partage sa ligne
+     avec le logo et les actions. On prend la plus exigeante des deux.
+
+     Puis on classe, plutôt que de poser la largeur au pixel : quatre tailles se
+     rangent encore en rangées, une largeur par tuile ferait un escalier. */
+  const ligne = chiffres ? a.querySelector('.app-mes').textContent : '';
+  const besoin = Math.max(54 + Math.ceil(ligne.length * 6.9),
+                          126 + Math.ceil(app.nom.length * 7.4));
+  a.classList.add(besoin <= 206 ? 'tuile-s' : besoin <= 262 ? 'tuile-m'
+    : besoin <= 372 ? 'tuile-l' : 'tuile-xl');
 
 
   if (app.url) { a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; }
