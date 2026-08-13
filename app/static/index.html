@@ -763,7 +763,12 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .user-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;transition:border-color .15s}
 .user-row:hover{border-color:var(--border-3)}
 .user-row.actif{border-color:var(--accent);background:var(--accent-soft)}
-.u-avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#fff;flex:none}
+.u-avatar{position:relative;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#fff;flex:none;overflow:hidden}
+/* La photo remplit la pastille et se recadre au centre, comme dans la fiche du
+   profil. Sans cette règle, l'image gardait sa taille d'origine et l'on ne
+   voyait que son coin supérieur gauche : la même photo paraissait différente
+   d'un endroit à l'autre. */
+.u-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .u-nom{flex:1;min-width:0;font:600 13.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .u-tag{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--subtle);color:var(--muted);white-space:nowrap}
 .u-actif{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
@@ -3197,20 +3202,19 @@ $('theme-seg').addEventListener('click', (e) => {
 });
 
 /* ---------- horloge + météo ---------- */
-const WX_FR = {
-  'clear-night': 'nuit claire', sunny: 'ensoleillé', cloudy: 'nuageux',
-  partlycloudy: 'éclaircies', rainy: 'pluie', pouring: 'forte pluie',
-  snowy: 'neige', 'snowy-rainy': 'neige fondue', fog: 'brouillard',
-  hail: 'grêle', lightning: 'orage', 'lightning-rainy': 'orage',
-  windy: 'venteux', 'windy-variant': 'venteux', exceptional: 'alerte',
-};
 function tickClock() {
   const now = new Date();
-  $('clock-time').textContent = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  let sub = now.toLocaleDateString('fr-FR', { weekday: 'long' });
+  /* L'heure et le jour suivent la langue choisie : ils étaient écrits en
+     français quoi qu'il arrive. */
+  const langue = i18n.langue === 'en' ? 'en-GB' : 'fr-FR';
+  $('clock-time').textContent = now.toLocaleTimeString(langue, { hour: '2-digit', minute: '2-digit' });
+  let sub = now.toLocaleDateString(langue, { weekday: 'long' });
   if (WEATHER) {
     const deg = (WEATHER.attributes || {}).temperature;
-    const lbl = WX_FR[WEATHER.state] || WEATHER.state;
+    /* La condition météo a ses traductions dans le dictionnaire ; WX_FR ne
+       servait qu'à les écrire une seconde fois, en français seulement. */
+    const cle = 'w.meteo.' + WEATHER.state;
+    const lbl = t(cle) === cle ? String(WEATHER.state).replace(/-/g, ' ') : t(cle);
     if (deg != null) sub += ' · ' + Math.round(deg) + '° ' + lbl;
   }
   $('clock-sub').textContent = sub;
@@ -6193,7 +6197,7 @@ function peindreFiche() {
 
   $('ap-nom').textContent = nom;
   const et = $('ap-etat');
-  et.className = 'fa-badge' + (sant === 'off' ? ' alerte' : '');
+  et.className = sant === 'off' ? 'fa-badge alerte' : 'fa-badge';
   et.textContent = t(sant === 'off' ? 'app.offline' : sant === 'warn' ? 'app.degraded'
     : sant === 'on' ? 'app.online' : 'app.checking');
 
@@ -6240,7 +6244,7 @@ function peindreFiche() {
   badges.className = 'fa-badges';
   const badge = (txt, alerte) => {
     const b = document.createElement('span');
-    b.className = 'fa-badge' + (alerte ? ' alerte' : '');
+    b.className = alerte ? 'fa-badge alerte' : 'fa-badge';
     b.textContent = txt;
     badges.appendChild(b);
   };

@@ -303,22 +303,56 @@ def w_ha(base, cle):
     return stats or None
 
 
-def w_unraid(base, cle):
-    """Charge du NAS, lue par l API GraphQL d Unraid."""
-    if not cle:
-        return None
-    corps = json.dumps({"query": "{ metrics { cpu { percentTotal } "
-                                 "memory { percentTotal } } "
-                                 "array { capacity { kilobytes { used total } } "
-                                 "disks { temp } } "
-                                 "info { time uptime } "
-                                 "docker { containers { state } } }"}).encode()
+def _unraid_graphql(base, cle, requete, diag=None, quoi=""):
+    """Une requete GraphQL Unraid. Rend « data », ou None en disant pourquoi.
+
+    GraphQL repond 200 meme lorsqu il refuse : le motif est dans « errors », et
+    c est celui-la qu il faut lire pour savoir si la cle manque de portee ou si
+    le schema a change.
+    """
+    corps = json.dumps({"query": requete}).encode()
     code, rep, _ = _http(base + "/graphql",
                          {"x-api-key": cle, "Content-Type": "application/json"},
                          "POST", corps)
-    d = _chemin(_json(rep), "data")
-    if code != 200 or not isinstance(d, dict):
+    j = _json(rep)
+    d = _chemin(j, "data")
+    if code == 200 and isinstance(d, dict):
+        return d
+    if diag is not None:
+        erreurs = _chemin(j, "errors") or []
+        motif = ""
+        if isinstance(erreurs, list) and erreurs:
+            motif = str((erreurs[0] or {}).get("message") or "")[:120]
+        diag.setdefault("refus", []).append(
+            "%s : %s" % (quoi, motif or ("HTTP %s" % code)))
+    return None
+
+
+def w_unraid(base, cle, diag=None):
+    """Charge du NAS, lue par l API GraphQL d Unraid.
+
+    Les quatre familles sont demandees separement : une branche refusee — Docker
+    hors de la portee de la cle, grappe absente d une version — ne doit pas
+    emporter les trois autres. Une requete de plus par cycle sur le reseau local
+    coute quelques millisecondes ; perdre toutes les mesures coute la tuile.
+    """
+    if not cle:
         return None
+    charge = _unraid_graphql(
+        base, cle, "{ metrics { cpu { percentTotal } memory { percentTotal } } }",
+        diag, "charge")
+    grappe = _unraid_graphql(
+        base, cle, "{ array { capacity { kilobytes { used total } } disks { temp } } }",
+        diag, "grappe")
+    marche = _unraid_graphql(base, cle, "{ info { time uptime } }", diag, "uptime")
+    conteneurs = _unraid_graphql(
+        base, cle, "{ docker { containers { state } } }", diag, "docker")
+    if charge is None and grappe is None and marche is None and conteneurs is None:
+        return None
+    d = {}
+    for bloc in (charge, grappe, marche, conteneurs):
+        if isinstance(bloc, dict):
+            d.update(bloc)
     stats = []
     cpu = _chemin(d, "metrics", "cpu", "percentTotal")
     if cpu is not None:
@@ -516,7 +550,13 @@ def profils():
     return sortie
 
 
-def mesurer(type_service, url, cle):
+def mesurer(type_service, url, cle, diag=None):
+    """Les mesures d un service, et pourquoi elles manquent quand elles manquent.
+
+    « diag » est rempli par les lecteurs qui savent nommer un refus : sans lui,
+    une tuile vide ne dit que « indisponible », ce qui n aide personne a
+    comprendre si c est la cle, la portee de la cle ou le service.
+    """
     fn = REGISTRE.get(type_service)
     if not fn:
         return None
@@ -524,7 +564,13 @@ def mesurer(type_service, url, cle):
     if not base:
         return None
     try:
-        stats = fn(base, cle or "")
+        # Seuls certains lecteurs savent detailler : les autres gardent leur
+        # signature a deux arguments.
+        import inspect as _i
+        if diag is not None and "diag" in _i.signature(fn).parameters:
+            stats = fn(base, cle or "", diag)
+        else:
+            stats = fn(base, cle or "")
     except Exception:
         return None
     # Plus de plafond ici : on remonte tout ce que le service donne, la fiche

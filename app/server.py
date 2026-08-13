@@ -174,7 +174,12 @@ def _collecter():
                 maj += n
         if type_service not in widgets.REGISTRE:
             continue
-        stats = widgets.mesurer(type_service, url, cle or "")
+        diag = {}
+        stats = widgets.mesurer(type_service, url, cle or "", diag)
+        if not stats and diag.get("refus"):
+            # Le service a repondu et a refuse : on nomme ce qu il a refuse,
+            # plutot que de laisser la tuile dire « indisponible ».
+            erreurs[nom] = "Données refusées — " + " · ".join(diag["refus"][:3])
         if stats:
             tuiles[nom] = stats
             _deja_lu.add(nom)
