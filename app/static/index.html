@@ -512,6 +512,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    structure d'un service à l'autre. */
 .app-mes{padding:9px 11px;min-height:38px;display:flex;align-items:center;border-radius:10px;background:var(--s3);
          font:500 11.5px/1.5 'IBM Plex Mono',monospace;color:var(--t2)}
+/* Plusieurs familles de mesures : une ligne chacune, dans la même boîte. */
+.app-mes.lignes{flex-direction:column;align-items:flex-start;gap:5px}
+.app-mes .mes-l{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-mes.vide{color:var(--t6);gap:8px;justify-content:space-between}
 .mes-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mes-cog{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
@@ -5632,8 +5635,36 @@ function appCard(app, index) {
     const zone = a.querySelector('.app-mes');
     zone.hidden = false;
     if (chiffres.length) {
-      texte = chiffres.map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
-      zone.textContent = texte;
+      /* Trois mesures par ligne au plus : au-delà, la ligne devient une phrase
+         qu'on parcourt au lieu de la lire. Le découpage suit l'ordre de
+         l'intégration, qui range déjà par famille — ce que le service compte
+         d'abord, sa propre santé ensuite. UniFi donne « 29 clients ·
+         5 équipements · 2 bornes » puis « 30 % cpu · 86 % ram ».
+
+         En vue Liste, la rangée n'a qu'une cellule pour ça : tout tient sur une
+         ligne, quitte à la couper au bout. */
+      /* Les lignes s'équilibrent : quatre mesures font deux et deux, pas trois
+         et une — une mesure seule sous une ligne pleine se lit comme un reste. */
+      const nb = view === 'list' ? 1 : Math.ceil(chiffres.length / 3);
+      const base = Math.floor(chiffres.length / nb);
+      let rab = chiffres.length % nb;
+      const lignes = [];
+      let reste = chiffres.slice();
+      while (reste.length) {
+        const n = base + (rab > 0 ? 1 : 0);
+        rab -= 1;
+        lignes.push(reste.slice(0, n));
+        reste = reste.slice(n);
+      }
+      zone.classList.toggle('lignes', lignes.length > 1);
+      lignes.forEach((g) => {
+        const l = document.createElement('span');
+        l.className = 'mes-l';
+        l.textContent = g.map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
+        zone.appendChild(l);
+        /* La largeur se règle sur la ligne la plus exigeante. */
+        if (l.textContent.length > texte.length) texte = l.textContent;
+      });
     } else {
       /* Quatre situations, quatre phrases. Dire « aucune métrique remontée »
          partout laissait croire à un échec là où, le plus souvent, il n'y a
