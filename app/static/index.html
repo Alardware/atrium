@@ -848,84 +848,86 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srvpage-body{flex:1;overflow-y:auto;padding:24px 26px 40px}
 
 /* ---- fiche d'application ---- */
-.ap-switch{margin-left:auto;display:flex;align-items:center;gap:9px;min-width:0}
-.ap-switch-l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.12em;
+.fa-switch{margin-left:auto;display:flex;align-items:center;gap:9px;min-width:0}
+.fa-switch-l{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.12em;
              text-transform:uppercase;color:var(--t7);white-space:nowrap}
 #ap-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
-.ap-chip{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+.fa-chip{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
          font:700 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--t4);
          background:var(--s3);border:1px solid var(--hair2);overflow:hidden}
-.ap-chip.on{border-color:var(--acc);color:var(--acc)}
-.ap-chip img{width:100%;height:100%;object-fit:contain;padding:1px}
-.ap-cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;
+.fa-chip.on{border-color:var(--acc);color:var(--acc)}
+.fa-chip img{width:100%;height:100%;object-fit:contain;padding:1px}
+.fa-cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;
          align-items:start}
-@media (max-width:1080px){ .ap-cols{grid-template-columns:1fr} }
-.ap-tete{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
-.ap-tete .logo-chip{width:56px;height:56px;border-radius:14px;font-size:20px}
-.ap-tete h3{font:700 24px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
-.ap-sous{margin-top:5px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t5)}
-.ap-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.ap-badge{padding:4px 9px;border-radius:7px;background:var(--s3);border:1px solid var(--hair2);
+@media (max-width:1080px){ .fa-cols{grid-template-columns:1fr} }
+.fa-tete{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
+.fa-tete .logo-chip{width:56px;height:56px;border-radius:14px;font-size:20px}
+.fa-tete h3{font:700 24px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.fa-sous{margin-top:5px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t5)}
+.fa-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fa-badge{padding:4px 9px;border-radius:7px;background:var(--s3);border:1px solid var(--hair2);
           font:600 10.5px/1 'IBM Plex Mono',monospace;color:var(--t5)}
-.ap-badge.alerte{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text)}
-.ap-actions{margin-left:auto;display:flex;gap:8px;flex:none}
-.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.ap-tuile{padding:14px 15px 16px;border:1px solid var(--hair2);border-radius:12px;
+.fa-badge.alerte{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text)}
+.fa-actions{margin-left:auto;display:flex;gap:8px;flex:none}
+.fa-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fa-tuile{padding:14px 15px 16px;border:1px solid var(--hair2);border-radius:12px;
           background:var(--s2);text-align:left;transition:border-color .15s}
-.ap-tuile[data-mes]{cursor:pointer}
-.ap-tuile[data-mes]:hover{border-color:var(--hairH)}
-.ap-tuile.on{border-color:var(--acc);background:var(--acc-soft)}
-.ap-tuile .k{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;
+.fa-tuile[data-mes]{cursor:pointer}
+.fa-tuile[data-mes]:hover{border-color:var(--hairH)}
+.fa-tuile.on{border-color:var(--acc);background:var(--acc-soft)}
+.fa-tuile .k{font:600 9.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;
              text-transform:uppercase;color:var(--t7)}
-.ap-tuile .v{margin-top:9px;font:700 23px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
-.ap-tuile .v.warn{color:var(--warn)} .ap-tuile .v.bad{color:var(--bad)}
-.ap-tuile .d{margin-top:7px;font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
-.ap-carte{margin-top:20px;border:1px solid var(--hair2);border-radius:12px;background:var(--s2);
+.fa-tuile .v{margin-top:9px;font:700 23px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
+.fa-tuile .v.warn{color:var(--warn)} .fa-tuile .v.bad{color:var(--bad)}
+.fa-tuile .d{margin-top:7px;font:500 11px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
+.fa-carte{margin-top:20px;border:1px solid var(--hair2);border-radius:12px;background:var(--s2);
           overflow:hidden}
-.ap-carte h4{display:flex;align-items:center;gap:9px;padding:13px 16px;
+.fa-carte h4{display:flex;align-items:center;gap:9px;padding:13px 16px;
              border-bottom:1px solid var(--hair2);
              font:700 12.5px/1 'Plus Jakarta Sans',sans-serif}
-.ap-carte h4 .aide{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--t7)}
-.ap-corps{padding:16px}
-.ap-plages{margin-left:auto}
-.ap-barres{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;align-items:end;
+.fa-carte h4 .aide{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--t7)}
+.fa-corps{padding:16px}
+.fa-plages{margin-left:auto}
+.fa-barres{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;align-items:end;
            min-height:132px}
 /* Au-delà d'une douzaine de colonnes, les valeurs ne tiennent plus : la barre
    parle seule et le détail passe au survol. */
-.ap-barres.dense{gap:3px}
-.ap-barres.dense .n{display:none}
-.ap-barres.dense .j{font-size:8.5px}
-.ap-b{display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;
+.fa-barres.dense{gap:3px}
+.fa-barres.dense .n{display:none}
+.fa-barres.dense .j{font-size:8.5px}
+.fa-b{display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;
       justify-content:flex-end}
-.ap-b .n{font:600 10.5px/1 'IBM Plex Mono',monospace;color:var(--t5)}
-.ap-b .j{font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
-.ap-b .z{width:100%;border-radius:7px 7px 3px 3px;background:var(--s4);
+.fa-b .n{font:600 10.5px/1 'IBM Plex Mono',monospace;color:var(--t5)}
+.fa-b .j{font:600 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
+/* Plafonnée : à une ou deux colonnes, une barre pleine largeur ne se lit plus
+   comme une mesure mais comme un aplat. */
+.fa-b .z{width:100%;max-width:54px;border-radius:7px 7px 3px 3px;background:var(--s4);
          border:1px solid var(--hair2);min-height:4px;transition:height .35s}
-.ap-b.haut .z{background:var(--acc-soft);border-color:var(--acc-line)}
-.ap-b.creux .z{background:none;border-style:dashed}
-.ap-b.creux .n{color:var(--t7)}
-.ap-vide{padding:18px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6);
+.fa-b.haut .z{background:var(--acc-soft);border-color:var(--acc-line)}
+.fa-b.creux .z{background:none;border-style:dashed}
+.fa-b.creux .n{color:var(--t7)}
+.fa-vide{padding:18px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6);
          text-align:center}
-.ap-ban{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;margin-bottom:18px;
+.fa-ban{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;margin-bottom:18px;
         border:1px solid var(--bad);border-radius:12px;background:var(--bad-soft)}
-.ap-ban.warn{border-color:var(--warn);background:var(--warn-soft)}
-.ap-ban .tx b{display:block;font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t1)}
-.ap-ban .tx span{display:block;margin-top:4px;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;
+.fa-ban.warn{border-color:var(--warn);background:var(--warn-soft)}
+.fa-ban .tx b{display:block;font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--t1)}
+.fa-ban .tx span{display:block;margin-top:4px;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;
                  color:var(--t4)}
-.ap-conn{display:flex;flex-direction:column;gap:0}
-.ap-conn .r{display:flex;align-items:baseline;gap:12px;padding:10px 0;
+.fa-conn{display:flex;flex-direction:column;gap:0}
+.fa-conn .r{display:flex;align-items:baseline;gap:12px;padding:10px 0;
             border-bottom:1px solid var(--hair)}
-.ap-conn .r:last-child{border-bottom:0}
-.ap-conn .r .l{flex:none;width:104px;font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;
+.fa-conn .r:last-child{border-bottom:0}
+.fa-conn .r .l{flex:none;width:104px;font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;
                letter-spacing:.08em;text-transform:uppercase;color:var(--t7)}
-.ap-conn .r .v{flex:1;min-width:0;font:500 12px/1.4 'IBM Plex Mono',monospace;color:var(--t2);
+.fa-conn .r .v{flex:1;min-width:0;font:500 12px/1.4 'IBM Plex Mono',monospace;color:var(--t2);
                overflow:hidden;text-overflow:ellipsis}
-.ap-jrn{display:flex;flex-direction:column}
-.ap-jrn .e{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--hair)}
-.ap-jrn .e:last-child{border-bottom:0}
-.ap-jrn .h{flex:none;font:500 10.5px/1.5 'IBM Plex Mono',monospace;color:var(--t7)}
-.ap-jrn .t{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t3)}
-.ap-jrn .e.bad .t{color:var(--bad-text)} .ap-jrn .e.warn .t{color:var(--warn-text)}
+.fa-jrn{display:flex;flex-direction:column}
+.fa-jrn .e{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--hair)}
+.fa-jrn .e:last-child{border-bottom:0}
+.fa-jrn .h{flex:none;font:500 10.5px/1.5 'IBM Plex Mono',monospace;color:var(--t7)}
+.fa-jrn .t{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t3)}
+.fa-jrn .e.bad .t{color:var(--bad-text)} .fa-jrn .e.warn .t{color:var(--warn-text)}
 .srv-bloc{max-width:1100px;margin:0 auto 26px;scroll-margin-top:16px}
 /* Un raccourci vers chaque machine : la page reste une seule colonne, mais on
    n'a plus à la parcourir pour atteindre la troisième. */
@@ -1220,19 +1222,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .note-card .tx b{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif}
 .note-card .tx span{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 /* À propos : l'application se décrit, sans rien demander à l'extérieur. */
-.ap-tete{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;
+.fa-tete{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;
          border:1px solid var(--border);background:var(--surface)}
-.ap-tete .marque{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+.fa-tete .marque{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
                  background:var(--subtle);border:1px solid var(--border)}
-.ap-tete .marque svg{width:30px;height:30px}
-.ap-tete .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
-.ap-tete .nom{display:flex;align-items:center;gap:9px;
+.fa-tete .marque svg{width:30px;height:30px}
+.fa-tete .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fa-tete .nom{display:flex;align-items:center;gap:9px;
               font:700 19px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
-.ap-tete .ver{padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
+.fa-tete .ver{padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
               font:700 11px/1.3 'IBM Plex Mono',monospace}
-.ap-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
-.ap-tete .btn-sm{margin-left:auto;flex:none}
-.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:22px}
+.fa-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.fa-tete .btn-sm{margin-left:auto;flex:none}
+.fa-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:22px}
 .ap-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .ap-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
 .ap-t .v{margin-top:9px;font:700 19px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
@@ -1945,7 +1947,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <button class="btn-ghost" id="ap-back" data-i18n="btn.back">← Retour</button>
     <h2 id="ap-nom"></h2>
     <span id="ap-etat"></span>
-    <div class="ap-switch"><span class="ap-switch-l" data-i18n="ap.switch">Changer d'application</span>
+    <div class="fa-switch"><span class="fa-switch-l" data-i18n="ap.switch">Changer d'application</span>
       <span id="ap-chips"></span></div>
   </div>
   <div class="srvpage-body" id="apppage-body"></div>
@@ -6089,7 +6091,7 @@ function peindreFiche() {
 
   $('ap-nom').textContent = nom;
   const et = $('ap-etat');
-  et.className = 'ap-badge' + (sant === 'off' ? ' alerte' : '');
+  et.className = 'fa-badge' + (sant === 'off' ? ' alerte' : '');
   et.textContent = t(sant === 'off' ? 'app.offline' : sant === 'warn' ? 'app.degraded'
     : sant === 'on' ? 'app.online' : 'app.checking');
 
@@ -6098,7 +6100,7 @@ function peindreFiche() {
   chips.textContent = '';
   apps.forEach((a) => {
     const b = document.createElement('button');
-    b.className = 'ap-chip' + (a.nom === nom ? ' on' : '');
+    b.className = 'fa-chip' + (a.nom === nom ? ' on' : '');
     b.type = 'button';
     b.title = a.nom;
     b.textContent = (a.nom[0] || '?').toUpperCase();
@@ -6110,7 +6112,7 @@ function peindreFiche() {
   const body = $('apppage-body');
   body.textContent = '';
   const cols = document.createElement('div');
-  cols.className = 'ap-cols';
+  cols.className = 'fa-cols';
   const gauche = document.createElement('div');
   const droite = document.createElement('div');
   cols.appendChild(gauche);
@@ -6119,7 +6121,7 @@ function peindreFiche() {
 
   /* --- identité --- */
   const tete = document.createElement('div');
-  tete.className = 'ap-tete';
+  tete.className = 'fa-tete';
   const chip = document.createElement('span');
   chip.className = 'logo-chip s40';
   const cl = document.createElement('span');
@@ -6131,13 +6133,13 @@ function peindreFiche() {
   const h3 = document.createElement('h3');
   h3.textContent = nom;
   const sous = document.createElement('div');
-  sous.className = 'ap-sous';
+  sous.className = 'fa-sous';
   sous.textContent = [app.role, app.url, app.version].filter(Boolean).join(' · ');
   const badges = document.createElement('div');
-  badges.className = 'ap-badges';
+  badges.className = 'fa-badges';
   const badge = (txt, alerte) => {
     const b = document.createElement('span');
-    b.className = 'ap-badge' + (alerte ? ' alerte' : '');
+    b.className = 'fa-badge' + (alerte ? ' alerte' : '');
     b.textContent = txt;
     badges.appendChild(b);
   };
@@ -6156,7 +6158,7 @@ function peindreFiche() {
   ident.appendChild(sous);
   ident.appendChild(badges);
   const actions = document.createElement('div');
-  actions.className = 'ap-actions';
+  actions.className = 'fa-actions';
   if (app.url) {
     const ouvrir = document.createElement('a');
     ouvrir.className = 'btn-primary';
@@ -6191,7 +6193,7 @@ function peindreFiche() {
   /* --- bandeau d'anomalie --- */
   if (sant === 'off' || (e && e.echecs)) {
     const ban = document.createElement('div');
-    ban.className = 'ap-ban' + (sant === 'off' ? '' : ' warn');
+    ban.className = 'fa-ban' + (sant === 'off' ? '' : ' warn');
     const tx = document.createElement('div');
     tx.className = 'tx';
     const b = document.createElement('b');
@@ -6208,12 +6210,12 @@ function peindreFiche() {
   /* --- tuiles de mesures --- */
   const mesures = mesuresDe(nom);
   const tuiles = document.createElement('div');
-  tuiles.className = 'ap-tuiles';
+  tuiles.className = 'fa-tuiles';
   /* Toutes les mesures, pas les trois premières : la fiche est l'endroit où
      l'on vient tout voir, et la grille se replie d'elle-même. */
   mesures.forEach((m) => {
     const tu = document.createElement('div');
-    tu.className = 'ap-tuile' + (m.id === AP.mes ? ' on' : '');
+    tu.className = 'fa-tuile' + (m.id === AP.mes ? ' on' : '');
     if (m.hist) tu.dataset.mes = m.id;
     const k = document.createElement('div');
     k.className = 'k';
@@ -6223,7 +6225,9 @@ function peindreFiche() {
     v.textContent = m.val;
     const d = document.createElement('div');
     d.className = 'd';
-    d.textContent = m.hist ? t('ap.suivie') : t('ap.instant');
+    /* « suivie dans le temps » sous chaque tuile ne disait rien qu'on ne voie :
+       seule celle qui est tracée le mérite. */
+    d.textContent = m.id === AP.mes ? t('ap.tracee') : '';
     tu.appendChild(k);
     tu.appendChild(v);
     tu.appendChild(d);
@@ -6231,7 +6235,7 @@ function peindreFiche() {
     tuiles.appendChild(tu);
   });
   const tl = document.createElement('div');
-  tl.className = 'ap-tuile';
+  tl.className = 'fa-tuile';
   const tlk = document.createElement('div');
   tlk.className = 'k';
   tlk.textContent = t('st.latency');
@@ -6249,19 +6253,19 @@ function peindreFiche() {
 
   /* --- sept jours --- */
   const carte = document.createElement('div');
-  carte.className = 'ap-carte';
+  carte.className = 'fa-carte';
   const h4 = document.createElement('h4');
   const titre = document.createElement('span');
   const choisie = mesures.find((m) => m.id === AP.mes);
   titre.textContent = choisie ? t('ap.7j', { q: etiquette(choisie).toLowerCase() }) : t('ap.7j.rien');
   h4.appendChild(titre);
   const corps = document.createElement('div');
-  corps.className = 'ap-corps';
+  corps.className = 'fa-corps';
   carte.appendChild(h4);
   carte.appendChild(corps);
   if (choisie) {
     const seg = document.createElement('span');
-    seg.className = 'seg ap-plages';
+    seg.className = 'seg fa-plages';
     PLAGES.forEach((h) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -6274,12 +6278,12 @@ function peindreFiche() {
   }
   if (!AP.points) {
     const v = document.createElement('div');
-    v.className = 'ap-vide';
+    v.className = 'fa-vide';
     v.textContent = t(choisie ? 'ap.charge' : 'ap.7j.aucune');
     corps.appendChild(v);
   } else if (!AP.points.cols.filter(Boolean).length) {
     const v = document.createElement('div');
-    v.className = 'ap-vide';
+    v.className = 'fa-vide';
     v.textContent = t('mh.rien');
     corps.appendChild(v);
   } else {
@@ -6295,13 +6299,13 @@ function peindreFiche() {
                                      v: fmtMesure(cols[ipic].v, AP.points.nature) });
     h4.appendChild(aide);
     const bandes = document.createElement('div');
-    bandes.className = cols.length > 12 ? 'ap-barres dense' : 'ap-barres';
+    bandes.className = cols.length > 12 ? 'fa-barres dense' : 'fa-barres';
     bandes.style.gridTemplateColumns = 'repeat(' + cols.length + ',1fr)';
     cols.forEach((j, i) => {
       const col = document.createElement('div');
       /* Écrites en toutes lettres : une classe construite par concaténation
          passe pour morte à la relecture qui traque les règles inutilisées. */
-      col.className = !j ? 'ap-b creux' : i === ipic ? 'ap-b haut' : 'ap-b';
+      col.className = !j ? 'fa-b creux' : i === ipic ? 'fa-b haut' : 'fa-b';
       const etq = etiquetteCol(cols.length - 1 - i, pas);
       const n = document.createElement('span');
       n.className = 'n';
@@ -6328,13 +6332,13 @@ function peindreFiche() {
   /* --- alertes en cours --- */
   if (ennuis.length) {
     const ac = document.createElement('div');
-    ac.className = 'ap-carte';
+    ac.className = 'fa-carte';
     const ah = document.createElement('h4');
     ah.textContent = t('st.alert');
     const acc = document.createElement('div');
-    acc.className = 'ap-corps';
+    acc.className = 'fa-corps';
     const zone = document.createElement('div');
-    zone.className = 'ap-jrn';
+    zone.className = 'fa-jrn';
     ennuis.forEach((al) => {
       const l = document.createElement('div');
       l.className = 'e ' + (al.niveau === 'critique' ? 'bad' : 'warn');
@@ -6357,19 +6361,19 @@ function peindreFiche() {
   /* --- source non branchée --- */
   if (!mesures.length && su) {
     const nb = document.createElement('div');
-    nb.className = 'ap-carte';
+    nb.className = 'fa-carte';
     const nh = document.createElement('h4');
     nh.textContent = t('ap.nonbranchee');
     const nc = document.createElement('div');
-    nc.className = 'ap-corps';
+    nc.className = 'fa-corps';
     const tx = document.createElement('div');
-    tx.className = 'ap-sous';
+    tx.className = 'fa-sous';
     tx.textContent = t('ap.nonbranchee.d');
     const l = document.createElement('div');
-    l.className = 'ap-badges';
+    l.className = 'fa-badges';
     su.donnees.forEach((d) => {
       const b = document.createElement('span');
-      b.className = 'ap-badge';
+      b.className = 'fa-badge';
       b.textContent = d.lab.toLowerCase();
       l.appendChild(b);
     });
@@ -6382,13 +6386,13 @@ function peindreFiche() {
 
   /* --- connexion --- */
   const cx = document.createElement('div');
-  cx.className = 'ap-carte';
+  cx.className = 'fa-carte';
   const cxh = document.createElement('h4');
   cxh.textContent = t('ap.connexion');
   const cxc = document.createElement('div');
-  cxc.className = 'ap-corps';
+  cxc.className = 'fa-corps';
   const liste = document.createElement('div');
-  liste.className = 'ap-conn';
+  liste.className = 'fa-conn';
   const ligne = (lab, val) => {
     const r = document.createElement('div');
     r.className = 'r';
@@ -6416,7 +6420,7 @@ function peindreFiche() {
 
   /* --- journal --- */
   const jr = document.createElement('div');
-  jr.className = 'ap-carte';
+  jr.className = 'fa-carte';
   const jh = document.createElement('h4');
   jh.textContent = t('ap.journal');
   const ja = document.createElement('span');
@@ -6424,17 +6428,17 @@ function peindreFiche() {
   ja.textContent = t('ap.journal.src');
   jh.appendChild(ja);
   const jc = document.createElement('div');
-  jc.className = 'ap-corps';
+  jc.className = 'fa-corps';
   jr.appendChild(jh);
   jr.appendChild(jc);
   if (!AP.journal || !AP.journal.length) {
     const v = document.createElement('div');
-    v.className = 'ap-vide';
+    v.className = 'fa-vide';
     v.textContent = t(AP.journal ? 'ap.journal.rien' : 'ap.charge');
     jc.appendChild(v);
   } else {
     const zone = document.createElement('div');
-    zone.className = 'ap-jrn';
+    zone.className = 'fa-jrn';
     AP.journal.forEach((ev) => {
       const l = document.createElement('div');
       const grave = ev.code === 'hors_ligne'
