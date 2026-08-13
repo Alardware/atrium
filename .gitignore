@@ -2,6 +2,13 @@
 data/
 *.json.tmp
 atrium.json
+# Les autres fichiers d'exécution : aucun secret, mais rien à versionner non
+# plus — et une copie égarée à la racine ne doit pas pouvoir partir dans un
+# commit distrait.
+sessions.json
+journal.json
+historique.json
+mesures.json
 
 # Divers
 .DS_Store

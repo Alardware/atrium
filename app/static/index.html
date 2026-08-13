@@ -540,9 +540,12 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-mes .mes-l{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-mes.vide{color:var(--t6);gap:8px;justify-content:space-between}
 .mes-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Vingt pixels à l'œil, vingt-huit sous le doigt : le rembourrage négatif
+   agrandit la cible sans déplacer quoi que ce soit autour. */
 .mes-cog{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
          font-size:11px;line-height:1;color:var(--t6);background:var(--field);
-         border:1px solid var(--hair4);transition:color .15s,border-color .15s}
+         border:1px solid var(--hair4);transition:color .15s,border-color .15s;
+         box-sizing:content-box;padding:4px;margin:-4px}
 .mes-cog:hover{color:var(--acc);border-color:var(--acc-line)}
 /* En liste, la colonne est étroite et la rangée entière est déjà cliquable. */
 .grid.list .mes-cog{display:none}
@@ -2374,7 +2377,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <div class="lock-profiles" id="lock-profiles"></div>
       <div id="lock-form" hidden>
         <div class="setup-err" id="lock-err" hidden></div>
-        <span class="lock-lab" id="lock-lab" data-i18n="login.pwd">Mot de passe</span>
+        <label class="lock-lab" id="lock-lab" for="lock-input" data-i18n="login.pwd">Mot de passe</label>
         <input id="lock-input" type="password" autocomplete="current-password">
         <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
         <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
@@ -5857,10 +5860,12 @@ function appCard(app, index) {
       else if (!su) cas = 'none';               // aucune intégration pour ce type
       else if (su.cle && !cle) cas = 'todo';    // elle existe, il lui manque la clé
       else cas = 'ko';                          // branchée, mais rien n'est revenu
-      const dit = { hidden: 'app.mes.hidden', none: 'app.nometric',
-                    todo: 'app.mes.todo', ko: 'app.mes.ko' }[cas];
+      /* Les clés sont écrites en toutes lettres plutôt qu'assemblées : la
+         relecture qui traque les traductions mortes doit pouvoir les voir. */
       zone.classList.add('vide');
-      texte = t(dit);
+      texte = cas === 'hidden' ? t('app.mes.hidden')
+        : cas === 'none' ? t('app.nometric')
+        : cas === 'todo' ? t('app.mes.todo') : t('app.mes.ko');
       const tx = document.createElement('span');
       tx.className = 'mes-tx';
       tx.textContent = texte;
@@ -6718,14 +6723,6 @@ function renderApparence() {
 }
 
 /* ---------- Sécurité ---------- */
-function etatLigne(id, niveau, titre, detail) {
-  const r = $(id);
-  r.querySelector('.etat-p').className = 'etat-p ' + niveau;
-  const b = r.querySelector('.etat-tx b');
-  if (titre) b.textContent = titre;
-  r.querySelector('.etat-tx span').textContent = detail;
-}
-/* ---------- Sécurité ---------- */
 /* Tous les constats viennent du serveur : une page qui s'auto-déclarerait sûre
    ne prouverait rien. Le navigateur ne fait qu'afficher, et le verrouillage
    automatique — le seul réglage qui lui appartienne — est signalé comme tel. */
@@ -7228,8 +7225,14 @@ function renderConnPanel() {
   if (!list || $('spage').hidden || $('sp-conn').hidden) return;
   list.textContent = '';
   /* L'historique se charge au premier affichage puis se garde : il change
-     d'une heure à l'autre, pas d'une seconde à l'autre. */
-  if (!HISTO) chargerHistorique().then(renderConnPanel);
+     d'une heure à l'autre, pas d'une seconde à l'autre.
+
+     La condition porte aussi sur l'instant du dernier essai, et pas seulement
+     sur l'absence de données. Sans cela, un appel qui échoue laisse HISTO vide,
+     le « then » redessine, le rendu redemande, et comme chargerHistorique rend
+     la main immédiatement pendant ses cinq minutes de garde, la page tourne en
+     rond sans jamais reprendre son souffle. */
+  if (!HISTO && Date.now() - HISTO_A > 300000) chargerHistorique().then(renderConnPanel);
 
   /* Une source est « branchée » quand elle a effectivement livré des mesures.
      C'est la seule preuve qui vaille, et elle marche pour les vingt-deux types
