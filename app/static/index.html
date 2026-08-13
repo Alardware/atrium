@@ -514,6 +514,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
          font:500 11.5px/1.5 'IBM Plex Mono',monospace;color:var(--t2)}
 /* Plusieurs familles de mesures : une ligne chacune, dans la même boîte. */
 .app-mes.lignes{flex-direction:column;align-items:flex-start;gap:5px}
+/* La mesure de tête : le chiffre porte, le libellé accompagne. */
+.mes-v{display:flex;align-items:baseline;gap:7px;max-width:100%;min-width:0}
+.mes-v b{font:700 22px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:var(--t1)}
+.mes-v i{font:500 11px/1.2 'Plus Jakarta Sans',sans-serif;font-style:normal;color:var(--t5);
+         overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mes-v.warn b{color:var(--warn)}
+.mes-v.bad b{color:var(--bad)}
 .app-mes .mes-l{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-mes.vide{color:var(--t6);gap:8px;justify-content:space-between}
 .mes-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -5643,20 +5650,56 @@ function appCard(app, index) {
 
          En vue Liste, la rangée n'a qu'une cellule pour ça : tout tient sur une
          ligne, quitte à la couper au bout. */
+      /* La vedette : celle qui pose problème s'il y en a une, la première
+         déclarée sinon. Aucun classement à tenir par intégration — celle-ci
+         met déjà en tête ce qu'elle a de plus parlant, et son ordre est le
+         même qui range les lignes par famille juste en dessous. */
+      const ennuis = view === 'list' ? [] : alertesDe(app.nom);
+      const enCause = (niv) => ennuis.filter((x) => (x.niveau === 'critique') === niv)
+        .map((x) => x.param && x.param.metrique).filter(Boolean);
+      const graves = enCause(true);
+      const legeres = enCause(false);
+      /* Le critique passe avant l'avertissement : c'est lui qu'on veut voir en
+         premier, quel que soit l'ordre de déclaration. */
+      const vedette = view === 'list' ? null
+        : (chiffres.find((x) => graves.includes(x.id))
+           || chiffres.find((x) => legeres.includes(x.id))
+           || chiffres[0]);
+      const suite = vedette ? chiffres.filter((x) => x !== vedette) : chiffres;
+
+      if (vedette) {
+        const v = document.createElement('span');
+        /* La couleur est celle de l'alerte de cette mesure-là, pas celle du
+           service : un disque critique ne doit pas rougir une température qui
+           n'est qu'en avertissement. */
+        v.className = 'mes-v' + (graves.includes(vedette.id) ? ' bad'
+          : legeres.includes(vedette.id) ? ' warn' : '');
+        const gros = document.createElement('b');
+        gros.textContent = vedette.val;
+        const lab = document.createElement('i');
+        lab.textContent = vedette.lab.toLowerCase();
+        v.appendChild(gros);
+        v.appendChild(lab);
+        zone.appendChild(v);
+        /* Le grand chiffre n'est pas en chasse fixe : il pèse plus large que
+           les lignes qui le suivent, et la tuile doit en tenir compte. */
+        texte = ''.padEnd(Math.ceil(vedette.val.length * 2.9) + vedette.lab.length + 2, 'x');
+      }
+
       /* Les lignes s'équilibrent : quatre mesures font deux et deux, pas trois
          et une — une mesure seule sous une ligne pleine se lit comme un reste. */
-      const nb = view === 'list' ? 1 : Math.ceil(chiffres.length / 3);
-      const base = Math.floor(chiffres.length / nb);
-      let rab = chiffres.length % nb;
+      const nb = view === 'list' ? 1 : Math.max(1, Math.ceil(suite.length / 3));
+      const base = Math.floor(suite.length / nb);
+      let rab = suite.length % nb;
       const lignes = [];
-      let reste = chiffres.slice();
+      let reste = suite.slice();
       while (reste.length) {
         const n = base + (rab > 0 ? 1 : 0);
         rab -= 1;
         lignes.push(reste.slice(0, n));
         reste = reste.slice(n);
       }
-      zone.classList.toggle('lignes', lignes.length > 1);
+      zone.classList.toggle('lignes', !!vedette || lignes.length > 1);
       lignes.forEach((g) => {
         const l = document.createElement('span');
         l.className = 'mes-l';
