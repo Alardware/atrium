@@ -955,22 +955,28 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .look-apercu{position:sticky;top:0}
 .ap-l,.ap-note{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
 .ap-note{margin-top:11px;letter-spacing:0;font-weight:500;font-size:11px;line-height:1.45}
-.ap-box{margin-top:11px;padding:14px;border:1px solid var(--border);border-radius:12px;
+/* Trois mesures suffisent à rejouer la densité en petit : l'écart entre les
+   tuiles, leur rembourrage, et l'air entre les lignes d'une tuile. Elles vivent
+   sur l'aperçu, que la densité du document repeint comme la vraie grille. */
+.ap-box{--ap-gap:9px; --ap-pad:10px; --ap-int:9px;
+        margin-top:11px;padding:14px;border:1px solid var(--border);border-radius:12px;
         background:var(--bg);display:flex;flex-direction:column;gap:10px}
+:root[data-densite="compact"] .ap-box{--ap-gap:6px; --ap-pad:7px; --ap-int:6px}
+:root[data-densite="large"] .ap-box{--ap-gap:13px; --ap-pad:15px; --ap-int:13px}
 .ap-barre{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:9px;
           border:1px solid var(--border);background:var(--surface)}
 .ap-barre .t{font:700 11.5px/1 'Plus Jakarta Sans',sans-serif}
 .ap-barre .j{margin-left:auto;width:74px;height:5px;border-radius:3px;background:var(--divider);overflow:hidden}
 .ap-barre .j > i{display:block;height:100%;width:62%;background:var(--accent)}
-.ap-grille{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.ap-tuile{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.ap-grille{display:grid;grid-template-columns:1fr 1fr;gap:var(--ap-gap)}
+.ap-tuile{padding:var(--ap-pad);border:1px solid var(--border);border-radius:10px;background:var(--surface)}
 .ap-tuile .h{display:flex;align-items:center;gap:7px;font:700 11px/1 'Plus Jakarta Sans',sans-serif}
 .ap-tuile .p{width:14px;height:14px;border-radius:4px;flex:none;border:0;background:var(--subtle)}
 .ap-tuile .p img{width:11px;height:11px}
-.ap-tuile .ch{display:flex;gap:6px;margin-top:9px}
+.ap-tuile .ch{display:flex;gap:6px;margin-top:var(--ap-int)}
 .ap-tuile .ch span{flex:1;padding:5px 0;border-radius:6px;background:var(--subtle);text-align:center;
                    font:700 10.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
-.ap-tuile .tr{height:2px;margin-top:9px;border-radius:2px;background:var(--accent);opacity:.75}
+.ap-tuile .tr{height:2px;margin-top:var(--ap-int);border-radius:2px;background:var(--accent);opacity:.75}
 @media (max-width:1080px){ .look-cols{grid-template-columns:1fr} .look-apercu{position:static} }
 /* L'identité n'est plus un champ parmi d'autres : elle a sa carte, et les
    réglages modifiables sont regroupés dessous, derrière une barre qui dit
@@ -5878,8 +5884,10 @@ function bascule(id, actif, action) {
 }
 /* L'aperçu est bâti avec les vraies applications de l'utilisateur et leurs
    vraies mesures : il montre ce que les réglages vont donner chez lui, pas une
-   maquette générique. Il hérite des variables CSS, donc l'accent, la densité et
-   le mode s'y appliquent sans une ligne de plus. */
+   maquette générique. Le mode et l'accent lui viennent par héritage, puisqu'ils
+   ne sont que des couleurs ; la densité et l'affichage des chiffres, eux,
+   changent la forme, et il faut les rejouer ici — sans quoi l'aperçu annonce
+   autre chose que ce qui va se produire. */
 function peindreApercu() {
   const box = $('look-apercu');
   if (!box) return;
@@ -5923,7 +5931,9 @@ function peindreApercu() {
     h.appendChild(p);
     h.appendChild(n);
     tu.appendChild(h);
-    const mes = (STATS[a.nom] || []).slice(0, 2);
+    /* Le même réglage que les vraies tuiles : sans lui, l'aperçu montrerait
+       des mesures que la grille n'affiche plus. */
+    const mes = voirStats ? (STATS[a.nom] || []).slice(0, 2) : [];
     if (mes.length) {
       const ch = document.createElement('div');
       ch.className = 'ch';
@@ -5988,7 +5998,9 @@ function renderApparence() {
     const b = document.createElement('button');
     b.type = 'button';
     b.title = t('look.accent.' + nom);
-    b.style.background = themeEffectif() === 'dark' ? ACCENTS[nom].f : ACCENTS[nom].c;
+    /* La pastille montre la teinte qui sera réellement posée : --acc reçoit
+       « h ». Les variantes claire et sombre servent aux libellés, pas ici. */
+    b.style.background = ACCENTS[nom].h;
     b.classList.toggle('on', nom === accent);
     b.addEventListener('click', () => {
       accent = nom;
