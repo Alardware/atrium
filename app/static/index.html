@@ -860,7 +860,10 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .fa-cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;
          align-items:start}
 @media (max-width:1080px){ .fa-cols{grid-template-columns:1fr} }
-.fa-tete{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
+/* L'entête traverse la page : elle nomme le service, elle n'est pas une carte
+   parmi d'autres. Un filet la sépare de ce qui la détaille. */
+.fa-tete{display:flex;align-items:flex-start;gap:14px;padding-bottom:18px;margin-bottom:20px;
+         border-bottom:1px solid var(--hair2)}
 .fa-tete .logo-chip{width:56px;height:56px;border-radius:14px;font-size:20px}
 .fa-tete h3{font:700 24px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
 .fa-sous{margin-top:5px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--t5)}
@@ -869,7 +872,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
           font:600 10.5px/1 'IBM Plex Mono',monospace;color:var(--t5)}
 .fa-badge.alerte{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-text)}
 .fa-actions{margin-left:auto;display:flex;gap:8px;flex:none}
-.fa-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fa-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:12px}
 .fa-tuile{padding:14px 15px 16px;border:1px solid var(--hair2);border-radius:12px;
           background:var(--s2);text-align:left;transition:border-color .15s}
 .fa-tuile[data-mes]{cursor:pointer}
@@ -922,6 +925,27 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
                letter-spacing:.08em;text-transform:uppercase;color:var(--t7)}
 .fa-conn .r .v{flex:1;min-width:0;font:500 12px/1.4 'IBM Plex Mono',monospace;color:var(--t2);
                overflow:hidden;text-overflow:ellipsis}
+/* Le panneau se modifie sur place : venir voir un service et devoir ouvrir une
+   fenêtre pour corriger son adresse était un détour. */
+.fa-champ{display:flex;flex-direction:column;gap:6px;padding:12px 0;
+          border-bottom:1px solid var(--hair)}
+.fa-champ:last-of-type{border-bottom:0}
+.fa-champ label{font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;
+                text-transform:uppercase;color:var(--t7)}
+.fa-champ input{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--hair4);
+                background:var(--field);color:var(--t1);
+                font:500 12px/1.3 'IBM Plex Mono',monospace;outline:none;
+                transition:border-color .15s}
+.fa-champ input:focus{border-color:var(--acc)}
+.fa-champ .aide{font:500 10.5px/1.45 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
+.fa-test{display:flex;align-items:center;gap:9px;margin-top:12px;padding:10px 12px;
+         border-radius:9px;border:1px solid var(--hair2);background:var(--s3);
+         font:500 11.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--t4)}
+.fa-test .pt{flex:none}
+.fa-test.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok-text)}
+.fa-test.bad{border-color:var(--bad);background:var(--bad-soft);color:var(--bad-text)}
+.fa-test button{margin-left:auto;flex:none}
+.fa-pied{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .fa-jrn{display:flex;flex-direction:column}
 .fa-jrn .e{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--hair)}
 .fa-jrn .e:last-child{border-bottom:0}
@@ -1222,19 +1246,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .note-card .tx b{font:600 12.5px/1.2 'Plus Jakarta Sans',sans-serif}
 .note-card .tx span{font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 /* À propos : l'application se décrit, sans rien demander à l'extérieur. */
-.fa-tete{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;
+.ap-tete{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;
          border:1px solid var(--border);background:var(--surface)}
-.fa-tete .marque{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+.ap-tete .marque{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
                  background:var(--subtle);border:1px solid var(--border)}
-.fa-tete .marque svg{width:30px;height:30px}
-.fa-tete .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
-.fa-tete .nom{display:flex;align-items:center;gap:9px;
+.ap-tete .marque svg{width:30px;height:30px}
+.ap-tete .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ap-tete .nom{display:flex;align-items:center;gap:9px;
               font:700 19px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
-.fa-tete .ver{padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
+.ap-tete .ver{padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
               font:700 11px/1.3 'IBM Plex Mono',monospace}
-.fa-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
-.fa-tete .btn-sm{margin-left:auto;flex:none}
-.fa-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:22px}
+.ap-tete .sous{font:500 11.5px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.ap-tete .btn-sm{margin-left:auto;flex:none}
+.ap-tuiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:12px;margin-top:22px}
 .ap-t{padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .ap-t .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;color:var(--muted-3)}
 .ap-t .v{margin-top:9px;font:700 19px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em}
@@ -6117,7 +6141,6 @@ function peindreFiche() {
   const droite = document.createElement('div');
   cols.appendChild(gauche);
   cols.appendChild(droite);
-  body.appendChild(cols);
 
   /* --- identité --- */
   const tete = document.createElement('div');
@@ -6188,7 +6211,10 @@ function peindreFiche() {
   tete.appendChild(chip);
   tete.appendChild(ident);
   tete.appendChild(actions);
-  gauche.appendChild(tete);
+  /* Avant les colonnes, et sur toute la largeur : les mesures et la connexion
+     commencent alors à la même hauteur. */
+  body.appendChild(tete);
+  body.appendChild(cols);
 
   /* --- bandeau d'anomalie --- */
   if (sant === 'off' || (e && e.echecs)) {
@@ -6393,6 +6419,28 @@ function peindreFiche() {
   cxc.className = 'fa-corps';
   const liste = document.createElement('div');
   liste.className = 'fa-conn';
+
+  const champ = (id, lab, val, aide, type) => {
+    const c = document.createElement('div');
+    c.className = 'fa-champ';
+    const l = document.createElement('label');
+    l.setAttribute('for', id);
+    l.textContent = lab;
+    const i = document.createElement('input');
+    i.id = id;
+    i.type = type || 'text';
+    i.value = val;
+    i.autocomplete = 'off';
+    i.spellcheck = false;
+    const a = document.createElement('span');
+    a.className = 'aide';
+    a.textContent = aide;
+    c.appendChild(l);
+    c.appendChild(i);
+    c.appendChild(a);
+    liste.appendChild(c);
+    return i;
+  };
   const ligne = (lab, val) => {
     const r = document.createElement('div');
     r.className = 'r';
@@ -6406,14 +6454,91 @@ function peindreFiche() {
     r.appendChild(v);
     liste.appendChild(r);
   };
-  ligne(t('ap.url'), app.url || '—');
-  /* La clé n'est jamais réaffichée : le serveur ne la renvoie pas au navigateur
-     et la fiche n'en garde que l'existence. */
-  ligne(t('ap.cle'), (app.token || app.apiKey) ? t('ap.cle.enreg') : t('ap.cle.aucune'));
+
+  const urlIn = champ('fa-url', t('ap.url'), app.url || '', t('ap.url.d'));
+  /* La clé est modifiable ici, et le champ part vide : réafficher une clé
+     enregistrée sur un écran qu'on laisse ouvert n'apporte rien, et l'effacer
+     par mégarde suffirait à couper l'intégration. Vide = on n'y touche pas. */
+  const cleIn = champ('fa-cle', t('ap.cle'), '',
+    (app.token || app.apiKey) ? t('ap.cle.d.enreg') : t('ap.cle.d.aucune'), 'password');
+  cleIn.placeholder = (app.token || app.apiKey) ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : t('ap.cle.aucune');
+  /* Le sondage est global : l'annoncer comme réglable ici serait promettre un
+     réglage qui n'existe pas. */
   ligne(t('ap.cycle'), t('ap.cycle.v'));
   if (e && e.vu_a) ligne(t('app.seen.t'), age(e.vu_a));
   if (cont) ligne(t('st.container'), cont.nom + ' \u00b7 ' + cont.etat);
   cxc.appendChild(liste);
+
+  const test = document.createElement('div');
+  test.className = 'fa-test';
+  const pt = document.createElement('span');
+  pt.className = 'pt';
+  const txTest = document.createElement('span');
+  txTest.textContent = t('ap.test.pret');
+  const btTest = document.createElement('button');
+  btTest.className = 'btn-sm';
+  btTest.type = 'button';
+  btTest.textContent = t('f.test');
+  test.appendChild(pt);
+  test.appendChild(txTest);
+  test.appendChild(btTest);
+  cxc.appendChild(test);
+
+  const dire = (etat, texte) => {
+    test.className = 'fa-test' + (etat ? ' ' + etat : '');
+    txTest.textContent = texte;
+  };
+  btTest.addEventListener('click', async () => {
+    const u = urlIn.value.trim();
+    if (!u) { dire('bad', t('f.test.nourl')); return; }
+    dire('', t('f.test.wait'));
+    try {
+      const r = await relayFetch('/api/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: u, cle: cleIn.value || app.token || app.apiKey || '' }),
+      });
+      const d = await r.json();
+      if (!r.ok) { dire('bad', d.error || ('HTTP ' + r.status)); return; }
+      if (!d.trouve) {
+        dire(d.joignable ? '' : 'bad',
+             d.joignable ? t('f.test.unknown') : t('f.test.unreachable'));
+        return;
+      }
+      /* La version relevée au test est conservée : c'est le seul moment où le
+         serveur la connaît. */
+      if (d.version) { app.version = d.version; saveApps(); }
+      dire('ok', t('f.test.detected', { nom: d.nom + (d.version ? ' ' + d.version : '') }));
+    } catch (err) { dire('bad', String(err.message || err)); }
+  });
+
+  const pied = document.createElement('div');
+  pied.className = 'fa-pied';
+  const annuler = document.createElement('button');
+  annuler.className = 'btn-ghost';
+  annuler.type = 'button';
+  annuler.textContent = t('btn.cancel');
+  annuler.addEventListener('click', peindreFiche);
+  const enreg = document.createElement('button');
+  enreg.className = 'btn-primary';
+  enreg.type = 'button';
+  enreg.textContent = t('btn.save');
+  enreg.addEventListener('click', () => {
+    app.url = urlIn.value.trim();
+    /* Un champ laissé vide ne supprime pas la clé : on ne devine pas une
+       intention d'effacement à partir d'un champ qu'on n'a pas rempli. */
+    if (cleIn.value) {
+      if (kindOfApp(app) === 'ha') app.token = cleIn.value;
+      else app.apiKey = cleIn.value;
+    }
+    saveApps();
+    toast(t('ap.enregistre'));
+    peindreFiche();
+    pollSupervision();
+  });
+  pied.appendChild(annuler);
+  pied.appendChild(enreg);
+  cxc.appendChild(pied);
   cx.appendChild(cxh);
   cx.appendChild(cxc);
   droite.appendChild(cx);
