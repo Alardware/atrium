@@ -328,6 +328,20 @@ summary:focus-visible,[tabindex]:focus-visible{
 .featured > .cock{flex:1 1 246px;max-width:360px}
 .cock{display:flex;flex-direction:column;gap:13px;padding:18px}
 .cock[hidden]{display:none}
+/* La bande des prochaines heures. La barre porte l'ecart de temperature de la
+   tranche, pas la temperature absolue : sur cinq relevés qui se tiennent en
+   quelques degres, un zero commun ecraserait tout contre le sol. */
+.wx-bande{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:14px}
+.wx-c{display:flex;flex-direction:column;align-items:center;gap:7px}
+.wx-c .h{font:600 10px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
+.wx-c .b{display:flex;align-items:flex-end;height:46px}
+.wx-c .b > i{display:block;width:4px;border-radius:2px;background:var(--acc);
+             transition:height .4s cubic-bezier(.4,0,.2,1)}
+.wx-c.wx-t0 .b > i{background:var(--acc)}
+.wx-c.wx-t1 .b > i{background:var(--acc2)}
+.wx-c.wx-t2 .b > i{background:var(--warn)}
+.wx-c.wx-t3 .b > i{background:var(--bad)}
+.wx-c .d{font:700 11.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
 .cock-big{display:flex;align-items:baseline;gap:10px}
 .cock-n{font:700 34px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em}
 .cock-u{font:500 11.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
@@ -2691,6 +2705,10 @@ let HA_MEDIAS = [];             // lectures vues par Home Assistant
 let PLEX_MEDIAS = [];           // sessions Plex en direct (relais)
 let N_MAJ = 0, N_LUM = 0, N_PORTES = 0;
 let VACUUM = null, TEMP_IN = null, WEATHER = null;
+/* Previsions : l'entite d'ou elles viennent, l'instant du dernier essai, et ce
+   qu'on a obtenu. « a » est mis a jour meme quand l'appel echoue : une
+   integration qui ne sait pas prevoir ne doit pas etre redemandee sans fin. */
+let PREVI = { ent: '', a: 0, liste: [], horaire: false };
 let SRV = [], NET = [], BOOT = null;
 let majByName = {};
 let UPDATES = [];               // mises à jour détaillées (entités update.* de HA)
@@ -4266,14 +4284,36 @@ const REGISTRE_W = {
       if (!WEATHER) return false;
       const a = attrE(WEATHER);
       if (a.temperature == null) return false;
-      cGrand(carte, Math.round(a.temperature) + '°', t('w.meteo.' + WEATHER.state) === 'w.meteo.' + WEATHER.state
-        ? WEATHER.state.replace(/-/g, ' ') : t('w.meteo.' + WEATHER.state));
-      const z = cListe(carte);
-      if (a.humidity != null) cRow(z, t('w.meteo.hum'), Math.round(a.humidity) + ' %');
-      if (a.wind_speed != null) {
-        cRow(z, t('w.meteo.wind'), Math.round(a.wind_speed) + ' ' + (a.wind_speed_unit || 'km/h'));
+      const grand = cGrand(carte, Math.round(a.temperature) + '°',
+        t('w.meteo.' + WEATHER.state) === 'w.meteo.' + WEATHER.state
+          ? WEATHER.state.replace(/-/g, ' ') : t('w.meteo.' + WEATHER.state));
+
+      /* La prevision ne bouge pas toutes les trente secondes : un quart d'heure
+         de cache, et la carte se redessine quand la reponse arrive. */
+      if (PREVI.ent !== WEATHER.entity_id || Date.now() - PREVI.a > 900000) {
+        chargerPrevisions().then(appliquerDisposition);
       }
-      if (a.pressure != null) cRow(z, t('w.meteo.pres'), Math.round(a.pressure) + ' hPa');
+      const pts = previsionsMontrees();
+
+      const releves = [];
+      if (a.humidity != null) releves.push([t('w.meteo.hum'), Math.round(a.humidity) + ' %']);
+      if (a.wind_speed != null) {
+        releves.push([t('w.meteo.wind'),
+                      Math.round(a.wind_speed) + ' ' + (a.wind_speed_unit || 'km/h')]);
+      }
+      if (a.pressure != null) releves.push([t('w.meteo.pres'), Math.round(a.pressure) + ' hPa']);
+
+      if (pts.length) {
+        /* Les releves passent au survol : la bande prend leur place plutot que
+           de doubler la hauteur de la carte. */
+        if (releves.length) {
+          grand.title = releves.map((r) => r[0] + ' ' + r[1]).join(' · ');
+        }
+        carte.appendChild(bandeMeteo(pts));
+      } else if (releves.length) {
+        const z = cListe(carte);
+        releves.forEach((r) => cRow(z, r[0], r[1]));
+      }
       return true;
     },
   },
@@ -4980,6 +5020,109 @@ function relayFetch(path, opts) {
    Repli par le serveur d'Atrium uniquement si le direct est refusé (CORS
    absent, certificat auto-signé) — c'est le cas d'UniFi notamment. */
 const DIRECT_KO = new Set();
+/* Home Assistant a change trois fois d'avis sur la facon de livrer une
+   prevision : attribut « forecast » de l'entite jusqu'en 2024.4, service
+   weather.get_forecast a partir de 2023.9, puis weather.get_forecasts au
+   pluriel depuis 2024.1. On demande le pluriel, on retombe sur le singulier,
+   et on finit par l'attribut. Aucune n'est inventee : sans reponse, la carte
+   garde ses lignes d'aujourd'hui. */
+async function appelPrevision(service, ent, type) {
+  const r = await pxFetch(haBase() + '/api/services/weather/' + service
+                          + '?return_response=true', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + haToken(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entity_id: ent, type: type }),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  const rep = j.service_response || j;
+  const par = rep[ent] || rep;      // pluriel : range par entite ; singulier : direct
+  return Array.isArray(par && par.forecast) ? par.forecast : [];
+}
+
+async function chargerPrevisions() {
+  /* La marque est posée d'abord, y compris quand on renonce : la carte se
+     redessine après cet appel, et si rien n'avait été noté elle redemanderait
+     aussitôt — un rendu qui se rappelle lui-même sans fin. */
+  const ent = (WEATHER || {}).entity_id || '';
+  PREVI.ent = ent;
+  PREVI.a = Date.now();
+  const base = haBase();
+  if (!ent || !base || !haToken()) { PREVI.liste = []; return; }
+  /* supported_features : 1 = quotidien, 2 = horaire. On prefere l'horaire
+     quand l'integration sait le faire, sinon on prend ce qu'elle a. */
+  const f = attrE(WEATHER).supported_features || 0;
+  const type = (f & 2) ? 'hourly' : (f & 1) ? 'daily' : 'hourly';
+  let liste = [];
+  for (const service of ['get_forecasts', 'get_forecast']) {
+    try {
+      liste = await appelPrevision(service, ent, type);
+      if (liste.length) break;
+    } catch (e) { /* service absent : on essaie le suivant */ }
+  }
+  if (!liste.length && Array.isArray(attrE(WEATHER).forecast)) {
+    liste = attrE(WEATHER).forecast;
+  }
+  /* Horaire ou quotidien se lit dans les donnees, pas dans ce qu'on a demande :
+     une integration peut repondre autre chose que le type souhaite. */
+  const t0 = liste[0] && Date.parse(liste[0].datetime);
+  const t1 = liste[1] && Date.parse(liste[1].datetime);
+  PREVI.horaire = !!(t0 && t1 && (t1 - t0) <= 6 * 3600 * 1000);
+  PREVI.liste = liste.filter((x) => x && x.datetime && x.temperature != null);
+}
+
+/* Cinq colonnes : une sur trois en horaire, ce qui couvre une demi-journee,
+   et les cinq prochaines echeances en quotidien. */
+function previsionsMontrees() {
+  if (PREVI.ent !== (WEATHER || {}).entity_id) return [];
+  const pas = PREVI.horaire ? 3 : 1;
+  return PREVI.liste.filter((x, i) => i % pas === 0).slice(0, 5);
+}
+
+function bandeMeteo(pts) {
+  const bande = document.createElement('div');
+  bande.className = 'wx-bande';
+  const temps = pts.map((x) => x.temperature);
+  const bas = Math.min(...temps);
+  const haut = Math.max(...temps);
+  const langue = i18n.langue === 'en' ? 'en-GB' : 'fr-FR';
+  pts.forEach((x) => {
+    const d = new Date(x.datetime);
+    const c = document.createElement('div');
+    const deg = Math.round(x.temperature);
+    /* Les noms sont écrits en toutes lettres : une classe assemblée en vol
+       échappe à la relecture qui traque les règles mortes. */
+    c.className = 'wx-c ' + ['wx-t0', 'wx-t1', 'wx-t2', 'wx-t3'][
+      deg < 5 ? 0 : deg < 15 ? 1 : deg < 25 ? 2 : 3];
+    const h = document.createElement('span');
+    h.className = 'h';
+    h.textContent = PREVI.horaire
+      ? (i18n.langue === 'en'
+          ? d.toLocaleTimeString(langue, { hour: 'numeric', hour12: true }).replace(/\s/g, '')
+          : String(d.getHours()).padStart(2, '0') + 'h')
+      : d.toLocaleDateString(langue, { weekday: 'short' });
+    const b = document.createElement('span');
+    b.className = 'b';
+    const i = document.createElement('i');
+    /* 30 % de hauteur pour la plus fraiche : une barre nulle se lirait comme
+       une mesure absente. */
+    i.style.height = (haut > bas
+      ? 30 + 70 * (x.temperature - bas) / (haut - bas) : 65).toFixed(0) + '%';
+    b.appendChild(i);
+    const v = document.createElement('span');
+    v.className = 'd';
+    v.textContent = deg + '°';
+    const cond = x.condition && t('w.meteo.' + x.condition);
+    c.title = d.toLocaleString(langue) + (cond && cond.indexOf('w.meteo.') !== 0
+      ? ' — ' + cond : '');
+    c.appendChild(h);
+    c.appendChild(b);
+    c.appendChild(v);
+    bande.appendChild(c);
+  });
+  return bande;
+}
+
 async function pxFetch(target, opts) {
   const cle = new URL(target, location.href).origin;
   if (!DIRECT_KO.has(cle)) {
