@@ -1235,6 +1235,64 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 .lock-remember{display:flex;align-items:center;gap:7px;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3);cursor:pointer;user-select:none}
 .lock-remember input{accent-color:var(--accent);margin:0}
 
+/* La carte est posée sur une profondeur plutôt que sur un aplat : une lueur
+   haute, une seconde en contre-jour, et une poussière d'étoiles masquée en
+   ellipse. Tout vient des jetons, donc le mode clair suit. */
+.lock{background:
+  radial-gradient(760px 380px at 50% -6%, var(--acc-soft), transparent 72%),
+  radial-gradient(1200px 700px at 50% 120%, var(--acc-soft), transparent 70%),
+  var(--bg)}
+.lock::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    radial-gradient(1px 1px at 18% 22%, var(--t5), transparent),
+    radial-gradient(1px 1px at 73% 14%, var(--t5), transparent),
+    radial-gradient(1px 1px at 41% 61%, var(--t5), transparent),
+    radial-gradient(1px 1px at 88% 47%, var(--t5), transparent),
+    radial-gradient(1px 1px at 9% 74%, var(--t5), transparent),
+    radial-gradient(1px 1px at 61% 86%, var(--t5), transparent),
+    radial-gradient(1px 1px at 30% 8%, var(--t6), transparent),
+    radial-gradient(1px 1px at 95% 78%, var(--t6), transparent);
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 45%,#000,transparent 80%);
+          mask-image:radial-gradient(ellipse 70% 60% at 50% 45%,#000,transparent 80%)}
+
+/* La carte et son pied forment un seul enfant : deux enfants d'une grille
+   centrée occupent deux rangées étirées, chacune centrée dans la sienne, et un
+   grand vide s'installe entre les deux. */
+.lock-pile{display:flex;flex-direction:column;align-items:center}
+.lock-box{width:352px;gap:0;padding:30px 26px 24px;border-radius:18px;
+  background:linear-gradient(180deg,var(--s2),var(--s3));
+  border:1px solid var(--hair2);
+  box-shadow:0 40px 90px var(--sh2), inset 0 1px 0 var(--hair)}
+/* Quatre croix d'angle : elles cadrent la carte sans lui ajouter de trait. */
+.lock-ticks i{position:absolute;width:9px;height:9px;opacity:.6}
+.lock-ticks i:nth-child(1){left:-5px;top:-5px}
+.lock-ticks i:nth-child(2){right:-5px;top:-5px}
+.lock-ticks i:nth-child(3){left:-5px;bottom:-5px}
+.lock-ticks i:nth-child(4){right:-5px;bottom:-5px}
+.lock-ticks i::before,.lock-ticks i::after{content:'';position:absolute;background:var(--t6)}
+.lock-ticks i::before{left:4px;top:0;width:1px;height:9px}
+.lock-ticks i::after{top:4px;left:0;height:1px;width:9px}
+.lock-logo{width:46px;height:46px;border-radius:50%;background:var(--s3);
+  border:1px solid var(--hair2);box-shadow:inset 0 1px 0 var(--hair)}
+.lock-logo svg{width:26px;height:26px}
+.lock-title{margin-top:15px;font-size:17px}
+.lock-when{margin-top:6px;font-size:11.5px;color:var(--t6)}
+.lock-profiles{margin:22px 0 2px;gap:12px}
+.lock-p .u-avatar{width:62px;height:62px;border-radius:16px}
+.lock-p .n{font-size:12px}
+#lock-form{margin-top:20px;display:flex;flex-direction:column;gap:10px;width:100%}
+#lock-form[hidden]{display:none}
+/* Le nom se lit au-dessus du champ : un texte fantôme disparaît à la première
+   frappe, et l'on ne sait plus à qui l'on s'apprête à ouvrir. */
+.lock-lab{font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--t4);text-align:left}
+.lock-box input[type=password]{text-align:left;padding:10px 12px;border-radius:9px;
+  background:var(--field);border-color:var(--hair4)}
+.lock-btn{margin-top:2px;padding:10px 0;border-radius:9px}
+.lock-remember{justify-content:flex-start;margin-top:2px}
+.lock-pied{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.lock-acces{background:transparent;border-color:var(--hair2)}
+.lock-note{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
+
 .conn-status{display:flex;align-items:center;gap:7px;font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;padding:9px 11px;border-radius:9px;background:var(--subtle);color:var(--text-2)}
 .conn-status .dot{width:7px;height:7px}
 .conn-status.ok .dot{background:var(--ok)}
@@ -2212,9 +2270,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
 <!-- écran de verrouillage -->
 <div class="lock" id="lock" hidden>
-  <div class="lock-box">
-    <div class="lock-logo">
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <div class="lock-pile">
+    <div class="lock-box">
+      <span class="lock-ticks"><i></i><i></i><i></i><i></i></span>
+      <div class="lock-logo">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs>
           <linearGradient id="atrium-gl" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#5b8cff"/>
@@ -2224,17 +2284,22 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <path d="M20 84V46a30 30 0 0 1 60 0v38" fill="none" stroke="url(#atrium-gl)" stroke-width="9" stroke-linecap="round"/>
         <path d="M38 84V50a12 12 0 0 1 24 0v34" fill="none" stroke="url(#atrium-gl)" stroke-width="7" stroke-linecap="round" opacity=".45"/>
       </svg>
+      </div>
+      <div class="lock-title" id="lock-title" data-i18n="login.who">Qui utilise Atrium ?</div>
+      <div class="lock-when" id="lock-when"></div>
+      <div class="lock-profiles" id="lock-profiles"></div>
+      <div id="lock-form" hidden>
+        <div class="setup-err" id="lock-err" hidden></div>
+        <span class="lock-lab" id="lock-lab" data-i18n="login.pwd">Mot de passe</span>
+        <input id="lock-input" type="password" autocomplete="current-password">
+        <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
+        <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
+      </div>
     </div>
-    <div class="lock-title" id="lock-title" data-i18n="login.who">Qui utilise Atrium ?</div>
-    <div class="lock-when" id="lock-when"></div>
-    <div class="lock-profiles" id="lock-profiles"></div>
-    <div id="lock-form" style="display:flex;flex-direction:column;gap:14px;width:100%;align-items:center" hidden>
-      <div class="setup-err" id="lock-err" hidden style="width:100%"></div>
-      <input id="lock-input" type="password" data-i18n-ph="login.pwd" placeholder="Mot de passe" autocomplete="current-password">
-      <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
-      <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
+    <div class="lock-pied">
+      <div class="lock-acces" id="lock-acces" hidden><span class="dot"></span><span class="tx"></span></div>
+      <div class="lock-note" data-i18n="login.note">Atrium — tableau de bord domestique</div>
     </div>
-    <div class="lock-acces" id="lock-acces" hidden><span class="dot"></span><span class="tx"></span></div>
   </div>
 </div>
 
@@ -7442,7 +7507,7 @@ function renderLockUi() {
         if (!u.protege) { seConnecter(u.nom, ''); return; }
         $('lock-form').hidden = false;
         $('lock-input').value = '';
-        $('lock-input').placeholder = t('login.pwdof', { nom: u.nom });
+        $('lock-lab').textContent = t('login.pwdof', { nom: u.nom });
         $('lock-input').focus();
       });
       profs.appendChild(p);
@@ -7450,6 +7515,7 @@ function renderLockUi() {
   } else {
     $('lock-form').hidden = false;
     $('lock-input').value = '';
+    $('lock-lab').textContent = t('login.pwd');
     $('lock-input').focus();
   }
 }
