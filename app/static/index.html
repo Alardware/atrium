@@ -637,6 +637,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .st-head .n{font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .st-head .r{font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 .st-rows{display:flex;flex-direction:column}
+/* La mesure d'où l'on vient, désignée sans bruit. */
+.st-vise{border-radius:8px;background:var(--acc-soft);
+         box-shadow:inset 0 0 0 1px var(--acc-line)}
 .st-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .st-row:first-child{border-top:0}
 .st-row b{font:600 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text);text-align:right}
@@ -3817,8 +3820,9 @@ function demanderRedemarrage(app, conteneur) {
 }
 
 /* ---------- fiche de statut ---------- */
-function stRow(zone, libelle, valeur, classe) {
+function stRow(zone, libelle, valeur, classe, id) {
   const r = clone('tpl-st-row');
+  if (id) r.dataset.mes = id;
   r.querySelector('.l').textContent = libelle;
   const v = r.querySelector('.v');
   v.textContent = valeur;
@@ -3827,7 +3831,7 @@ function stRow(zone, libelle, valeur, classe) {
   return r;
 }
 
-function ouvrirStatut(app) {
+function ouvrirStatut(app, vise) {
   $('st-nom').textContent = app.nom;
   $('st-role').textContent = [app.role, app.cat].filter(Boolean).join(' · ');
   $('st-chip').querySelector('.cl').textContent = (app.nom[0] || '?').toUpperCase();
@@ -3856,7 +3860,7 @@ function ouvrirStatut(app) {
   const type = kindOfApp(app);
   if (type) stRow(zone, t('st.integration'), TYPES[type] || type);
 
-  (STATS[app.nom] || []).forEach((s) => stRow(zone, s.lab, s.val, 'mono'));
+  (STATS[app.nom] || []).forEach((s) => stRow(zone, s.lab, s.val, 'mono', s.id));
 
   const soucis = alertesDe(app.nom);
   soucis.forEach((a) => stRow(zone, t('st.alert'), texteAlerte(a),
@@ -3866,6 +3870,16 @@ function ouvrirStatut(app) {
   if (c) stRow(zone, t('st.container'), c.nom + ' · ' + c.etat, 'mono');
 
   $('ov-statut').hidden = false;
+  /* Venir d'une mesure précise : on la désigne plutôt que de laisser chercher
+     dans une liste de huit lignes. */
+  zone.querySelectorAll('.st-vise').forEach((r) => r.classList.remove('st-vise'));
+  if (vise) {
+    const cible = zone.querySelector('[data-mes="' + vise + '"]');
+    if (cible) {
+      cible.classList.add('st-vise');
+      if (cible.scrollIntoView) cible.scrollIntoView({ block: 'nearest' });
+    }
+  }
 }
 $('st-close').addEventListener('click', () => { $('ov-statut').hidden = true; });
 $('ov-statut').addEventListener('click', (e) => {
@@ -5640,6 +5654,14 @@ function appCard(app, index) {
     vu.textContent = t('app.seen', { q: ageCourt(etat.vu_a) });
   }
   const sant = sante(app.nom);
+  /* L'état est ce qu'on regarde en premier quand quelque chose cloche : il mène
+     au détail de la supervision, là où se lisent la latence moyenne, la durée
+     de l'état courant et les alertes en cours. */
+  a.querySelectorAll('.badge-on,.badge-warn,.badge-off,.badge-na').forEach((b) => {
+    b.dataset.act = 'etat';
+    b.setAttribute('role', 'button');
+    b.tabIndex = 0;
+  });
   if (cache('etat')) {
     /* rien : ni pastille d'état, ni temps de réponse qu'elle porte */
   } else if (sant === 'on' || sant === 'warn') {
@@ -5738,6 +5760,10 @@ function appCard(app, index) {
            n'est qu'en avertissement. */
         v.className = 'mes-v' + (graves.includes(vedette.id) ? ' bad'
           : legeres.includes(vedette.id) ? ' warn' : '');
+        v.dataset.act = 'mes';
+        v.dataset.mes = vedette.id;
+        v.setAttribute('role', 'button');
+        v.tabIndex = 0;
         const gros = document.createElement('b');
         gros.textContent = vedette.val;
         const lab = document.createElement('i');
@@ -5775,6 +5801,8 @@ function appCard(app, index) {
           const u = document.createElement('span');
           u.className = graves.includes(mm.id) ? 'm-bad'
             : legeres.includes(mm.id) ? 'm-warn' : '';
+          u.dataset.act = 'mes';
+          u.dataset.mes = mm.id;
           u.textContent = mm.val + ' ' + etiquette(mm).toLowerCase();
           l.appendChild(u);
         });
@@ -5858,6 +5886,8 @@ function appCard(app, index) {
       else if (act.dataset.act === 'menu') ouvrirQMenu(act, index);
       else if (act.dataset.act === 'edit' || act.dataset.act === 'cfg') openAppModal(index);
       else if (act.dataset.act === 'histo') ouvrirHistorique(app.nom);
+      else if (act.dataset.act === 'etat') ouvrirStatut(app);
+      else if (act.dataset.act === 'mes') ouvrirStatut(app, act.dataset.mes);
       else openDelModal(index);
       return;
     }
