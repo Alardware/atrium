@@ -37,6 +37,18 @@ CPU, mémoire, stockage et température de la machine, avec la tendance sur le
 dernier quart d'heure et une heure d'historique. Si la socket Docker est montée,
 la liste des conteneurs avec leur consommation et de quoi les redémarrer.
 
+**Aucune intégration n'est nécessaire, et aucun agent n'est à installer** : ces
+mesures sont lues dans `/proc` et `/sys`, qui reflètent la machine hôte depuis le
+conteneur. N'importe quel hôte Linux faisant tourner Docker convient — Unraid,
+Synology, TrueNAS, OpenMediaVault, Proxmox, Debian, Raspberry Pi OS. L'intégration
+Unraid de la table ci-dessous est autre chose : elle interroge l'API d'un serveur
+Unraid **distant**, pour ce que `/proc` ne dit pas (état de la grappe, parité).
+
+Deux réserves, dites honnêtement : sous Docker Desktop (Windows, macOS) le
+conteneur voit la machine virtuelle Linux, pas votre machine ; et l'occupation
+affichée est celle du volume qui porte `/config`, pas la somme de vos disques.
+Quand une mesure n'est pas lisible, la carte disparaît au lieu d'afficher zéro.
+
 ![La page Serveurs](docs/serveurs.png)
 
 ### Les connexions
@@ -155,11 +167,15 @@ fiche de son application (mode création → ✎ → **Tester**).
 | **Média** | Plex, Jellyfin, Tautulli | Lectures, spectateurs, transcodages, débit, bibliothèques |
 | **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs, débit |
 | **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
-| **Machines** | Unraid | CPU, mémoire, grappe, température, uptime, conteneurs |
+| **Machines** | Unraid *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
 | **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
 | **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |
 | **Outils** | Portainer, Uptime Kuma | Conteneurs actifs, services surveillés |
 | **Toute autre app** | — | En ligne / hors ligne, temps de réponse |
+
+La machine qui héberge Atrium n'a pas sa place dans cette table : elle ne demande
+aucune intégration, quelle que soit la distribution (voir
+[La page Serveurs](#la-page-serveurs)).
 
 Les API de ces services n'autorisent pas les appels directs depuis un navigateur
 (CORS absent, certificats auto-signés) : le serveur d'Atrium les relaie. Le relais
