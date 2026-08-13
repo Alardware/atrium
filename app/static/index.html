@@ -239,8 +239,10 @@ summary:focus-visible,[tabindex]:focus-visible{
 .cock-anneaux:empty{display:none}
 .anneau{display:flex;flex-direction:column;align-items:center;gap:9px}
 .anneau svg{width:76px;height:76px;transform:rotate(-90deg)}
-.anneau .piste{fill:none;stroke:var(--divider);stroke-width:6}
-.anneau .arc{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
+/* Quatre unites de viewBox pour quarante-huit de diametre : le trait se lit
+   sans peser autant que le chiffre qu'il entoure. */
+.anneau .piste{fill:none;stroke:var(--divider);stroke-width:4}
+.anneau .arc{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;
              transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1)}
 .anneau.s2 .arc{stroke:var(--warn)}
 .anneau.s3 .arc{stroke:var(--warn)}
@@ -401,9 +403,12 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-live .dot{width:6px;height:6px;animation:pulse 2.4s ease-in-out infinite}
 .np-title{margin-top:12px;font:700 20px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .np-sub{margin-top:5px;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
-.np-more{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.np-more{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .np-more:empty{display:none}
-.np-more::before{content:'Aussi en cours';font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3);margin-bottom:2px}
+/* Le titre est un element a part : dans la feuille, il ne pouvait pas se
+   traduire, et l'anglais lisait « Aussi en cours ». */
+.np-more-t{margin-top:14px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;
+           letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
 .np-mrow{display:flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);cursor:pointer;transition:border-color .15s}
 .np-mrow:hover{border-color:var(--accent-border)}
 .pchip{position:relative;width:26px;height:26px;border-radius:6px;overflow:hidden;flex:none;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 10px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
@@ -1460,6 +1465,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                   <span class="btn-primary" id="np-config" data-i18n="now.connect">Connecter une source</span>
                 </div>
               </div>
+              <div class="np-more-t" id="np-more-t" hidden data-i18n="now.also">Aussi en cours</div>
               <div class="np-more" id="np-more"></div>
             </div>
           </a>
@@ -3037,6 +3043,29 @@ const fmtDur = (sec) => {
   return h ? h + ' h ' + String(m).padStart(2, '0') : m + ' min';
 };
 /* fusion multi-sources : Plex direct + lecteurs HA, la plus « riche » en premier, dédoublonnée */
+/* Ou en est une lecture, maintenant : la position relevee, avancee du temps
+   ecoule depuis le releve si ca joue encore. */
+const instantDe = (m) => (m.pos || 0)
+  + (m.etat === 'playing' && m.posAt ? (Date.now() - m.posAt) / 1000 : 0);
+
+/* Une meme lecture est souvent vue deux fois : Plex la rapporte comme session,
+   Home Assistant comme lecteur de la piece. Les cles ne peuvent pas coincider —
+   HA titre l'episode « S1 · E2: Le calamar geant » la ou Plex titre « Le
+   calamar geant » — alors on compare ce qui ne depend pas de la source : le
+   titre a l'inclusion pres, la duree, et l'endroit ou on en est.
+
+   Uniquement entre deux sources differentes : deux enfants qui regardent le
+   meme episode sur deux televiseurs sont deux lectures, et le resteront. */
+function memeLecture(a, b) {
+  if (a.src === b.src) return false;
+  const ta = normTxt(a.titre || '');
+  const tb = normTxt(b.titre || '');
+  const titre = !!ta && !!tb && (ta.includes(tb) || tb.includes(ta));
+  const duree = a.dur > 0 && b.dur > 0 && Math.abs(a.dur - b.dur) <= 5;
+  const endroit = Math.abs(instantDe(a) - instantDe(b)) <= 90;
+  return (duree && endroit) || (titre && (duree || endroit));
+}
+
 function combineMedias() {
   const score = (m) => (m.etat === 'playing' ? 10 : 0) + (m.dur ? 5 : 0) + (m.poster ? 1 : 0) + (m.src === 'direct' ? 2 : 0);
   const all = [...PLEX_MEDIAS, ...HA_MEDIAS].sort((a, b) => score(b) - score(a));
@@ -3047,6 +3076,16 @@ function combineMedias() {
     seen.add(m.key);
     return true;
   });
+  /* La liste est triee par richesse : la premiere rencontree est celle qui en
+     dit le plus, et on lui prend ce qui lui manque avant d'ecarter l'autre. */
+  const gardees = [];
+  MEDIAS.forEach((m) => {
+    const g = gardees.find((x) => memeLecture(x, m));
+    if (!g) { gardees.push(m); return; }
+    if (!g.poster && m.poster) g.poster = m.poster;
+    if (!g.dur && m.dur) { g.dur = m.dur; g.pos = m.pos; g.posAt = m.posAt; }
+  });
+  MEDIAS = gardees;
   /* lecture épinglée par clic : passe devant tant qu'elle existe */
   if (SELECTED_KEY) {
     const i = MEDIAS.findIndex((m) => m.key === SELECTED_KEY);
@@ -3147,6 +3186,7 @@ function renderLive() {
   $('np-foot').hidden = true;
   $('np-setup').hidden = true;
   $('np-more').textContent = '';
+  $('np-more-t').hidden = true;
   $('np-poster').querySelectorAll('img').forEach((i) => i.remove());
 
   if (MEDIA) {
@@ -3222,6 +3262,7 @@ function renderLive() {
       });
       $('np-more').appendChild(row);
     });
+    $('np-more-t').hidden = !$('np-more').children.length;
   } else {
     /* aucune lecture : état neutre, indépendant de toute intégration précise */
     const sourcesMedia = ['plex', 'jellyfin', 'ha'].filter((k) => {
@@ -5125,7 +5166,10 @@ async function pollDirect() {
           appLabel: 'Plex',
           entId: '',
           type: m.type === 'track' ? 'musique' : 'video',
-          key: normTxt((m.title || '') + '|plex|'),
+          /* Le lecteur et le spectateur font partie de la clé : deux personnes
+             devant le même épisode sur deux téléviseurs sont deux lectures. */
+          key: normTxt((m.title || '') + '|plex|' + (pl.title || '') + '|'
+                       + ((m.User && m.User.title) || '')),
           src: 'direct',
         };
       });
