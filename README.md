@@ -185,12 +185,25 @@ servir de rebond vers Internet.
 
 ## Sécurité
 
-Les mots de passe sont dérivés avec PBKDF2-HMAC-SHA256 (240 000 itérations, sel
+Les mots de passe sont dérivés avec PBKDF2-HMAC-SHA256 (600 000 itérations, sel
 par utilisateur) et ne quittent jamais le serveur. Les sessions sont des jetons
 serveur transmis dans un cookie `HttpOnly` + `SameSite=Strict`. Les routes de
 configuration refusent toute requête sans session valide, un profil ne peut
 modifier que son propre mot de passe, et les tentatives de connexion sont
 limitées par adresse.
+
+Le nombre d'itérations est écrit dans l'empreinte elle-même. Une empreinte plus
+ancienne reste donc vérifiable avec le sien et se refait au nombre courant à la
+première connexion réussie : relever la recommandation ne demande jamais de
+réinitialiser un mot de passe. La page Sécurité affiche le nombre en vigueur, tel
+que le serveur le déclare — pas un texte écrit dans la page.
+
+Nommer l'algorithme n'affaiblit rien : le secret est le mot de passe et son sel,
+jamais la méthode. Le code est public, et chaque empreinte porte son algorithme
+en clair de toute façon — c'est ce qui permet d'en changer sans casser
+l'existant. Ce qui doit rester secret ne l'est pas moins pour autant :
+`atrium.json` (empreintes, sels, clés d'API) n'est pas versionné, et `/api/config`
+ne renvoie jamais d'empreinte.
 
 C'est un **garde-fou familial**, pas une authentification d'entreprise :
 n'exposez pas Atrium directement sur Internet. Placez-le derrière un reverse

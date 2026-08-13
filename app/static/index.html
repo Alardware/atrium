@@ -6045,6 +6045,14 @@ async function renderSecurite() {
   ligneSecu(zc, 'autolock', VERROU_MIN ? 'ok' : 'off',
             VERROU_MIN ? t('sec.min', { n: VERROU_MIN }) : t('sec.never'),
             { lab: t('sec.modify'), fn: cyclerVerrou });
+  /* Le nombre d'itérations vient du serveur, jamais d'un texte écrit ici : une
+     page qui l'annoncerait de mémoire ne prouverait rien, et le chiffre change
+     quand la recommandation change. */
+  if (SECU.iterations) {
+    const n = SECU.iterations.toLocaleString(i18n.langue === 'en' ? 'en-GB' : 'fr-FR');
+    const lh = ligneSecu(zc, 'hash', 'ok', n);
+    lh.querySelector('.etat-tx span').textContent = t('sec.hash.d', { n: n });
+  }
 
   const za = $('sec-attaques');
   za.textContent = '';

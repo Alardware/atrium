@@ -712,6 +712,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         LIMITEUR.reussite(cle)
+
+        # Une empreinte plus ancienne que la recommandation courante se refait
+        # ici, seul moment ou le mot de passe en clair est disponible. Un echec
+        # d'ecriture ne doit pas empecher la connexion : le compte reste
+        # utilisable avec son ancienne empreinte, qui porte son propre nombre
+        # d'iterations.
+        if u and u.get("pwd") and auth.a_refaire(u.get("pwd")):
+            try:
+                frais = self.lire_config()
+                cible = next((x for x in (frais.get("users") or [])
+                              if x.get("nom") == nom), None)
+                if cible and cible.get("pwd") == u.get("pwd"):
+                    cible["pwd"] = auth.hacher(mdp)
+                    self.ecrire_config(frais)
+            except (OSError, ValueError):
+                pass
+
         jeton = SESSIONS.creer(nom, longue, self.headers.get("User-Agent", ""),
                                self.client_address[0])
         self.reply(200, json.dumps({"ok": True, "utilisateur": nom}, ensure_ascii=False).encode(),

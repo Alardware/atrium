@@ -1,8 +1,13 @@
 """Atrium — authentification.
 
 Les mots de passe sont derives avec PBKDF2-HMAC-SHA256 (sel aleatoire par
-utilisateur, 240 000 iterations). Le mot de passe en clair ne quitte jamais la
+utilisateur, 600 000 iterations). Le mot de passe en clair ne quitte jamais la
 requete de connexion et n'est jamais ecrit sur le disque.
+
+Le nombre d'iterations vit dans l'empreinte elle-meme : une empreinte ancienne
+reste verifiable avec le sien, et se refait au nombre courant a la premiere
+connexion reussie. Relever la recommandation ne demande donc jamais de
+reinitialiser un mot de passe.
 
 Une session valide est un jeton aleatoire de 32 octets, conserve cote serveur et
 transmis au navigateur dans un cookie HttpOnly (donc illisible par JavaScript,
@@ -17,7 +22,10 @@ import secrets
 import threading
 import time
 
-ITERATIONS = 240_000
+# Recommandation OWASP pour PBKDF2-HMAC-SHA256. Le cout se paie une fois par
+# connexion, cote serveur ; il ne coute rien a l'usage courant, ou seule la
+# session est presentee.
+ITERATIONS = 600_000
 SESSION_TTL = 30 * 24 * 3600      # 30 jours
 SESSION_TTL_COURT = 12 * 3600     # sans « se souvenir de moi »
 COOKIE = "atrium_session"
@@ -45,6 +53,19 @@ def verifier(motdepasse, stocke):
         calcule = hashlib.pbkdf2_hmac("sha256", motdepasse.encode("utf-8"), sel, int(iters))
         return hmac.compare_digest(calcule, attendu)
     except (ValueError, TypeError):
+        return False
+
+
+def a_refaire(stocke):
+    """L'empreinte a-t-elle ete calculee avec moins d'iterations qu'aujourd'hui ?
+
+    A n'appeler qu'apres une verification reussie : c'est le seul moment ou le
+    mot de passe en clair est disponible pour en refaire une.
+    """
+    try:
+        algo, iters, _, _ = (stocke or "").split("$")
+        return algo != "pbkdf2" or int(iters) < ITERATIONS
+    except (ValueError, TypeError, AttributeError):
         return False
 
 
