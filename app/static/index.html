@@ -521,6 +521,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
          overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mes-v.warn b{color:var(--warn)}
 .mes-v.bad b{color:var(--bad)}
+/* Une mesure qui a franchi son seuil se teinte là où elle se trouve. */
+.mes-l .m-warn{color:var(--warn)}
+.mes-l .m-bad{color:var(--bad)}
 .app-mes .mes-l{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-mes.vide{color:var(--t6);gap:8px;justify-content:space-between}
 .mes-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -5703,7 +5706,17 @@ function appCard(app, index) {
       lignes.forEach((g) => {
         const l = document.createElement('span');
         l.className = 'mes-l';
-        l.textContent = g.map((m) => m.val + ' ' + m.lab.toLowerCase()).join(' · ');
+        /* Chaque mesure porte sa propre couleur, vedette ou pas : une mémoire
+           à 86 % se voit dans la deuxième ligne comme elle se verrait dans la
+           première. Le reste de la ligne garde son gris. */
+        g.forEach((mm, i) => {
+          if (i) l.appendChild(document.createTextNode(' · '));
+          const u = document.createElement('span');
+          u.className = graves.includes(mm.id) ? 'm-bad'
+            : legeres.includes(mm.id) ? 'm-warn' : '';
+          u.textContent = mm.val + ' ' + mm.lab.toLowerCase();
+          l.appendChild(u);
+        });
         zone.appendChild(l);
         /* La largeur se règle sur la ligne la plus exigeante. */
         if (l.textContent.length > texte.length) texte = l.textContent;
