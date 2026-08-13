@@ -68,6 +68,11 @@ provenance de la connexion, journal des accès refusés, appareils connectés.
 
 ![La page Sécurité](docs/securite.png)
 
+Au chargement, et après un délai d'inactivité, Atrium demande qui vient. Un
+profil sans mot de passe entre directement — c'est un choix, pas un oubli.
+
+![L'écran de verrouillage](docs/verrou.png)
+
 ## Installation
 
 L'image est publiée sur GitHub Container Registry pour `amd64`, `arm64` et `armv7`.
