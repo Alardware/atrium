@@ -28,6 +28,7 @@ import urllib.request
 import auth
 import conteneurs
 import historique
+import metriques
 import reseau
 import services
 import supervision
@@ -49,6 +50,7 @@ SESSIONS = auth.Sessions(SESSION_FILE)
 LIMITEUR = auth.Limiteur()
 JOURNAL = auth.Journal(os.path.join(CONFIG_DIR, "journal.json"))
 HISTO = historique.Historique(os.path.join(CONFIG_DIR, "historique.json"))
+MESURES = historique.Mesures(os.path.join(CONFIG_DIR, "mesures.json"))
 
 FORWARD_HEADERS = ("x-api-key", "authorization", "content-type", "accept", "x-plex-token")
 CORPS_MAX = 8 * 1024 * 1024      # au-dela, la requete est refusee
@@ -185,6 +187,23 @@ def _collecter():
                 # donnees : sans cette preuve, un service qui n'en expose tout
                 # simplement pas serait signale a tort.
                 erreurs[nom] = "Service joignable, données refusées : vérifiez la clé d'API"
+
+    # Chaque mesure numerique rejoint sa serie. Celles a texte libre — un
+    # uptime, un « 23 / 24 » — n en ont pas : leur nombre ne veut rien dire hors
+    # de leur phrase, et metriques.historisable le dit.
+    releves = {}
+    for nom, stats in tuiles.items():
+        gardees = set()
+        for s in stats:
+            ident = s.get("id")
+            if ident and metriques.historisable(ident) and s.get("num") is not None:
+                MESURES.noter(nom, ident, s["num"])
+                gardees.add(ident)
+        releves[nom] = gardees
+    # « noms » : les services configures. « releves » : ceux qui ont repondu a ce
+    # cycle. Un service muet garde son historique — son silence ne dit rien de
+    # ses mesures passees.
+    MESURES.oublier(noms, releves)
 
     _releve.update(widgets=tuiles, hote=hote, maj=maj, a=time.time())
     supervision.evaluer(apps, hote, maj, erreurs, tuiles)
@@ -387,6 +406,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/diagnostic":
             if self.exiger_session():
                 self.diagnostic_get()
+        elif route == "/api/mesure":
+            if self.exiger_session():
+                self.mesure_get()
         elif route == "/api/capacites":
             # Ne change jamais en cours d'execution : l'interface la demande une
             # fois et s'en sert pour expliquer une tuile sans chiffre.
@@ -522,6 +544,32 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "heures": heures,
             "services": {n: HISTO.resume(n, heures) for n in noms},
         }, ensure_ascii=False).encode())
+
+    def mesure_get(self):
+        """Serie d une mesure d un service, sur la plage demandee.
+
+        Le service doit exister dans la configuration : sans cette verification,
+        la route repondrait sur n importe quel nom present dans le fichier,
+        y compris ceux qu une suppression aurait du faire disparaitre.
+        """
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        nom = (q.get("service") or [""])[0]
+        ident = (q.get("id") or [""])[0]
+        try:
+            heures = int((q.get("h") or ["24"])[0])
+        except (ValueError, TypeError):
+            heures = 24
+        heures = max(1, min(heures, historique.RETENTION))
+        if not self._app_nommee(nom):
+            self.reply(404, json.dumps({"error": "service inconnu"},
+                                       ensure_ascii=False).encode())
+            return
+        r = MESURES.resume(nom, ident, heures)
+        r["heures_demandees"] = heures
+        r["nature"] = metriques.nature(ident)
+        r["agregats"] = list(metriques.agregats(ident))
+        r["lab"] = metriques.libelle(ident)
+        self.reply(200, json.dumps(r, ensure_ascii=False).encode())
 
     def securite_get(self):
         """Etat de securite reel, tel que le serveur peut le constater.

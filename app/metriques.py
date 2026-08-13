@@ -167,7 +167,44 @@ def M(ident, num, libre=None):
     # masques — et « lab1 » n apparait que la ou l accord existe.
     if ident in SINGULIER:
         mesure["lab1"] = SINGULIER[ident]
+    # « hist » dit a l interface qu une serie existe pour cette mesure : elle
+    # n a pas a connaitre les natures pour savoir ou mene un clic.
+    if historisable(ident):
+        mesure["hist"] = True
     return mesure
+
+
+# Ce qu on retient d une mesure dans le temps depend de ce qu elle mesure.
+#
+# Une occupation ou une temperature se resume par sa moyenne et son pire : on
+# veut savoir si le disque est plein souvent, et jusqu ou il est monte. Un
+# compteur, lui, ne se moyenne pas utilement — « 1 386 episodes manquants en
+# moyenne » n apprend rien que « entre 1 386 et 1 452 » ne dise mieux.
+#
+# Les mesures a texte libre (un uptime, un « 23 / 24 ») n ont pas de serie : leur
+# nombre ne veut rien dire hors de leur phrase.
+AGREGATS = {
+    POURCENT: ("moy", "max"),
+    TEMPERATURE: ("moy", "max"),
+    DEBIT_MB: ("moy", "max"),
+    DEBIT_OCTETS: ("moy", "max"),
+    NOMBRE: ("moy", "min", "max"),
+    LIBRE: (),
+}
+
+
+def nature(ident):
+    return METRIQUES.get(ident, (ident.upper(), NOMBRE))[1]
+
+
+def agregats(ident):
+    """Les resumes qui ont un sens pour cette mesure."""
+    return AGREGATS.get(nature(ident), ())
+
+
+def historisable(ident):
+    """Cette mesure merite-t-elle une serie dans le temps ?"""
+    return bool(agregats(ident))
 
 
 def niveau(ident, num):

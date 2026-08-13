@@ -640,6 +640,16 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* La mesure d'où l'on vient, désignée sans bruit. */
 .st-vise{border-radius:8px;background:var(--acc-soft);
          box-shadow:inset 0 0 0 1px var(--acc-line)}
+.st-rows [data-mes]{cursor:pointer}
+#st-histo{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair2)}
+.mh-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.mh-lab{font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;color:var(--t4)}
+.mh-now{font:700 17px/1 'IBM Plex Mono',monospace;color:var(--t1)}
+.mh-graf{height:62px;margin:2px 0 12px}
+.mh-graf svg{width:100%;height:62px;overflow:visible}
+.mh-graf polyline{fill:none;stroke:var(--acc);stroke-width:1.6;stroke-linecap:round;
+                  stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.mh-vide{padding:10px 0;font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--t6)}
 .st-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:9px 0;border-top:1px solid var(--divider);font:500 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text-3)}
 .st-row:first-child{border-top:0}
 .st-row b{font:600 12.5px/1.35 'Plus Jakarta Sans',sans-serif;color:var(--text);text-align:right}
@@ -1829,6 +1839,19 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </span>
     </div>
     <div id="st-corps"></div>
+    <div id="st-histo" hidden>
+      <div class="mh-head">
+        <span class="mh-lab" id="mh-lab"></span>
+        <span class="mh-now" id="mh-now"></span>
+      </div>
+      <div class="seg hi-plages" id="mh-plages">
+        <button data-v="24" data-i18n="hi.24h">24 h</button>
+        <button data-v="168" data-i18n="hi.7j">7 j</button>
+        <button data-v="720" data-i18n="hi.30j">30 j</button>
+      </div>
+      <div class="mh-graf" id="mh-graf"></div>
+      <div id="mh-chiffres"></div>
+    </div>
     <div class="modal-foot">
       <button class="btn-ghost" id="st-close" data-i18n="btn.close">Fermer</button>
     </div>
@@ -3831,7 +3854,25 @@ function stRow(zone, libelle, valeur, classe, id) {
   return r;
 }
 
+let ST_APP = null;
+function viserMesure(ident) {
+  const zone = $('st-corps').querySelector('.st-rows');
+  if (!zone) return;
+  zone.querySelectorAll('.st-vise').forEach((r) => r.classList.remove('st-vise'));
+  const cible = zone.querySelector('[data-mes="' + ident + '"]');
+  if (!cible) return;
+  cible.classList.add('st-vise');
+  if (cible.scrollIntoView) cible.scrollIntoView({ block: 'nearest' });
+  const mes = (STATS[ST_APP.nom] || []).find((m) => m.id === ident);
+  /* « hist » vient du serveur : lui seul sait si cette mesure a une série. Un
+     uptime n'en a pas, et on ne montre pas un cadre vide pour autant. */
+  if (mes && mes.hist) ouvrirMesure(ST_APP.nom, ident, mes.val, mes.lab);
+  else $('st-histo').hidden = true;
+}
+
 function ouvrirStatut(app, vise) {
+  ST_APP = app;
+  $('st-histo').hidden = true;
   $('st-nom').textContent = app.nom;
   $('st-role').textContent = [app.role, app.cat].filter(Boolean).join(' · ');
   $('st-chip').querySelector('.cl').textContent = (app.nom[0] || '?').toUpperCase();
@@ -3872,14 +3913,7 @@ function ouvrirStatut(app, vise) {
   $('ov-statut').hidden = false;
   /* Venir d'une mesure précise : on la désigne plutôt que de laisser chercher
      dans une liste de huit lignes. */
-  zone.querySelectorAll('.st-vise').forEach((r) => r.classList.remove('st-vise'));
-  if (vise) {
-    const cible = zone.querySelector('[data-mes="' + vise + '"]');
-    if (cible) {
-      cible.classList.add('st-vise');
-      if (cible.scrollIntoView) cible.scrollIntoView({ block: 'nearest' });
-    }
-  }
+  if (vise) viserMesure(vise);
 }
 $('st-close').addEventListener('click', () => { $('ov-statut').hidden = true; });
 $('ov-statut').addEventListener('click', (e) => {
@@ -5927,6 +5961,94 @@ $('btn-ranger').addEventListener('click', rangerApps);
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
+/* Histoire d'une mesure. Le serveur en garde une série horaire ; ce qu'on en
+   retient dépend de ce qu'elle mesure, et c'est lui qui le dit : une occupation
+   se résume par sa moyenne et son pire, un compteur par ses extrêmes. */
+let MH = { service: '', id: '', h: 24, val: '' };
+
+function courbeSerie(points) {
+  const vus = points.map((p) => (p ? p.moy : null));
+  const connus = vus.filter((v) => v != null);
+  if (connus.length < 2) return null;
+  const bas = Math.min.apply(null, connus);
+  const haut = Math.max.apply(null, connus);
+  const amp = haut - bas || 1;
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 40');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  const x = (i) => (i / (vus.length - 1) * 100);
+  const y = (v) => (36 - (v - bas) / amp * 32);
+  /* Les heures sans relevé coupent le trait : relier deux bords éloignés
+     inventerait une évolution qui n'a pas été observée. */
+  let seg = [];
+  const poser = () => {
+    if (seg.length >= 2) {
+      const l = document.createElementNS(SVGNS, 'polyline');
+      l.setAttribute('points', seg.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' '));
+      svg.appendChild(l);
+    }
+    seg = [];
+  };
+  vus.forEach((v, i) => { if (v == null) poser(); else seg.push([x(i), y(v)]); });
+  poser();
+  return svg;
+}
+
+async function peindreMesure() {
+  const boite = $('st-histo');
+  const graf = $('mh-graf');
+  const chiffres = $('mh-chiffres');
+  graf.textContent = '';
+  chiffres.textContent = '';
+  [...$('mh-plages').children].forEach((b) => {
+    b.classList.toggle('on', Number(b.dataset.v) === MH.h);
+  });
+  let r = null;
+  try {
+    const rep = await relayFetch('/api/mesure?service=' + encodeURIComponent(MH.service)
+      + '&id=' + encodeURIComponent(MH.id) + '&h=' + MH.h);
+    if (rep.ok) r = await rep.json();
+  } catch (e) { /* hors ligne */ }
+  if (!r || !r.releves) {
+    const v = document.createElement('div');
+    v.className = 'mh-vide';
+    v.textContent = t('mh.rien');
+    graf.appendChild(v);
+    return;
+  }
+  const trace = courbeSerie(r.points);
+  if (trace) graf.appendChild(trace);
+  else {
+    const v = document.createElement('div');
+    v.className = 'mh-vide';
+    v.textContent = t('mh.court');
+    graf.appendChild(v);
+  }
+  /* Seuls les résumés que le serveur juge pertinents pour cette nature. */
+  const z = cListe(chiffres);
+  const nombre = (x) => (Math.round(x) === x ? String(x) : String(Math.round(x * 10) / 10));
+  (r.agregats || []).forEach((k) => {
+    if (r[k] == null) return;
+    cRow(z, t('mh.' + k), nombre(r[k]) + (r.nature === 'pourcent' ? ' %'
+      : r.nature === 'temperature' ? ' °C' : ''));
+  });
+  cRow(z, t('mh.releves'), String(r.releves));
+  const note = document.createElement('div');
+  note.className = 'hi-note';
+  note.textContent = t('hi.couvre', { h: r.heures, s: r.releves });
+  chiffres.appendChild(note);
+  boite.hidden = false;
+}
+
+function ouvrirMesure(nom, ident, valeur, lab) {
+  MH = { service: nom, id: ident, h: MH.h || 24, val: valeur || '' };
+  $('mh-lab').textContent = lab || ident;
+  $('mh-now').textContent = MH.val ? t('mh.now', { v: MH.val }) : '';
+  $('st-histo').hidden = false;
+  peindreMesure();
+}
+
 /* Historique d'un service : disponibilité et temps de réponse sur la plage
    demandée. Tout vient du serveur, qui seul garde ces heures ; le navigateur
    ne conserve rien et ne recalcule rien. */
@@ -5976,6 +6098,18 @@ async function peindreHistorique() {
     : t('hi.rien');
   corps.appendChild(note);
 }
+
+$('mh-plages').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  MH.h = Number(b.dataset.v);
+  peindreMesure();
+});
+$('st-corps').addEventListener('click', (e) => {
+  const r = e.target.closest('[data-mes]');
+  if (!r || !ST_APP) return;
+  viserMesure(r.dataset.mes);
+});
 
 $('hi-plages').addEventListener('click', (e) => {
   const b = e.target.closest('button');

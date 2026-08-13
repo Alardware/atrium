@@ -176,3 +176,160 @@ class Historique:
             os.replace(tmp, self.chemin)
         except OSError:
             pass                      # un disque plein ne doit pas tout arreter
+
+
+class Mesures:
+    """Les mesures des services, heure par heure.
+
+    Meme grain et meme retention que la disponibilite, dans un fichier a part :
+    l un pese quelques centaines de kilo-octets, l autre environ un mega, et
+    les melanger obligerait a tout relire pour repondre a une question sur l un
+    ou sur l autre.
+
+    Par service, par mesure et par heure : combien de relevés, leur somme, le
+    plus bas et le plus haut. De quoi calculer une moyenne ponderee sur
+    n importe quelle duree, et retrouver les extremes sans les avoir lisses.
+
+    Ce qui est retenu ensuite depend de ce que la mesure mesure : une occupation
+    se resume par sa moyenne et son pire, un compteur par ses extremes. Ce choix
+    n est pas fait ici — metriques.agregats le dit, et l interface l applique.
+    """
+
+    def __init__(self, chemin):
+        self.chemin = chemin
+        self.lock = threading.Lock()
+        self.data = {}
+        self._dernier_ecrit = 0
+        self._sale = False
+        try:
+            with open(chemin, "r", encoding="utf-8") as f:
+                brut = json.load(f) or {}
+            self.data = {
+                service: {mes: {int(h): [float(x) for x in v] for h, v in heures.items()}
+                          for mes, heures in mesures.items()}
+                for service, mesures in brut.items()}
+        except (OSError, ValueError, AttributeError, TypeError):
+            self.data = {}
+
+    def noter(self, service, ident, valeur):
+        """Ajoute un releve. Les valeurs non numeriques sont ignorees."""
+        if not service or not ident:
+            return
+        try:
+            v = float(valeur)
+        except (TypeError, ValueError):
+            return
+        if v != v or v in (float("inf"), float("-inf")):   # NaN, infinis
+            return
+        h = _maintenant()
+        with self.lock:
+            heures = self.data.setdefault(service, {}).setdefault(ident, {})
+            seau = heures.get(h)
+            if seau is None:
+                heures[h] = [1, v, v, v]
+            else:
+                seau[0] += 1
+                seau[1] += v
+                seau[2] = min(seau[2], v)
+                seau[3] = max(seau[3], v)
+            self._sale = True
+            self._elaguer(heures)
+        self._peut_etre_ecrire()
+
+    def oublier(self, services, releves=None):
+        """Retire ce qui n a plus de raison d etre garde.
+
+        « services » est l ensemble des services configures : ceux qui n y sont
+        plus ont ete supprimes, leur historique part avec eux.
+
+        « releves » associe a chaque service les mesures qu il vient de rendre.
+        Un service absent de ce dictionnaire n a rien rendu a ce cycle — panne,
+        cle refusee, redemarrage — et ce silence ne dit rien de ses mesures : on
+        ne touche pas a son historique. Sans cette distinction, une heure
+        d indisponibilite effacerait trente jours de series.
+        """
+        releves = releves or {}
+        with self.lock:
+            for service in [s for s in self.data if s not in services]:
+                del self.data[service]
+                self._sale = True
+            for service, gardees in releves.items():
+                mesures = self.data.get(service)
+                if not mesures or not gardees:
+                    continue
+                for mes in [m for m in mesures if m not in gardees]:
+                    del mesures[mes]
+                    self._sale = True
+
+    def serie(self, service, ident, combien=24):
+        """Les « combien » dernieres heures, de la plus ancienne a maintenant.
+
+        Une heure sans releve rend None : le graphique doit pouvoir montrer un
+        trou plutot que de relier deux points qui ne se suivent pas.
+        """
+        fin = _maintenant()
+        with self.lock:
+            heures = (self.data.get(service) or {}).get(ident) or {}
+            points = []
+            for h in range(fin - combien + 1, fin + 1):
+                s = heures.get(h)
+                points.append(None if not s else {
+                    "n": int(s[0]),
+                    "moy": s[1] / s[0] if s[0] else None,
+                    "min": s[2],
+                    "max": s[3],
+                })
+            return points
+
+    def resume(self, service, ident, combien=24):
+        """Moyenne ponderee, extremes, et ce que la plage couvre reellement."""
+        points = self.serie(service, ident, combien)
+        connus = [p for p in points if p]
+        n = sum(p["n"] for p in connus)
+        return {
+            "points": points,
+            "heures": len(connus),
+            "releves": n,
+            "moy": round(sum(p["moy"] * p["n"] for p in connus) / n, 2) if n else None,
+            "min": min((p["min"] for p in connus), default=None),
+            "max": max((p["max"] for p in connus), default=None),
+        }
+
+    def mesures_de(self, service):
+        with self.lock:
+            return sorted((self.data.get(service) or {}).keys())
+
+    def _elaguer(self, heures):
+        if len(heures) <= RETENTION:
+            return
+        for h in sorted(heures)[:-RETENTION]:
+            del heures[h]
+
+    def _peut_etre_ecrire(self):
+        maintenant = time.time()
+        with self.lock:
+            if not self._sale or maintenant - self._dernier_ecrit < ECRITURE:
+                return
+            self._dernier_ecrit = maintenant
+            self._sale = False
+            copie = {
+                service: {mes: {str(h): [_court(x) for x in v] for h, v in heures.items()}
+                          for mes, heures in mesures.items()}
+                for service, mesures in self.data.items()}
+        try:
+            tmp = self.chemin + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(copie, f, separators=(",", ":"))
+            os.replace(tmp, self.chemin)
+        except OSError:
+            pass
+
+
+def _court(x):
+    """Un entier reste un entier : « 95 » plutot que « 95.0 » dans le fichier.
+
+    Sur sept cent vingt heures et douze services, l economie n est pas
+    decorative.
+    """
+    e = int(x)
+    return e if e == x else round(x, 2)
