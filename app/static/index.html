@@ -468,15 +468,28 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* Assez large pour que « aucune métrique remontée » tienne d'un tenant :
    une mention coupée en deux se lit comme un défaut. */
 .grid:not(.list) > *{flex:1 1 248px;min-width:0;max-width:310px}
-/* Chaque tuile prend la largeur de ce qu'elle a à dire. Un service qui remonte
-   quatre mesures a besoin de la ligne entière ; un service muet n'a besoin de
-   rien, et lui donner la même place étirait son vide. Quatre tailles plutôt
-   qu'une mesure au pixel : la rangée reste une rangée, pas un escalier. */
+/* Trois formats, et rien à régler : la tuile prend la largeur de ce qu'elle a
+   à dire, et son format en découle.
+
+     petite    (tuile-s)         un service simple — « 2 indexeurs », un nom
+                                 court. Pas de courbe : à cette largeur elle ne
+                                 montrerait rien, l'état et le temps de réponse
+                                 passent avant.
+     standard  (tuile-m)         une ligne de mesures, courbe comprise.
+     large     (tuile-l, -xl)    plusieurs lignes, ou une ligne longue. Deux
+                                 crans plutôt qu'un, pour que Plex ne réserve
+                                 pas la place d'Unraid.
+
+   Le format n'est jamais choisi par service : il se déduit du contenu, donc il
+   suit tout seul quand une intégration gagne ou perd une mesure. */
 /* La marge de croissance reste courte. Une rangée incomplète — la dernière —
    se partage tout l'espace qui reste : à deux tuiles, chacune doublait et la
    taille ne disait plus rien du contenu. Huit pour cent suffisent à ce que les
    rangées pleines finissent au bord sans que la dernière enfle. */
 .grid:not(.list) > .tuile-s{flex:1 1 206px;max-width:222px}
+/* Format petit : la courbe cède la place. Sa fonction ne se perd pas pour
+   autant — le temps de réponse porte la même explication et le même clic. */
+.grid:not(.list) > .tuile-s .spark{display:none}
 .grid:not(.list) > .tuile-m{flex:1 1 262px;max-width:283px}
 .grid:not(.list) > .tuile-l{flex:1 1 372px;max-width:402px}
 .grid:not(.list) > .tuile-xl{flex:1 1 476px;max-width:514px}
@@ -5646,6 +5659,11 @@ function appCard(app, index) {
     const lat = a.querySelector('.lat');
     lat.textContent = etat.latence_ms + ' ms';
     lat.title = t('app.moy', { n: etat.latence_moy });
+    /* Le temps de réponse mène à l'historique, comme la courbe : sur une tuile
+       au format petit, la courbe est masquée et il reste le seul chemin. */
+    lat.dataset.act = 'histo';
+    lat.setAttribute('role', 'button');
+    lat.tabIndex = 0;
   }
   /* l'activité n'a de sens que si l'état est montré : sans pastille, une
      courbe seule ne se rattache à rien */
@@ -5805,19 +5823,29 @@ function appCard(app, index) {
     }
   }
 
-  /* La largeur suit ce que la tuile a à écrire, et deux choses peuvent se faire
-     couper : la ligne de mesures — en chasse fixe, donc sa longueur en
-     caractères donne sa largeur — et le nom du service, qui partage sa ligne
-     avec le logo et les actions. On prend la plus exigeante des deux.
+  /* Le format de la tuile suit ce que le service a à dire, et cela se mesure de
+     deux façons qui ne disent pas la même chose.
 
-     Puis on classe, plutôt que de poser la largeur au pixel : quatre tailles se
-     rangent encore en rangées, une largeur par tuile ferait un escalier. */
-  const ligne = texte;
-  const besoin = Math.max(54 + Math.ceil(ligne.length * 6.9)
+     Combien de mesures d'abord : un service qui en remonte cinq est un service
+     dont on attend un tableau de bord, même si chacune tient en huit
+     caractères. Une seule mesure, ou aucune, se contente du format petit.
+
+     La place qu'elles prennent ensuite : une ligne longue ou un nom long font
+     monter d'un cran, sans quoi le texte se ferait couper. La ligne est en
+     chasse fixe, donc sa longueur en caractères donne sa largeur ; le nom, lui,
+     partage sa ligne avec le logo et les actions.
+
+     On classe plutôt que de poser la largeur au pixel : quatre crans se rangent
+     encore en rangées, une largeur par tuile ferait un escalier. */
+  const combien = chiffres ? chiffres.length : 0;
+  const besoin = Math.max(54 + Math.ceil(texte.length * 6.9)
                              + (a.querySelector('.mes-cog') ? 28 : 0),
                           126 + Math.ceil(app.nom.length * 7.4));
-  a.classList.add(besoin <= 206 ? 'tuile-s' : besoin <= 262 ? 'tuile-m'
-    : besoin <= 372 ? 'tuile-l' : 'tuile-xl');
+  let cran = combien <= 1 ? 0 : combien <= 3 ? 1 : 2;
+  if (besoin > 372) cran = 3;
+  else if (besoin > 262) cran = Math.max(cran, 2);
+  else if (besoin > 206) cran = Math.max(cran, 1);
+  a.classList.add(['tuile-s', 'tuile-m', 'tuile-l', 'tuile-xl'][cran]);
 
 
   if (app.url) { a.href = app.url; a.target = '_blank'; a.rel = 'noopener'; }
