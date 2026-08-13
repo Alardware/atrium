@@ -331,16 +331,12 @@ summary:focus-visible,[tabindex]:focus-visible{
 /* La bande des prochaines heures. La barre porte l'ecart de temperature de la
    tranche, pas la temperature absolue : sur cinq relevés qui se tiennent en
    quelques degres, un zero commun ecraserait tout contre le sol. */
-.wx-bande{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:14px}
-.wx-c{display:flex;flex-direction:column;align-items:center;gap:7px}
+.wx-bande{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.wx-c{display:flex;flex-direction:column;align-items:center;gap:5px}
 .wx-c .h{font:600 10px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
-.wx-c .b{display:flex;align-items:flex-end;height:46px}
+.wx-c .b{display:flex;align-items:flex-end;height:30px}
 .wx-c .b > i{display:block;width:4px;border-radius:2px;background:var(--acc);
              transition:height .4s cubic-bezier(.4,0,.2,1)}
-.wx-c.wx-t0 .b > i{background:var(--acc)}
-.wx-c.wx-t1 .b > i{background:var(--acc2)}
-.wx-c.wx-t2 .b > i{background:var(--warn)}
-.wx-c.wx-t3 .b > i{background:var(--bad)}
 .wx-c .d{font:700 11.5px/1 'IBM Plex Mono',monospace;color:var(--text-2)}
 .cock-big{display:flex;align-items:baseline;gap:10px}
 .cock-n{font:700 34px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em}
@@ -466,6 +462,14 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* Assez large pour que « aucune métrique remontée » tienne d'un tenant :
    une mention coupée en deux se lit comme un défaut. */
 .grid:not(.list) > *{flex:1 1 248px;min-width:0;max-width:310px}
+/* Chaque tuile prend la largeur de ce qu'elle a à dire. Un service qui remonte
+   quatre mesures a besoin de la ligne entière ; un service muet n'a besoin de
+   rien, et lui donner la même place étirait son vide. Quatre tailles plutôt
+   qu'une mesure au pixel : la rangée reste une rangée, pas un escalier. */
+.grid:not(.list) > .tuile-s{flex:1 1 206px;max-width:250px}
+.grid:not(.list) > .tuile-m{flex:1 1 262px;max-width:320px}
+.grid:not(.list) > .tuile-l{flex:1 1 330px;max-width:392px}
+.grid:not(.list) > .tuile-xl{flex:1 1 424px;max-width:504px}
 .app-card{position:relative;display:flex;flex-direction:column;gap:13px;padding:16px}
 /* Le nom se tient à côté du logo, pas dessous : deux lignes gagnées, que les
    chiffres occupent. La tuile n'a donc plus besoin de s'élargir pour les
@@ -5079,6 +5083,26 @@ function previsionsMontrees() {
   return PREVI.liste.filter((x, i) => i % pas === 0).slice(0, 5);
 }
 
+/* La teinte suit la temperature elle-meme, en continu. Quatre paliers
+   donnaient cinq barres rouges des qu'une journee etait chaude : le degre
+   n'apparaissait plus nulle part dans la couleur. */
+const RAMPE_TEMP = [[-5, 76, 141, 255], [5, 56, 189, 248], [12, 45, 212, 191],
+                    [18, 34, 197, 94], [24, 245, 165, 36], [30, 249, 115, 22],
+                    [36, 239, 68, 68], [42, 185, 28, 28]];
+function teinteTemp(deg) {
+  const r = RAMPE_TEMP;
+  if (deg <= r[0][0]) return 'rgb(' + r[0].slice(1).join(',') + ')';
+  for (let i = 1; i < r.length; i++) {
+    if (deg > r[i][0]) continue;
+    const a = r[i - 1];
+    const b = r[i];
+    const k = (deg - a[0]) / (b[0] - a[0]);
+    const c = [1, 2, 3].map((j) => Math.round(a[j] + (b[j] - a[j]) * k));
+    return 'rgb(' + c.join(',') + ')';
+  }
+  return 'rgb(' + r[r.length - 1].slice(1).join(',') + ')';
+}
+
 function bandeMeteo(pts) {
   const bande = document.createElement('div');
   bande.className = 'wx-bande';
@@ -5090,10 +5114,7 @@ function bandeMeteo(pts) {
     const d = new Date(x.datetime);
     const c = document.createElement('div');
     const deg = Math.round(x.temperature);
-    /* Les noms sont écrits en toutes lettres : une classe assemblée en vol
-       échappe à la relecture qui traque les règles mortes. */
-    c.className = 'wx-c ' + ['wx-t0', 'wx-t1', 'wx-t2', 'wx-t3'][
-      deg < 5 ? 0 : deg < 15 ? 1 : deg < 25 ? 2 : 3];
+    c.className = 'wx-c';
     const h = document.createElement('span');
     h.className = 'h';
     h.textContent = PREVI.horaire
@@ -5104,10 +5125,11 @@ function bandeMeteo(pts) {
     const b = document.createElement('span');
     b.className = 'b';
     const i = document.createElement('i');
-    /* 30 % de hauteur pour la plus fraiche : une barre nulle se lirait comme
-       une mesure absente. */
+    /* 45 % de hauteur pour la plus fraiche : une barre nulle se lirait comme
+       une mesure absente, et un plancher haut laisse moins de vide au-dessus. */
     i.style.height = (haut > bas
-      ? 30 + 70 * (x.temperature - bas) / (haut - bas) : 65).toFixed(0) + '%';
+      ? 45 + 55 * (x.temperature - bas) / (haut - bas) : 70).toFixed(0) + '%';
+    i.style.background = teinteTemp(x.temperature);
     b.appendChild(i);
     const v = document.createElement('span');
     v.className = 'd';
@@ -5515,6 +5537,12 @@ function appCard(app, index) {
       zone.classList.add('vide');
       zone.textContent = t('app.nometric');
     }
+    /* La ligne est en chasse fixe : sa longueur en caractères dit sa largeur.
+       On classe plutôt qu'on ne mesure au pixel — quatre largeurs se rangent
+       encore en rangées, une largeur par tuile ferait un escalier. */
+    const n = zone.textContent.length;
+    a.classList.add(n <= 16 ? 'tuile-s' : n <= 30 ? 'tuile-m'
+      : n <= 46 ? 'tuile-l' : 'tuile-xl');
   }
 
 
