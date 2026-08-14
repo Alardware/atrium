@@ -14,6 +14,9 @@
   /* ---- tokens de la maquette (thème clair) ---- */
   --acc:#5b8cff; --acc2:#2dd4bf; --acc-soft:#5b8cff1f; --acc-line:#5b8cff66;
   --acc-h:#1d55c9; --on-acc:#ffffff;
+  /* Fond des boutons pleins : l'accent est trop clair pour porter du blanc
+     en mode clair. Sa teinte foncée, elle, se lit. */
+  --acc-btn:var(--acc-h);
   --bg:#f2f4f7; --rail:#ffffff; --field:#ffffff;
   --chrome:rgba(255,255,255,.92); --topbar:rgba(246,247,249,.9);
   --scrim:rgba(16,24,40,.42); --scrim2:rgba(16,24,40,.28);
@@ -43,6 +46,7 @@
 :root[data-theme="dark"]{
   /* ---- tokens de la maquette (thème sombre) ---- */
   --acc-soft:#5b8cff22; --acc-line:#5b8cff55; --acc-h:#8fb0ff; --on-acc:#06101f;
+  --acc-btn:var(--acc);   /* sombre : texte sombre sur accent, déjà lisible */
   --bg:#07090d; --rail:#0a0d12; --field:#0d1117;
   --chrome:rgba(5,7,10,.88); --topbar:rgba(8,10,14,.88);
   --scrim:rgba(4,6,9,.72); --scrim2:rgba(4,6,9,.55);
@@ -263,18 +267,25 @@ summary:focus-visible,[tabindex]:focus-visible{
 /* Une puce par problème : le bandeau nomme ce qui ne va pas plutôt que d'en
    donner le nombre. Cliquer mène à la fiche du service concerné. */
 .s-chips{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px}
+/* La puce reste neutre — c'est le bandeau qui porte la teinte de l'alerte — et
+   seule la mesure fautive s'y colore. Un fond teinté sur fond teinté rendait
+   les deux illisibles. */
 .s-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px 5px 6px;border-radius:8px;
-        border:1px solid var(--border-2);background:var(--surface);white-space:nowrap;
+        border:1px solid var(--hair4);background:var(--s3);white-space:nowrap;
         font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2);
         transition:border-color .13s}
 .s-chip:hover{border-color:var(--accent)}
 .s-chip .d{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
-.strip .s-open{padding:6px 11px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface)}
-.strip .s-open:hover{text-decoration:none;border-color:var(--accent)}
+.s-chip .d.warn{color:var(--warn-text)}
+.s-chip .d.bad{color:var(--bad-text)}
+/* Le bouton est l'action du bandeau : il se voit, et il ne rétrécit pas quand
+   les puces prennent la place — « Diagnostiquer » est plus long que « Diagnose ». */
+.strip .s-open{flex:none;padding:7px 13px;border-radius:8px;border:1px solid transparent;
+               background:var(--acc-btn);color:var(--on-accent)}
+.strip .s-open:hover{text-decoration:none;filter:brightness(1.08)}
 .strip.grave .s-txt{color:var(--bad-text)}
 .strip .s-det{display:block;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.strip .s-open{font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--accent);white-space:nowrap}
-.strip .s-open:hover{text-decoration:underline}
+.strip .s-open{font:700 11px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap}
 
 /* Les deux modes sont montrés, celui qui s'applique est marqué : on voit ce
    qu'on va obtenir au lieu de deviner ce que la bascule fera. « Système » se
@@ -437,7 +448,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .np-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px}
 .np-times{display:flex;justify-content:space-between;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted)}
 .np-btns{display:flex;gap:9px;margin-top:6px}
-.btn-primary{padding:9px 15px;border-radius:9px;background:var(--accent);color:var(--on-accent);font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.btn-primary{padding:9px 15px;border-radius:9px;background:var(--acc-btn);color:var(--on-accent);font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
 .btn-ghost{padding:9px 15px;border-radius:9px;border:1px solid var(--border-2);background:var(--surface);font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
 .btn-danger{padding:9px 15px;border-radius:9px;background:var(--bad);color:#fff;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
 .ha-card{display:flex;flex-direction:column;gap:14px;padding:18px}
@@ -1267,7 +1278,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .lang-l .demo{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3);
               white-space:nowrap}
 .lang-l .coche{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
-               background:var(--accent);color:var(--on-accent);font-size:11px}
+               background:var(--acc-btn);color:var(--on-accent);font-size:11px}
 .note-card{display:flex;gap:12px;padding:15px 17px;border-radius:12px;
            border:1px solid var(--border);background:var(--surface)}
 .note-card .ic{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
@@ -1349,7 +1360,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 .setup-card{padding:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);display:flex;flex-direction:column;gap:16px;box-shadow:var(--sh-1)}
 .setup-err{font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--bad-text);background:var(--bad-soft);border:1px solid var(--bad);border-radius:8px;padding:9px 11px}
 .setup-err[hidden]{display:none}
-.setup-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--accent);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.setup-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--acc-btn);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
 .setup-skip{width:100%;text-align:center;font:600 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted);padding:4px}
 .setup-skip:hover{color:var(--text-2)}
 /* choix guidé des services */
@@ -1408,7 +1419,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 .lock-box input[type=password]:focus{border-color:var(--accent)}
 .lock-box input.err{border-color:var(--bad);animation:shake .3s}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.lock-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--accent);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
+.lock-btn{width:100%;padding:11px 0;border-radius:10px;background:var(--acc-btn);color:var(--on-accent);font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh-btn)}
 .lock-remember{display:flex;align-items:center;gap:7px;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3);cursor:pointer;user-select:none}
 .lock-remember input{accent-color:var(--accent);margin:0}
 
@@ -5285,7 +5296,9 @@ function renderAlertes() {
       const nom = document.createElement('span');
       nom.textContent = a.service;
       const det = document.createElement('span');
-      det.className = 'd';
+      /* La mesure fautive porte la gravité de son alerte, pas celle du bandeau :
+         deux services peuvent y figurer pour deux raisons différentes. */
+      det.className = a.niveau === 'critique' ? 'd bad' : 'd warn';
       det.textContent = texteAlerte(a);
       b.appendChild(chip);
       b.appendChild(nom);
