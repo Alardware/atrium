@@ -570,8 +570,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-off .dot{background:var(--bad)}
 .badge-na .dot{background:var(--muted-2)}
 .badge-on[hidden],.badge-off[hidden],.badge-na[hidden]{display:none}
-.app-foot .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
-.app-foot .lat:empty{display:none}
 /* La courbe ne vit plus sur les tuiles : elle appartient au panneau des
    connexions et à la fiche d'une application, là où on vient la lire. */
 .spark{flex:1 1 40px;min-width:0;height:18px;display:none;align-items:center}
@@ -591,8 +589,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-warn .dot{--puls:rgba(245,165,36,.55);--puls-0:rgba(245,165,36,0)}
 .badge-off .dot{--puls:rgba(240,104,90,.55);--puls-0:rgba(240,104,90,0)}
 .badge-na .dot{--puls:rgba(148,163,184,.45);--puls-0:rgba(148,163,184,0)}
-.badge-on .lat:empty{display:none}
-.app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 /* Montrer ou cacher les chiffres de toutes les tuiles d'un geste, là où on les
    regarde. Le même réglage vit dans Apparence : les deux commandent la même
    valeur et se suivent. */
@@ -607,12 +603,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .apps-tally{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .apps-tally:empty{display:none}
 .app-foot{flex-wrap:wrap;row-gap:6px}
-/* Sans la courbe, le temps de réponse et la dernière vérification se rangent
-   à droite de la pastille, sur la même ligne. Le repli reste possible sur une
-   tuile étroite : c'est la vérification qui passe à la ligne. */
-.grid:not(.list) .app-foot .lat{margin-left:auto}
-.grid:not(.list) .app-seen{margin-left:6px;text-align:right}
-.app-seen:empty{display:none}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
 .add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
@@ -679,7 +669,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    même variable, elles ne peuvent donc pas se désaligner. « nowrap » est
    indispensable — une colonne flex qui enveloppe se réduit à la largeur de son
    contenu au lieu de tenir la ligne. */
-.grid.list{--cols:auto minmax(140px,1.1fr) auto minmax(120px,1.6fr) 104px 52px auto;
+.grid.list{--cols:auto minmax(140px,1.1fr) auto minmax(120px,1.6fr) 104px auto;
            flex-direction:column;flex-wrap:nowrap;gap:0;
            border:1px solid var(--border);border-radius:12px;overflow:hidden;
            background:var(--surface)}
@@ -720,12 +710,10 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .grid.list .badge-on,.grid.list .badge-warn,
 .grid.list .badge-off,.grid.list .badge-na{grid-column:5}
-.grid.list .lat{grid-column:6;justify-self:end}
-.grid.list .app-seen{display:none}
 /* En liste, les commandes ont leur propre colonne, tout à droite : elles ne
    flottent plus au-dessus d'une rangée haute de quarante pixels, et le menu ⋮
    — visible même hors mode création — ne recouvre aucun badge. */
-.grid.list .app-actions{position:static;grid-column:7;justify-self:end}
+.grid.list .app-actions{position:static;grid-column:6;justify-self:end}
 .grid.list .add-card{min-height:0;flex-direction:row;padding:12px 16px}
 .grid.list .add-ring{width:26px;height:26px;font-size:14px}
 
@@ -1512,13 +1500,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
 /* ---- téléphone ---- */
 @media (max-width:760px){
-  /* Sept colonnes ne tiennent pas sur un téléphone. Plutôt qu'un défilement
-     horizontal sur la liste principale, on retire ce qui se déduit ailleurs :
-     le temps de réponse reste lisible en vue Grille. */
+  /* Six colonnes tiennent tout juste : le rôle du service, lisible sur la
+     tuile en vue Grille, cède sa place au nom et aux mesures. */
   .grid.list{--cols:auto minmax(90px,1fr) auto minmax(74px,auto) 104px auto}
   .grid.list .app-card{column-gap:10px;padding:10px 12px}
-  .grid.list .lat{display:none}
-  .grid.list .app-actions{grid-column:6}
   .grid.list .app-role{display:none}
   /* La barre de navigation défile horizontalement au lieu de s'empiler sur
      quatre lignes : sur un écran étroit, huit entrées repliées mangeaient la
@@ -2742,8 +2727,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <span class="badge-warn" hidden><span class="dot"></span><span data-i18n="app.degraded">dégradé</span></span>
       <span class="badge-off" hidden><span class="dot"></span><span data-i18n="app.offline">hors ligne</span></span>
       <span class="badge-na" hidden><span class="dot"></span><span class="lbl">vérification…</span></span>
-      <span class="lat"></span>
-      <span class="app-seen"></span>
     </div>
   </a>
 </template>
@@ -3948,6 +3931,8 @@ async function ouvrirQMenu(bouton, index) {
   qitem(menu, '⟳', t('qm.refresh'), () => sonderMaintenant(app));
   qitem(menu, '⧉', t('qm.copy'), () => copier(app.url), { inactif: !app.url });
   qitem(menu, '◉', t('qm.status'), () => ouvrirFiche(app.nom));
+  /* Le temps de réponse a quitté la tuile : son historique se demande ici. */
+  qitem(menu, '⤢', t('qm.histo'), () => ouvrirHistorique(app.nom));
 
   if (kindOfApp(app) === 'ha') {
     qsep(menu);
@@ -5166,9 +5151,6 @@ function ageCourt(depuis) {
 /* Les durées affichées vieillissent entre deux relevés : on les rafraîchit
    seules, sans reconstruire la grille. */
 function majAges() {
-  document.querySelectorAll('[data-vu]').forEach((el) => {
-    el.textContent = t('app.seen', { q: ageCourt(Number(el.dataset.vu)) });
-  });
   document.querySelectorAll('.al-age[data-depuis]').forEach((el) => {
     el.textContent = age(Number(el.dataset.depuis));
   });
@@ -5814,12 +5796,6 @@ function appCard(app, index) {
   /* « masque » liste ce que l'utilisateur a décoché sur cette fiche ; vide ou
      absent, tout s'affiche — les configurations existantes ne changent pas. */
   const cache = (id) => (app.masque || []).includes(id);
-  if (etat && etat.vu_a && !cache('vu')) {
-    const vu = a.querySelector('.app-seen');
-    vu.dataset.vu = etat.vu_a;
-    vu.title = t('app.seen.t');
-    vu.textContent = t('app.seen', { q: ageCourt(etat.vu_a) });
-  }
   const sant = sante(app.nom);
   /* L'état est ce qu'on regarde en premier quand quelque chose cloche : il mène
      au détail de la supervision, là où se lisent la latence moyenne, la durée
@@ -5843,16 +5819,6 @@ function appCard(app, index) {
     const na = a.querySelector('.badge-na');
     na.hidden = false;
     na.querySelector('.lbl').textContent = t(app.url ? 'app.checking' : 'app.nourl');
-  }
-  if (!cache('etat') && !cache('latence') && etat && etat.latence_ms != null) {
-    const lat = a.querySelector('.lat');
-    lat.textContent = etat.latence_ms + ' ms';
-    lat.title = t('app.moy', { n: etat.latence_moy });
-    /* Le temps de réponse mène à l'historique, comme la courbe : sur une tuile
-       au format petit, la courbe est masquée et il reste le seul chemin. */
-    lat.dataset.act = 'histo';
-    lat.setAttribute('role', 'button');
-    lat.tabIndex = 0;
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
 
@@ -6988,8 +6954,6 @@ function peindreDonnees() {
 
 const INFOS_BASE = [
   ['etat', 'f.infos.etat'],
-  ['latence', 'f.infos.latence'],
-  ['vu', 'f.infos.vu'],
 ];
 let MASQUE = [];
 
@@ -7035,13 +6999,7 @@ function renderInfos(app) {
     zone.appendChild(l);
     return c;
   };
-  const etatCoche = ligne('etat', t('f.infos.etat'));
-  const lat = ligne('latence', t('f.infos.latence'));
-  /* le temps de réponse vit dans la pastille d'état : sans elle, il n'a pas
-     d'endroit où s'afficher */
-  lat.disabled = !etatCoche.checked;
-  lat.parentElement.classList.toggle('off', !etatCoche.checked || lat.checked === false);
-  ligne('vu', t('f.infos.vu'));
+  ligne('etat', t('f.infos.etat'));
 
   if (stats.length) {
     const s = document.createElement('div');
