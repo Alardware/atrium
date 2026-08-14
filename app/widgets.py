@@ -8,6 +8,7 @@ affiche le texte, et aucun des deux n a besoin de connaitre l autre.
 CAPACITES declare, pour chaque type, ce qu il sait lire — de quoi l annoncer
 avant meme la premiere mesure.
 """
+import base64
 import inspect
 import json
 import re
@@ -449,6 +450,135 @@ def w_unifi(base, cle):
     return stats or None
 
 
+# --- supervision de machine --------------------------------------------------
+
+# La version de l API se decouvre une fois par hote : Glances 4 et Glances 3
+# n exposent pas les memes chemins, et refaire la decouverte a chaque cycle
+# doublerait les appels pour une reponse qui ne change pas.
+_GLANCES = {}
+
+
+def _glances_auth(mot):
+    """L en-tete d authentification quand Glances tourne avec un mot de passe.
+
+    Glances signe ses acces en Basic. Le champ de la fiche accepte les deux
+    ecritures rencontrees : « utilisateur:secret », ou le secret seul — auquel
+    cas l utilisateur est « glances », celui que le serveur cree par defaut.
+    """
+    mot = (mot or "").strip()
+    if not mot:
+        return {}
+    couple = mot if ":" in mot else ("glances:" + mot)
+    return {"Authorization": "Basic "
+            + base64.b64encode(couple.encode("utf-8")).decode("ascii")}
+
+
+def _glances_lire(base, version, greffon, entetes):
+    code, corps, _ = _http("%s/api/%s/%s" % (base, version, greffon), entetes)
+    if code != 200:
+        return None
+    return _json(corps)
+
+
+def _glances_version(base, entetes):
+    """4 ou 3, selon ce que l hote repond — retenu pour les cycles suivants."""
+    connue = _GLANCES.get(base)
+    if connue:
+        return connue
+    for v in ("4", "3"):
+        if _glances_lire(base, v, "cpu", entetes) is not None:
+            _GLANCES[base] = v
+            return v
+    return None
+
+
+def _glances_secondes(texte_duree):
+    """« 6 days, 22:53:29 » en secondes ; Glances ne donne que cette forme."""
+    m = re.search(r"(?:(\d+)\s*day[s]?,\s*)?(\d+):(\d+):(\d+)", str(texte_duree or ""))
+    if not m:
+        return None
+    jours = int(m.group(1) or 0)
+    return ((jours * 24 + int(m.group(2))) * 60 + int(m.group(3))) * 60 + int(m.group(4))
+
+
+def w_glances(base, mot_de_passe=""):
+    """Charge de la machine, lue par l API REST de Glances.
+
+    Un greffon par mesure plutot qu un « /all » : la reponse complete embarque
+    la liste des processus, plusieurs centaines de kilo-octets dont on ne lit
+    rien. Chaque greffon absent — pas de sonde thermique, pas de Docker — laisse
+    simplement sa mesure de cote.
+    """
+    entetes = _glances_auth(mot_de_passe)
+    version = _glances_version(base, entetes)
+    if not version:
+        return None
+    def lire(greffon):
+        return _glances_lire(base, version, greffon, entetes)
+
+    stats = []
+
+    cpu = lire("cpu")
+    if isinstance(cpu, dict) and cpu.get("total") is not None:
+        stats.append(M("cpu", float(cpu["total"])))
+
+    mem = lire("mem")
+    if isinstance(mem, dict) and mem.get("percent") is not None:
+        stats.append(M("ram", float(mem["percent"])))
+
+    # Plusieurs points de montage : celui qui se remplit decide, c est lui qui
+    # declenchera l alerte.
+    fs = lire("fs")
+    if isinstance(fs, dict):
+        fs = fs.get("fs") or []
+    plein = [(float(d["percent"]), d.get("mnt_point") or "")
+             for d in (fs or []) if isinstance(d, dict) and d.get("percent") is not None]
+    if plein:
+        pire = max(plein)
+        stats.append(M("disque", pire[0]))
+
+    # Meme regle pour les sondes thermiques, en ecartant les valeurs qui ne
+    # sont pas des temperatures (ventilateurs, batteries).
+    sondes = lire("sensors")
+    if isinstance(sondes, dict):
+        sondes = sondes.get("sensors") or []
+    degres = []
+    for d in (sondes or []):
+        if not isinstance(d, dict):
+            continue
+        unite = str(d.get("unit") or "")
+        if unite not in ("C", "°C"):
+            continue
+        try:
+            v = float(d.get("value"))
+        except (TypeError, ValueError):
+            continue
+        if 0 < v < 120:
+            degres.append(v)
+    if degres:
+        stats.append(M("temp", max(degres)))
+
+    marche = lire("uptime")
+    if isinstance(marche, dict):
+        marche = marche.get("uptime")
+    secondes = _glances_secondes(marche)
+    if secondes:
+        jours = secondes // 86400
+        stats.append(M("uptime", secondes,
+                       ("%d j" % jours) if jours else ("%d h" % (secondes // 3600))))
+
+    # Glances 4 nomme le greffon « containers », Glances 3 « docker ».
+    boites = lire("containers" if version == "4" else "docker")
+    if isinstance(boites, dict):
+        boites = boites.get("containers") or []
+    if isinstance(boites, list) and boites:
+        actifs = sum(1 for c in boites if isinstance(c, dict)
+                     and str(c.get("status") or c.get("Status") or "").lower().startswith("running"))
+        stats.append(M("docker", actifs, "%d / %d" % (actifs, len(boites))))
+
+    return stats or None
+
+
 def maj_ha(base, cle):
     """Nombre de mises a jour en attente selon Home Assistant."""
     rep = _gabarit_ha(base, cle,
@@ -482,6 +612,7 @@ REGISTRE = {
     "ha": w_ha,
     "unraid": w_unraid,
     "unifi": w_unifi,
+    "glances": w_glances,
 }
 
 
@@ -511,6 +642,7 @@ CAPACITES = {
     "ha": ["indispo", "autom_off", "lumieres", "ouvertures", "presents"],
     "unraid": ["cpu", "ram", "disque", "temp", "uptime", "docker"],
     "unifi": ["clients", "equipements", "bornes", "cpu", "ram"],
+    "glances": ["cpu", "ram", "disque", "temp", "uptime", "docker"],
 }
 
 
