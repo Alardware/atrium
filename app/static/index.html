@@ -3850,8 +3850,28 @@ function openConfirm(titre, sous, libelle, action) {
   $('ov-confirm').hidden = false;
 }
 function closeConfirm() { $('ov-confirm').hidden = true; CONFIRM_ACTION = null; }
+/* Fermer une fenêtre en cliquant son fond — à condition que le geste ait
+   commencé et fini sur ce fond.
+
+   Sélectionner le texte d'un champ en débordant du cadre relâche le bouton
+   au-dessus du fond ; le clic qui s'ensuit vise l'ancêtre commun des deux
+   points, c'est-à-dire le fond lui-même, et la fenêtre se fermait au milieu
+   d'une saisie. On juge donc sur les deux extrémités du geste plutôt que sur
+   l'événement de synthèse. */
+function fermerAuFond(el, fermer) {
+  let depart = null;
+  el.addEventListener('pointerdown', (e) => { depart = e.target; });
+  el.addEventListener('pointerup', (e) => {
+    const dehors = depart === el && e.target === el;
+    depart = null;
+    if (dehors) fermer();
+  });
+  /* Un geste commencé dans la fenêtre peut finir hors de la page : sans cela,
+     « depart » resterait armé jusqu'au geste suivant. */
+  el.addEventListener('pointercancel', () => { depart = null; });
+}
 $('c-cancel').addEventListener('click', closeConfirm);
-$('ov-confirm').addEventListener('click', (e) => { if (e.target === $('ov-confirm')) closeConfirm(); });
+fermerAuFond($('ov-confirm'), closeConfirm);
 $('c-ok').addEventListener('click', () => {
   const a = CONFIRM_ACTION;
   closeConfirm();
@@ -4036,9 +4056,7 @@ function stRow(zone, libelle, valeur, classe, id) {
 
 
 $('st-close').addEventListener('click', () => { $('ov-statut').hidden = true; });
-$('ov-statut').addEventListener('click', (e) => {
-  if (e.target === $('ov-statut')) $('ov-statut').hidden = true;
-});
+fermerAuFond($('ov-statut'), () => { $('ov-statut').hidden = true; });
 
 /* ---------- listes d'entités Home Assistant ---------- */
 const ATTR = (s) => s.attributes || {};
@@ -5088,9 +5106,7 @@ async function ouvrirChoixWidget() {
   $('ov-widget').hidden = false;
 }
 $('w-cancel').addEventListener('click', () => { $('ov-widget').hidden = true; });
-$('ov-widget').addEventListener('click', (e) => {
-  if (e.target === $('ov-widget')) $('ov-widget').hidden = true;
-});
+fermerAuFond($('ov-widget'), () => { $('ov-widget').hidden = true; });
 
 /* ---------- supervision ----------
    Le serveur sonde les services en continu et en déduit les alertes ; le
@@ -6709,9 +6725,7 @@ $('hi-plages').addEventListener('click', (e) => {
   peindreHistorique();
 });
 $('hi-close').addEventListener('click', () => { $('ov-histo').hidden = true; });
-$('ov-histo').addEventListener('click', (e) => {
-  if (e.target === $('ov-histo')) $('ov-histo').hidden = true;
-});
+fermerAuFond($('ov-histo'), () => { $('ov-histo').hidden = true; });
 
 /* Trace les temps de réponse relevés par le serveur. Rien n'est lissé ni
    inventé : deux mesures au minimum, sinon pas de courbe du tout. */
@@ -8856,7 +8870,7 @@ $('m-sysmon').addEventListener('click', async () => {
 
 /* fermeture par fond ou Échap */
 [['ov-app', closeAppModal], ['ov-del', closeDelModal]].forEach(([id, close]) => {
-  $(id).addEventListener('click', (e) => { if (e.target === $(id)) close(); });
+  fermerAuFond($(id), close);
 });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
