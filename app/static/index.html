@@ -124,11 +124,11 @@ summary:focus-visible,[tabindex]:focus-visible{
 .brand-sub{font:600 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .brand-sub2{font:500 10px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-3)}
 .nav{display:flex;flex-direction:column;gap:3px}
-.nav-title{padding:0 8px 8px;font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-3)}
-.nav-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:var(--text-2);font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;transition:background .15s,color .15s;text-align:left;width:100%}
+.nav-title{padding:0 9px 9px;font:600 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-3)}
+.nav-link{display:flex;align-items:center;gap:12px;padding:11px 11px;border-radius:9px;color:var(--text-2);font:600 14px/1 'Plus Jakarta Sans',sans-serif;transition:background .15s,color .15s;text-align:left;width:100%}
 .nav-link:hover{background:var(--subtle);color:var(--text)}
-.nav-link .ico{width:18px;text-align:center;color:var(--muted-2)}
-.nav-link .count{margin-left:auto;font:500 11.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.nav-link .ico{width:18px;text-align:center;font-size:15px;color:var(--muted-2)}
+.nav-link .count{margin-left:auto;font:500 12px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
 .nav-link.active{background:var(--accent-soft);color:var(--accent-strong)}
 .nav-link.active .ico{color:var(--accent-strong)}
 .nav-link.active .count{color:var(--accent)}
@@ -815,13 +815,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage-head{display:flex;align-items:center;gap:14px;padding:0 26px;height:58px;border-bottom:1px solid var(--border);background:var(--surface);flex:none}
 .spage-head h2{margin:0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif}
 .spage-body{flex:1;display:grid;grid-template-columns:236px 1fr;overflow:hidden}
-.spage-nav{display:flex;flex-direction:column;gap:2px;padding:16px 12px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto}
-.spage-nav .grp{padding:14px 10px 6px;font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-3)}
+.spage-nav{display:flex;flex-direction:column;gap:4px;padding:18px 12px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto}
+.spage-nav .grp{padding:18px 12px 8px;font:600 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-3)}
 .spage-nav .grp:first-child{padding-top:2px}
-.spage-nav button{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:8px;color:var(--text-2);font:600 13px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .13s,color .13s}
+.spage-nav button{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;color:var(--text-2);font:600 14px/1 'Plus Jakarta Sans',sans-serif;text-align:left;transition:background .13s,color .13s}
 .spage-nav button:hover{background:var(--subtle);color:var(--text)}
 .spage-nav button.on{background:var(--accent-soft);color:var(--accent-strong)}
-.spage-nav button .ic{width:16px;text-align:center;font-size:13px;opacity:.85}
+.spage-nav button .ic{width:18px;text-align:center;font-size:15px;opacity:.85}
 .spage-content{overflow-y:auto;padding:0}
 
 /* ---- réglages : lignes d'état et d'option, denses comme le tableau de bord ---- */
@@ -1239,7 +1239,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .jr-l .n{margin-left:auto;color:var(--muted-2)}
 .jr-vide{padding:22px;text-align:center;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 /* Chaque entrée de navigation annonce ce qu'elle contient. */
-.spage-nav button .q{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
+.spage-nav button .q{margin-left:auto;font:500 11.5px/1 'IBM Plex Mono',monospace;color:var(--muted-3)}
 .spage-nav button .q:empty{display:none}
 .spage-nav button.on .q{color:var(--muted-2)}
 /* Langue : chaque ligne montre ce que le choix change concrètement. */
@@ -1495,8 +1495,8 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   .health{display:none !important}
   .featured > .cock{max-width:none}
   .clock{display:none}
-  .spage-body{grid-template-columns:1fr}
-  .spage-nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border);padding:10px 12px;gap:6px;scrollbar-width:none}
+  .spage-body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  .spage-nav{flex-direction:row;align-items:center;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border);padding:10px 12px;gap:6px;scrollbar-width:none}
   .spage-nav::-webkit-scrollbar{display:none}
   .spage-nav .grp{display:none}
   .spage-nav button{white-space:nowrap;flex:none}
