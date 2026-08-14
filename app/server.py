@@ -134,6 +134,13 @@ def installer_admin_cache():
     cfg = charger_config()
     users = cfg.get("users") or []
     u = next((x for x in users if x.get("nom") == nom), None)
+    if u is not None and not profil_cache(u):
+        # Reprendre le nom d un profil existant le ferait disparaitre de l ecran
+        # de connexion et remplacerait son mot de passe : ce serait perdre un
+        # compte en croyant en ajouter un.
+        print("ATRIUM_ADMIN ignore : « %s » est deja un profil visible. "
+              "Choisissez un autre nom." % nom, flush=True)
+        return
     if u is None:
         users.append({"nom": nom, "pwd": auth.hacher(mdp), "photo": "", "cache": True})
         action = "cree"

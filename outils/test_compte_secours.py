@@ -10,8 +10,9 @@ interroge comme le ferait un navigateur. Ce qui est verifie :
      declarer cachee a son tour — que ce soit par la configuration ou par une
      archive de restauration ;
   4. il se connecte en tapant son nom, et refuse un mauvais mot de passe ;
-  5. un secret trop court est refuse au demarrage ;
-  6. il survit au retrait de la variable.
+  5. il ne prend pas le nom d un profil deja visible, qui disparaitrait ;
+  6. un secret trop court est refuse au demarrage ;
+  7. il survit au retrait de la variable.
 
 Sortie : 0 si tout tient, 1 au premier point qui cede.
 """
@@ -191,7 +192,20 @@ def main():
     finally:
         arreter(srv)
 
-    print("7. un secret trop court est refuse")
+    print("7. il ne prend pas le nom d un profil visible")
+    env = dict(os.environ, ATRIUM_PORT=str(PORT), ATRIUM_CONFIG_DIR=DOSSIER,
+               ATRIUM_ADMIN="%s:un-autre-mot-de-passe" % PROFIL, PYTHONIOENCODING="utf-8")
+    p = subprocess.Popen([sys.executable, "server.py"], cwd=os.path.join(RACINE, "app"),
+                         env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                         text=True, encoding="utf-8", errors="replace")
+    time.sleep(3)
+    arreter(p)
+    sortie = p.stdout.read()
+    verifier("refus annonce", any("deja un profil visible" in l for l in sortie.splitlines()), True)
+    proprio = next((x for x in config()["users"] if x["nom"] == PROFIL), None)
+    verifier("le profil visible reste visible", bool(proprio) and not proprio.get("cache"), True)
+
+    print("8. un secret trop court est refuse")
     env = dict(os.environ, ATRIUM_PORT=str(PORT), ATRIUM_CONFIG_DIR=DOSSIER,
                ATRIUM_ADMIN="court:1234", PYTHONIOENCODING="utf-8")
     p = subprocess.Popen([sys.executable, "server.py"], cwd=os.path.join(RACINE, "app"),
@@ -205,7 +219,7 @@ def main():
     verifier("compte trop court cree",
              any(x["nom"] == "court" for x in config()["users"]), False)
 
-    print("8. il survit au retrait de la variable")
+    print("9. il survit au retrait de la variable")
     srv = demarrer()
     try:
         verifier("connexion apres redemarrage", connexion(NOM, SECRET)[1], 200)

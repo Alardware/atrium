@@ -226,6 +226,18 @@ Au démarrage, le compte est créé — ou son mot de passe mis à jour — puis
 l'empreinte seule est écrite dans `atrium.json` ; la variable peut ensuite être
 retirée, le compte reste. Un secret de moins de huit caractères est refusé et le
 serveur le dit : c'est le mot de passe qui garde ce compte, pas sa discrétion.
+Le nom doit être nouveau : reprendre celui d'un profil existant le ferait
+disparaître de l'écran de connexion, la variable est donc ignorée dans ce cas.
+
+Le journal du conteneur dit ce qui s'est passé, en une ligne :
+
+```
+Compte de secours « secours » cree (invisible a l ecran de connexion)
+ATRIUM_ADMIN ignore : mot de passe de moins de 8 caracteres
+ATRIUM_ADMIN ignore : « Guillaume » est deja un profil visible. Choisissez un autre nom.
+```
+
+Aucune ligne du tout : l'image ne contient pas encore cette version.
 
 Pour vous y connecter : **Autre profil…** sous la liste, puis son nom et son mot
 de passe.
