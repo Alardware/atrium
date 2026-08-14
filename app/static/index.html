@@ -101,6 +101,13 @@ button{font:inherit;border:0;background:none;padding:0;color:inherit;cursor:poin
 template{display:none}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Le halo d'une pastille d'état : il naît sur le point et se dissipe. Chaque
+   état donne sa teinte, et sa version transparente — une couleur nommée
+   « transparent » virerait au gris en cours de route. */
+@keyframes battement{
+  0%{box-shadow:0 0 0 0 var(--puls)}
+  70%{box-shadow:0 0 0 6px var(--puls-0)}
+  100%{box-shadow:0 0 0 0 var(--puls-0)}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
 
@@ -500,7 +507,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid:not(.list) > .tuile-s{flex:1 1 206px;max-width:222px}
 /* Format petit : la courbe cède la place. Sa fonction ne se perd pas pour
    autant — le temps de réponse porte la même explication et le même clic. */
-.grid:not(.list) > .tuile-s .spark{display:none}
 .grid:not(.list) > .tuile-m{flex:1 1 262px;max-width:283px}
 .grid:not(.list) > .tuile-l{flex:1 1 372px;max-width:402px}
 .grid:not(.list) > .tuile-xl{flex:1 1 476px;max-width:514px}
@@ -516,10 +522,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-tags{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
 .badge-maj{padding:4px 8px;border-radius:6px;background:var(--warn-soft);border:1px solid var(--warn-border);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text)}
 .badge-maj[hidden]{display:none}
-.app-tags .star{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;line-height:1;color:var(--muted-3);opacity:0;transition:opacity .15s,color .15s}
-.app-card:hover .app-tags .star,.app-tags .star:focus-visible{opacity:1}
-.app-tags .star:hover{color:var(--warn)}
-.app-tags .star.on{opacity:1;color:var(--warn)}
 .app-name{font:700 14.5px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-role{margin-top:3px;font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--muted)}
 /* Calé en bas : dans une rangée, une tuile sans mesure et une tuile qui en
@@ -570,9 +572,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .badge-on[hidden],.badge-off[hidden],.badge-na[hidden]{display:none}
 .app-foot .lat{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .app-foot .lat:empty{display:none}
-/* La courbe occupe la place restante entre la pastille et le temps de réponse.
-   Elle est tracée à partir des mesures réellement relevées : pas de courbe,
-   pas de dessin. */
+/* La courbe ne vit plus sur les tuiles : elle appartient au panneau des
+   connexions et à la fiche d'une application, là où on vient la lire. */
 .spark{flex:1 1 40px;min-width:0;height:18px;display:none;align-items:center}
 .spark.on{display:flex}
 .crb{width:100%;height:18px;overflow:visible}
@@ -582,6 +583,14 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .crb.c-off polyline{stroke:var(--bad)}
 .badge-warn{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--warn-text);white-space:nowrap}
 .badge-warn .dot{background:var(--warn)}
+/* « en ligne », « dégradé », « hors ligne », « vérification… » : la pastille
+   respire pour dire que la surveillance tourne. */
+.badge-on .dot,.badge-warn .dot,.badge-off .dot,.badge-na .dot{
+  animation:battement 2.6s ease-out infinite}
+.badge-on .dot{--puls:rgba(34,197,94,.55);--puls-0:rgba(34,197,94,0)}
+.badge-warn .dot{--puls:rgba(245,165,36,.55);--puls-0:rgba(245,165,36,0)}
+.badge-off .dot{--puls:rgba(240,104,90,.55);--puls-0:rgba(240,104,90,0)}
+.badge-na .dot{--puls:rgba(148,163,184,.45);--puls-0:rgba(148,163,184,0)}
 .badge-on .lat:empty{display:none}
 .app-seen{font:500 10px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 /* Montrer ou cacher les chiffres de toutes les tuiles d'un geste, là où on les
@@ -598,9 +607,11 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .apps-tally{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
 .apps-tally:empty{display:none}
 .app-foot{flex-wrap:wrap;row-gap:6px}
-/* La dernière vérification prend la ligne suivante plutôt que de comprimer la
-   courbe : la tuile est étroite, l'état et le temps de réponse passent avant. */
-.grid:not(.list) .app-seen{flex:1 1 100%;text-align:right;margin-top:-2px}
+/* Sans la courbe, le temps de réponse et la dernière vérification se rangent
+   à droite de la pastille, sur la même ligne. Le repli reste possible sur une
+   tuile étroite : c'est la vérification qui passe à la ligne. */
+.grid:not(.list) .app-foot .lat{margin-left:auto}
+.grid:not(.list) .app-seen{margin-left:6px;text-align:right}
 .app-seen:empty{display:none}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
@@ -623,9 +634,8 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .nav-link.bascule.on{background:var(--accent-soft);color:var(--accent-strong)}
 .nav-link.bascule.on .ico{color:var(--accent-strong)}
 
-/* Les commandes n'apparaissent qu'au survol. L'étoile, elle, est un état de la
-   tuile et non une commande : elle vit avec les pastilles (.app-tags) et reste
-   visible en permanence sur un favori. */
+/* Les commandes n'apparaissent qu'au survol. Le favori, lui, se met et
+   s'enlève depuis le menu ⋮ : c'est une commande, pas un ornement. */
 .app-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:2}
 .act-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border-2);background:var(--surface);color:var(--muted);display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:var(--sh-1);opacity:0;transition:opacity .15s,color .15s,border-color .15s}
 .app-card:hover .act-btn,.app-actions:focus-within .act-btn{opacity:1}
@@ -669,7 +679,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
    même variable, elles ne peuvent donc pas se désaligner. « nowrap » est
    indispensable — une colonne flex qui enveloppe se réduit à la largeur de son
    contenu au lieu de tenir la ligne. */
-.grid.list{--cols:auto minmax(140px,1.1fr) auto minmax(120px,1.6fr) 92px 104px 52px auto;
+.grid.list{--cols:auto minmax(140px,1.1fr) auto minmax(120px,1.6fr) 104px 52px auto;
            flex-direction:column;flex-wrap:nowrap;gap:0;
            border:1px solid var(--border);border-radius:12px;overflow:hidden;
            background:var(--surface)}
@@ -682,8 +692,7 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .list-head[hidden]{display:none}
 .list-head > span:first-child{grid-column:1 / 4}
 .list-head .c-met{grid-column:4}
-.list-head .c-act{grid-column:5}
-.list-head .c-etat{grid-column:6}
+.list-head .c-etat{grid-column:5}
 .grid.list + .list-head,.list-head + .grid.list{border-top-left-radius:0;border-top-right-radius:0}
 .grid.list .app-card{display:grid;grid-template-columns:var(--cols);align-items:center;
                      row-gap:0;column-gap:16px;padding:10px 16px;
@@ -710,14 +719,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .grid.list .app-mes{grid-column:4;padding:0;background:none;
                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .grid.list .badge-on,.grid.list .badge-warn,
-.grid.list .badge-off,.grid.list .badge-na{grid-column:6}
-.grid.list .spark{grid-column:5;flex:none;width:100%}
-.grid.list .lat{grid-column:7;justify-self:end}
+.grid.list .badge-off,.grid.list .badge-na{grid-column:5}
+.grid.list .lat{grid-column:6;justify-self:end}
 .grid.list .app-seen{display:none}
 /* En liste, les commandes ont leur propre colonne, tout à droite : elles ne
    flottent plus au-dessus d'une rangée haute de quarante pixels, et le menu ⋮
    — visible même hors mode création — ne recouvre aucun badge. */
-.grid.list .app-actions{position:static;grid-column:8;justify-self:end}
+.grid.list .app-actions{position:static;grid-column:7;justify-self:end}
 .grid.list .add-card{min-height:0;flex-direction:row;padding:12px 16px}
 .grid.list .add-ring{width:26px;height:26px;font-size:14px}
 
@@ -1504,16 +1512,14 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 
 /* ---- téléphone ---- */
 @media (max-width:760px){
-  /* Huit colonnes ne tiennent pas sur un téléphone. Plutôt qu'un défilement
+  /* Sept colonnes ne tiennent pas sur un téléphone. Plutôt qu'un défilement
      horizontal sur la liste principale, on retire ce qui se déduit ailleurs :
-     l'activité et le temps de réponse restent lisibles en vue Grille. */
-  .grid.list{--cols:auto minmax(90px,1fr) auto 104px minmax(74px,auto) auto}
+     le temps de réponse reste lisible en vue Grille. */
+  .grid.list{--cols:auto minmax(90px,1fr) auto minmax(74px,auto) 104px auto}
   .grid.list .app-card{column-gap:10px;padding:10px 12px}
-  .grid.list .spark,.grid.list .lat{display:none}
+  .grid.list .lat{display:none}
   .grid.list .app-actions{grid-column:6}
   .grid.list .app-role{display:none}
-  .list-head .c-act{display:none}
-  .list-head .c-met{grid-column:5}
   /* La barre de navigation défile horizontalement au lieu de s'empiler sur
      quatre lignes : sur un écran étroit, huit entrées repliées mangeaient la
      moitié de la hauteur utile. */
@@ -1583,13 +1589,11 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
   .app-actions .act-btn[data-act="edit"],
   .app-actions .act-btn[data-act="del"]{display:none}
   .app-actions .act-btn[data-act="menu"]{opacity:1}
-  .app-tags .star{opacity:1;color:var(--muted-3)}
-  .app-tags .star.on{color:var(--warn)}
   .wbar button{opacity:1}
   /* 44 px : la norme Apple ; Material demande 48 dp. Au doigt, un bouton plus
      grand n'est pas un défaut : on les laisse grandir plutôt que de bricoler
      une zone tactile invisible autour d'un dessin bordé. */
-  .act-btn,.app-tags .star,.wbar button,.pwd-eye,.bell,.theme-seg button,.avatar{
+  .act-btn,.wbar button,.pwd-eye,.bell,.theme-seg button,.avatar{
     min-width:44px;min-height:44px}
   .app-actions{top:6px;right:6px}
   .qmenu button{padding:13px 12px}
@@ -1818,7 +1822,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <div class="list-head" id="list-head" hidden>
           <span data-i18n="col.app">APPLICATION</span>
           <span class="c-met" data-i18n="col.metric">MESURES</span>
-          <span class="c-act" data-i18n="col.activity">ACTIVITÉ</span>
           <span class="c-etat" data-i18n="col.state">ÉTAT</span>
         </div>
         <div class="grid" id="apps-grid"></div>
@@ -2731,7 +2734,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <span class="app-tags">
         <span class="badge-alert" hidden>⚠</span>
         <span class="badge-maj" hidden>MAJ</span>
-        <button class="star" data-act="fav" data-i18n-title="fav.add" title="Mettre en favori">☆</button>
       </span>
     </div>
     <div class="app-mes" hidden></div>
@@ -2740,7 +2742,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <span class="badge-warn" hidden><span class="dot"></span><span data-i18n="app.degraded">dégradé</span></span>
       <span class="badge-off" hidden><span class="dot"></span><span data-i18n="app.offline">hors ligne</span></span>
       <span class="badge-na" hidden><span class="dot"></span><span class="lbl">vérification…</span></span>
-      <span class="spark"></span>
       <span class="lat"></span>
       <span class="app-seen"></span>
     </div>
@@ -5795,13 +5796,9 @@ function appCard(app, index) {
   a.querySelector('.app-role').textContent = app.role;
   if (majByName[app.nom]) a.querySelector('.badge-maj').hidden = false;
 
-  const etoile = a.querySelector('.app-tags .star');
-  if (app.fav) {
-    a.classList.add('fav');
-    etoile.classList.add('on');
-    etoile.textContent = '★';
-  }
-  etoile.title = t(app.fav ? 'fav.remove' : 'fav.add');
+  /* Mettre en favori vit dans le menu ⋮, avec les autres commandes : une
+     étoile posée sur la tuile se lisait comme une décoration. */
+  if (app.fav) a.classList.add('fav');
 
   /* « hors ligne » est déjà dit par le bas de la tuile : le bandeau d'alerte
      ne sert qu'à signaler ce que l'on ne verrait pas autrement. */
@@ -5856,28 +5853,6 @@ function appCard(app, index) {
     lat.dataset.act = 'histo';
     lat.setAttribute('role', 'button');
     lat.tabIndex = 0;
-  }
-  /* l'activité n'a de sens que si l'état est montré : sans pastille, une
-     courbe seule ne se rattache à rien */
-  if (!cache('etat') && etat) {
-    const trace = courbe(etat.courbe, sant === 'na' ? 'on' : sant);
-    if (trace) {
-      const z = a.querySelector('.spark');
-      z.classList.add('on');
-      z.appendChild(trace);
-      /* Une courbe sans légende ne fait que meubler. Elle dit maintenant ce
-         qu'elle trace, sur quelle durée, et ce qu'on y lit. */
-      const c = etat.courbe;
-      z.title = t('crb.t', {
-        n: c.length,
-        min: Math.min.apply(null, c),
-        moy: Math.round(c.reduce((x, y) => x + y, 0) / c.length),
-        max: Math.max.apply(null, c),
-      });
-      z.dataset.act = 'histo';
-      z.setAttribute('role', 'button');
-      z.tabIndex = 0;
-    }
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
 
