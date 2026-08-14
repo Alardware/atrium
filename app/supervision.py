@@ -49,7 +49,8 @@ def _sonder(url, delai=6):
     req = urllib.request.Request(url, method="GET")
     req.add_header("User-Agent", "Atrium")
     try:
-        with urllib.request.urlopen(req, timeout=delai, context=_CTX) as r:
+        # Destination et schema deja valides plus haut par reseau.autorise.
+        with urllib.request.urlopen(req, timeout=delai, context=_CTX) as r:  # nosec B310
             r.read(1)
     except urllib.error.HTTPError:
         pass

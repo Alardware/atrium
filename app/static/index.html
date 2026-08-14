@@ -1469,10 +1469,20 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 /* Le nom se lit au-dessus du champ : un texte fantôme disparaît à la première
    frappe, et l'on ne sait plus à qui l'on s'apprête à ouvrir. */
 .lock-lab{font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--t4);text-align:left}
-.lock-box input[type=password]{text-align:left;padding:10px 12px;border-radius:9px;
-  background:var(--field);border-color:var(--hair4)}
+.lock-box input[type=password],.lock-box input[type=text]{text-align:left;padding:10px 12px;
+  border-radius:9px;background:var(--field);border-color:var(--hair4)}
+/* Le nom se pose comme le mot de passe : libellé au-dessus, champ pleine
+   largeur. Sans cela, le libellé et le champ se partageaient la même ligne. */
+#lock-nom-bloc{display:flex;flex-direction:column;gap:10px}
+#lock-nom-bloc[hidden]{display:none}
 .lock-btn{margin-top:2px;padding:10px 0;border-radius:9px}
 .lock-remember{justify-content:flex-start;margin-top:2px}
+/* « Autre profil » ne s'annonce pas plus qu'il ne faut : c'est le chemin des
+   comptes qui ne figurent pas dans la liste, pas une commande courante. */
+.lock-autre{margin-top:14px;background:none;border:0;font:500 12px/1 'Plus Jakarta Sans',sans-serif;
+            color:var(--muted-2);text-decoration:underline;text-underline-offset:3px}
+.lock-autre:hover{color:var(--text-2)}
+.lock-autre[hidden]{display:none}
 .lock-pied{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:9px}
 .lock-acces{background:transparent;border-color:var(--hair2)}
 .lock-note{font:500 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--t7)}
@@ -2557,11 +2567,16 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <div class="lock-profiles" id="lock-profiles"></div>
       <div id="lock-form" hidden>
         <div class="setup-err" id="lock-err" hidden></div>
+        <div id="lock-nom-bloc" hidden>
+          <label class="lock-lab" for="lock-nom" data-i18n="login.name">Nom du profil</label>
+          <input id="lock-nom" type="text" autocomplete="username" spellcheck="false">
+        </div>
         <label class="lock-lab" id="lock-lab" for="lock-input" data-i18n="login.pwd">Mot de passe</label>
         <input id="lock-input" type="password" autocomplete="current-password">
         <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
         <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
       </div>
+      <button class="lock-autre" id="lock-autre" hidden data-i18n="login.other">Autre profil…</button>
     </div>
     <div class="lock-pied">
       <div class="lock-acces" id="lock-acces" hidden><span class="dot"></span><span class="tx"></span></div>
@@ -8643,6 +8658,7 @@ let PROFILS = [];        // profils publics renvoyés par /api/session
 let ACCES = null;        // provenance de la connexion, vue par le serveur
 let PENDING_USER = -1;
 let SESSION_USER = null;
+let AUTRE_PROFIL = false;   // connexion par nom tapé, hors de la liste
 
 function lockErr(msg) {
   const e = $('lock-err');
@@ -8672,6 +8688,11 @@ function renderLockUi() {
     acces.hidden = true;
   }
   const liste = PROFILS.length ? PROFILS : USERS.map((u) => ({ nom: u.nom, photo: u.photo, protege: !!u.pwd }));
+  /* La saisie libre n'a de sens que s'il existe déjà des profils : à
+     l'installation, le formulaire est déjà là. */
+  $('lock-autre').hidden = !liste.length;
+  $('lock-nom-bloc').hidden = true;
+  AUTRE_PROFIL = false;
   if (liste.length) {
     $('lock-form').hidden = true;
     liste.forEach((u, i) => {
@@ -8771,11 +8792,34 @@ function applyLock() {
   }
 }
 function tryUnlock() {
+  if (AUTRE_PROFIL) {
+    const nom = $('lock-nom').value.trim();
+    if (!nom) { $('lock-nom').focus(); return; }
+    seConnecter(nom, $('lock-input').value);
+    return;
+  }
   const liste = PROFILS.length ? PROFILS : USERS;
   const u = PENDING_USER >= 0 ? liste[PENDING_USER] : liste[0];
   if (!u) return;
   seConnecter(u.nom, $('lock-input').value);
 }
+/* Se connecter à un profil qui n'est pas dans la liste : un compte de secours
+   n'y figure jamais, on y accède en tapant son nom. */
+$('lock-autre').addEventListener('click', () => {
+  AUTRE_PROFIL = true;
+  PENDING_USER = -1;
+  lockErr('');
+  $('lock-form').hidden = false;
+  $('lock-nom-bloc').hidden = false;
+  $('lock-nom').value = '';
+  $('lock-input').value = '';
+  $('lock-lab').textContent = t('login.pwd');
+  $('lock-nom').focus();
+});
+$('lock-nom').addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Enter') $('lock-input').focus();
+});
 $('lock-go').addEventListener('click', tryUnlock);
 $('lock-input').addEventListener('keydown', (e) => {
   e.stopPropagation();

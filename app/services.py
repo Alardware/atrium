@@ -13,6 +13,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import reseau
+
 TIMEOUT = 4
 _CTX = ssl.create_default_context()
 _CTX.check_hostname = False
@@ -20,6 +22,12 @@ _CTX.verify_mode = ssl.CERT_NONE     # equipements locaux : certificats auto-sig
 
 
 def _http(url, entetes=None, methode="GET", corps=None):
+    # Les appelants verifient deja la destination ; on la reverifie ici parce
+    # que ce lecteur sert a toutes les integrations et qu un appel ajoute plus
+    # tard oublierait la garde. urlopen accepte « file:// » et « ftp:// » : une
+    # URL de service mal formee lirait un fichier du conteneur.
+    if not reseau.autorise(url):
+        return 0, b"", {}
     req = urllib.request.Request(url, data=corps, method=methode)
     req.add_header("Accept", "application/json")
     req.add_header("User-Agent", "Atrium")
@@ -27,7 +35,8 @@ def _http(url, entetes=None, methode="GET", corps=None):
         if v:
             req.add_header(k, v)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=_CTX) as r:
+        # Destination et schema deja valides ci-dessus par reseau.autorise.
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=_CTX) as r:  # nosec B310
             return r.status, r.read(200000), dict(r.headers)
     except urllib.error.HTTPError as e:
         try:

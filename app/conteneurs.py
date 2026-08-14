@@ -60,8 +60,8 @@ def _appel(methode, chemin, delai=TIMEOUT):
     finally:
         try:
             c.close()
-        except Exception:
-            pass
+        except OSError:
+            pass          # deja ferme par la pile reseau : rien a signaler
 
 
 def _get(chemin):

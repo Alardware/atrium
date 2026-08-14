@@ -1,0 +1,18 @@
+version: 2
+
+# Atrium n'a aucune dépendance Python : ce qui vieillit, c'est l'image de base
+# et les actions de la chaîne d'intégration. Ce sont donc elles qu'on surveille.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "CI"
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "Image"

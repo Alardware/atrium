@@ -10,6 +10,10 @@ Variables d'environnement :
   ATRIUM_CONFIG_DIR  dossier de la configuration  (defaut /config, sinon ./data)
   ATRIUM_ALLOW_NET   prefixes reseau autorises pour le relais, separes par des
                      virgules (defaut : reseaux prives RFC1918 + loopback)
+  ATRIUM_ADMIN       compte de secours cache, « nom:motdepasse ». Cree ou mis a
+                     jour au demarrage, absent de l ecran de connexion et de
+                     toutes les listes de profils. La variable peut etre retiree
+                     ensuite : le compte, lui, reste.
 """
 import hashlib
 import http.cookies
@@ -90,6 +94,68 @@ def charger_config():
             return json.load(f)
     except (OSError, ValueError):
         return {}
+
+
+def profil_cache(u):
+    """Ce profil est-il un compte de secours ?"""
+    return bool((u or {}).get("cache"))
+
+
+def visibles(users):
+    """Les profils que l interface a le droit de connaitre."""
+    return [u for u in (users or []) if not profil_cache(u)]
+
+
+MDP_MINIMUM = 8
+
+
+def installer_admin_cache():
+    """Cree ou met a jour le compte de secours decrit par ATRIUM_ADMIN.
+
+    Un compte cache n a d interet que s il reste protege : le dissimuler ne
+    prouve rien, c est le mot de passe qui garde. Un secret trop court est donc
+    refuse plutot que dilue dans le fichier.
+
+    Le mot de passe n est ni journalise, ni renvoye : seule son empreinte est
+    ecrite, comme pour les autres profils.
+    """
+    brut = (os.environ.get("ATRIUM_ADMIN") or "").strip()
+    if not brut:
+        return
+    nom, _, mdp = brut.partition(":")
+    nom, mdp = nom.strip(), mdp
+    if not nom or not mdp:
+        print("ATRIUM_ADMIN ignore : format attendu « nom:motdepasse »", flush=True)
+        return
+    if len(mdp) < MDP_MINIMUM:
+        print("ATRIUM_ADMIN ignore : mot de passe de moins de %d caracteres"
+              % MDP_MINIMUM, flush=True)
+        return
+    cfg = charger_config()
+    users = cfg.get("users") or []
+    u = next((x for x in users if x.get("nom") == nom), None)
+    if u is None:
+        users.append({"nom": nom, "pwd": auth.hacher(mdp), "photo": "", "cache": True})
+        action = "cree"
+    else:
+        u["pwd"] = auth.hacher(mdp)
+        u["cache"] = True
+        action = "mis a jour"
+    cfg["users"] = users
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        tmp = CONFIG_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False)
+        os.replace(tmp, CONFIG_FILE)
+        try:
+            os.chmod(CONFIG_FILE, 0o600)
+        except OSError:
+            pass
+        print("Compte de secours « %s » %s (invisible a l ecran de connexion)"
+              % (nom, action), flush=True)
+    except OSError as e:
+        print("Compte de secours : ecriture impossible (%s)" % e, flush=True)
 
 
 # ---------- collecte de fond ----------
@@ -677,9 +743,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         with zipfile.ZipFile(tampon, "w", zipfile.ZIP_DEFLATED) as z:
             for nom in self.SAUVEGARDE:
                 chemin = os.path.join(CONFIG_DIR, nom)
-                if os.path.exists(chemin):
-                    z.write(chemin, nom)
-                    dedans.append(nom)
+                if not os.path.exists(chemin):
+                    continue
+                if nom == "atrium.json":
+                    # Les comptes de secours ne partent pas dans une archive que
+                    # n importe quelle session peut telecharger : leur nom et
+                    # leur empreinte y seraient lisibles. Ils appartiennent a
+                    # l installation (ATRIUM_ADMIN), pas a la sauvegarde.
+                    try:
+                        with open(chemin, "r", encoding="utf-8-sig") as f:
+                            cfg = json.load(f)
+                        cfg["users"] = visibles(cfg.get("users"))
+                        z.writestr(nom, json.dumps(cfg, ensure_ascii=False))
+                        dedans.append(nom)
+                        continue
+                    except (OSError, ValueError):
+                        pass          # illisible : on archive le fichier tel quel
+                z.write(chemin, nom)
+                dedans.append(nom)
             z.writestr("LISEZ-MOI.txt", (
                 "Sauvegarde Atrium du %s\r\n\r\n"
                 "Contenu : %s\r\n\r\n"
@@ -688,7 +769,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "comme vous rangeriez ces cles.\r\n\r\n"
                 "Les jetons de session et le journal des connexions refusees\r\n"
                 "n y figurent pas : ils ne se restaurent pas et n ont rien a\r\n"
-                "faire dans une archive.\r\n"
+                "faire dans une archive. Un eventuel compte de secours non plus :\r\n"
+                "il se redefinit sur la nouvelle installation par ATRIUM_ADMIN.\r\n"
             ) % (time.strftime("%Y-%m-%d %H:%M"), ", ".join(dedans) or "rien"))
         corps = tampon.getvalue()
         self.reply(200, corps, "application/zip", entetes={
@@ -727,6 +809,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     raise ValueError("configuration illisible")
                 if not cfg["users"]:
                     raise ValueError("configuration sans profil")
+                # Une archive ne pose pas de compte cache : ce serait le moyen
+                # le plus simple d installer un acces invisible sur une machine
+                # ou l on vient d obtenir une session ordinaire.
+                for u in cfg["users"]:
+                    if isinstance(u, dict):
+                        u.pop("cache", None)
+                # Ceux de l installation en cours, eux, survivent : ils ne
+                # figurent dans aucune archive et seraient sinon effaces.
+                gardes = [u for u in (self.lire_config().get("users") or [])
+                          if profil_cache(u)]
+                noms_gardes = {u.get("nom") for u in gardes}
+                cfg["users"] = [u for u in cfg["users"]
+                                if not (isinstance(u, dict) and u.get("nom") in noms_gardes)]
+                cfg["users"] += gardes
+                contenus["atrium.json"] = json.dumps(cfg, ensure_ascii=False).encode("utf-8")
         except (zipfile.BadZipFile, ValueError, KeyError, UnicodeDecodeError) as e:
             self.reply(400, json.dumps({"error": "Archive invalide : %s" % e},
                                        ensure_ascii=False).encode())
@@ -770,9 +867,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         verifiable est rapporte comme inconnu, jamais comme bon.
         """
         cfg = self.lire_config()
-        users = cfg.get("users") or []
+        # Le compte de secours n est pas compte parmi les profils : le nombre
+        # affiche revelerait son existence.
+        users = visibles(cfg.get("users"))
         moi = self.session_user()
-        u = next((x for x in users if x.get("nom") == moi), None)
+        u = next((x for x in (cfg.get("users") or []) if x.get("nom") == moi), None)
 
         ip = self.client_address[0]
         relaye = bool(self.headers.get("X-Forwarded-For"))
@@ -912,14 +1011,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         relaye = bool(self.headers.get("X-Forwarded-For"))
         pretendue = (self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
         self.reply(200, json.dumps({
-            "installe": bool(users),
+            "installe": bool(visibles(users)),
             "utilisateur": self.session_user(),
             "acces": {"ip": pretendue if relaye else ip,
                       "local": (not relaye) and reseau.prive(ip),
                       "relaye": relaye},
+            # Un compte de secours n apparait nulle part : il se rejoint en
+            # tapant son nom, et son existence ne se lit pas depuis le dehors.
             "profils": [
                 {"nom": u.get("nom"), "photo": u.get("photo", ""), "protege": bool(u.get("pwd"))}
-                for u in users if u.get("nom")
+                for u in visibles(users) if u.get("nom")
             ],
         }, ensure_ascii=False).encode())
 
@@ -1044,7 +1145,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         (Ne pas nommer cette methode « setup » : BaseRequestHandler.setup est
         appelee a chaque connexion.)"""
         cfg = self.lire_config()
-        if cfg.get("users"):
+        # Un compte de secours cree par ATRIUM_ADMIN ne compte pas comme une
+        # installation : il n a pas d ecran, pas de tableau de bord, et son
+        # existence ne doit pas empecher le proprietaire de creer son profil.
+        if visibles(cfg.get("users")):
             self.reply(409, json.dumps({"error": "Atrium est déjà configuré."}, ensure_ascii=False).encode())
             return
         d = self.json_recu() or {}
@@ -1056,7 +1160,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if mdp and len(mdp) < 6:
             self.reply(400, json.dumps({"error": "Le mot de passe doit faire au moins 6 caractères."}, ensure_ascii=False).encode())
             return
-        cfg["users"] = [{"nom": nom, "pwd": auth.hacher(mdp) if mdp else "", "photo": ""}]
+        # Les comptes de secours survivent a l installation : ils ne sont pas
+        # remplaces par le premier profil, seulement rejoints.
+        caches = [u for u in (cfg.get("users") or []) if profil_cache(u)]
+        if any(u.get("nom") == nom for u in caches):
+            self.reply(409, json.dumps({"error": "Ce nom de profil n'est pas disponible."},
+                                       ensure_ascii=False).encode())
+            return
+        cfg["users"] = [{"nom": nom, "pwd": auth.hacher(mdp) if mdp else "", "photo": ""}] + caches
         cfg.setdefault("apps", d.get("apps") or [])
         try:
             self.ecrire_config(cfg)
@@ -1084,6 +1195,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         cfg = charger_config()
         for u in (cfg.get("users") or []):
             u["pwd"] = "1" if u.get("pwd") else ""
+        # Le compte de secours est retire de la liste envoyee : il ne doit
+        # apparaitre ni dans le panneau des profils, ni dans une sauvegarde
+        # faite depuis le navigateur.
+        cfg["users"] = visibles(cfg.get("users"))
         self.reply(200, json.dumps(cfg, ensure_ascii=False).encode())
 
     def cfg_post(self):
@@ -1093,7 +1208,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         actuel = self.lire_config()
-        users_actuels = actuel.get("users") or []
+        # Les comptes de secours ne sont jamais envoyes au navigateur : ils ne
+        # peuvent donc ni etre modifies ni etre supprimes par cette route, et
+        # sont remis en place tels quels a l enregistrement.
+        caches = [u for u in (actuel.get("users") or []) if profil_cache(u)]
+        users_actuels = visibles(actuel.get("users"))
 
         # Garde-fou : un navigateur qui repart d'un etat vide ne doit pas
         # effacer les comptes existants. Supprimer un profil passe par une
@@ -1120,8 +1239,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Les empreintes de mots de passe restent l'affaire du serveur : le
         # navigateur ne peut ni les lire ni les remplacer via cette route.
         anciens = {u.get("nom"): u.get("pwd", "") for u in users_actuels}
+        noms_caches = {u.get("nom") for u in caches}
+        propres = []
         for u in (recu.get("users") or []):
+            # Le drapeau « cache » ne se pose pas depuis le navigateur, et un
+            # profil ordinaire ne peut pas usurper le nom d un compte de secours.
+            u.pop("cache", None)
+            if u.get("nom") in noms_caches:
+                continue
             u["pwd"] = anciens.get(u.get("nom"), "")
+            propres.append(u)
+        recu["users"] = propres + caches
 
         try:
             self.ecrire_config(recu)
@@ -1204,6 +1332,10 @@ if __name__ == "__main__":
     print("Atrium — http://0.0.0.0:%d" % PORT, flush=True)
     print("Configuration : %s" % CONFIG_FILE, flush=True)
     verifier_config_inscriptible()
+    installer_admin_cache()
     systeme.demarrer_echantillonnage()
     demarrer_collecte()
-    Server(("0.0.0.0", PORT), Handler).serve_forever()
+    # Ecoute sur toutes les interfaces : dans un conteneur, seul le port
+    # publie par Docker est joignable, et une ecoute sur 127.0.0.1 ne
+    # sortirait pas du conteneur. L exposition est decidee par le -p, pas ici.
+    Server(("0.0.0.0", PORT), Handler).serve_forever()  # nosec B104

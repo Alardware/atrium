@@ -153,6 +153,7 @@ liste des conteneurs disparaît.
 | `ATRIUM_PORT` | `8420` | Port d'écoute |
 | `ATRIUM_CONFIG_DIR` | `/config` | Dossier de la configuration (`atrium.json`) |
 | `ATRIUM_ALLOW_NET` | réseaux privés | Noms d'hôtes que le relais a le droit de joindre, en plus des réseaux privés |
+| `ATRIUM_ADMIN` | — | Compte de secours caché, `nom:motdepasse` (voir [Compte de secours](#compte-de-secours)) |
 | `TZ` | — | Fuseau horaire |
 | `ATRIUM_DEBUG` | — | Journalise les requêtes si défini |
 
@@ -209,6 +210,59 @@ en clair de toute façon — c'est ce qui permet d'en changer sans casser
 l'existant. Ce qui doit rester secret ne l'est pas moins pour autant :
 `atrium.json` (empreintes, sels, clés d'API) n'est pas versionné, et `/api/config`
 ne renvoie jamais d'empreinte.
+
+### Compte de secours
+
+Un mot de passe oublié, un profil supprimé par erreur, un fichier de
+configuration à moitié écrit : il faut pouvoir rentrer. `ATRIUM_ADMIN` définit un
+compte que l'interface ne montre jamais.
+
+```yaml
+environment:
+  - ATRIUM_ADMIN=secours:un-mot-de-passe-vraiment-long
+```
+
+Au démarrage, le compte est créé — ou son mot de passe mis à jour — puis
+l'empreinte seule est écrite dans `atrium.json` ; la variable peut ensuite être
+retirée, le compte reste. Un secret de moins de huit caractères est refusé et le
+serveur le dit : c'est le mot de passe qui garde ce compte, pas sa discrétion.
+
+Pour vous y connecter : **Autre profil…** sous la liste, puis son nom et son mot
+de passe.
+
+Ce que « caché » veut dire, exactement :
+
+- absent de l'écran de connexion, de la liste des profils, du décompte de la
+  page Sécurité et des sauvegardes téléchargées depuis le navigateur ;
+- inaltérable depuis une session ordinaire : ni suppression, ni changement de
+  mot de passe, ni usurpation de son nom ;
+- impossible à créer autrement : ni une configuration envoyée par le navigateur,
+  ni une archive de restauration ne peuvent poser un compte invisible — sans
+  quoi ce serait la façon la plus simple d'installer une porte dérobée depuis
+  une session ordinaire.
+
+Il n'est pas sauvegardé avec le reste : sur une nouvelle installation, il se
+redéfinit avec la variable.
+
+### Analyse de sécurité
+
+Chaque poussée et chaque semaine, [une chaîne d'analyse](.github/workflows/securite.yml)
+passe sur le dépôt, dans les catégories habituelles : le code (CodeQL Python et
+JavaScript, Bandit), les secrets (gitleaks, sur tout l'historique), l'image et le
+Dockerfile (Trivy), puis l'application en marche. Les résultats arrivent dans
+l'onglet **Security** du dépôt, qui sert de tableau de bord.
+
+Les deux derniers contrôles se lancent aussi à la main, contre un Atrium qui
+tourne :
+
+```bash
+python outils/audit_securite.py http://127.0.0.1:8420   # chaque route, avec et sans session
+python outils/test_compte_secours.py                    # le compte caché tient-il ses promesses
+```
+
+Le premier ne recopie pas la liste des routes : il la relit dans le source du
+serveur. Une route ajoutée sans garde de session apparaît donc le jour même, et
+non le jour où quelqu'un pense à l'inscrire dans un test.
 
 C'est un **garde-fou familial**, pas une authentification d'entreprise :
 n'exposez pas Atrium directement sur Internet. Placez-le derrière un reverse
