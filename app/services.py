@@ -6,6 +6,7 @@ verifiee dans la foulee.
 
 Ajouter un service = ajouter une entree dans CATALOGUE.
 """
+import base64
 import json
 import re
 import ssl
@@ -55,6 +56,22 @@ def _http(url, entetes=None, methode="GET", corps=None):
         return e.code, corps_err, dict(e.headers or {})
     except Exception:
         return 0, b"", {}
+
+
+def basic(secret, utilisateur="glances"):
+    """En-tete d authentification Basic, ou rien si aucun secret.
+
+    Le champ de la fiche accepte deux ecritures : « utilisateur:secret », et le
+    secret seul — l utilisateur vaut alors celui que le service cree par
+    defaut. Les modules de Home Assistant, eux, demandent un compte Home
+    Assistant : c est la premiere forme qu il faut alors donner.
+    """
+    secret = (secret or "").strip()
+    if not secret:
+        return {}
+    couple = secret if ":" in secret else ("%s:%s" % (utilisateur, secret))
+    return {"Authorization": "Basic "
+            + base64.b64encode(couple.encode("utf-8")).decode("ascii")}
 
 
 def _json(donnees):
@@ -405,12 +422,15 @@ def s_glances(base, cle):
     Se contenter d un 200 sur « /api/4/status » reconnaissait n importe quel
     serveur qui rend la meme page a toutes les adresses.
     """
+    # Glances peut etre protege — le module de Home Assistant l est par un
+    # compte Home Assistant. Sans cette cle, la detection ne verrait qu un 401.
+    entetes = basic(cle)
     for v in ("4", "3"):
-        code, corps, _ = _http(base + "/api/%s/status" % v)
+        code, corps, _ = _http(base + "/api/%s/status" % v, entetes)
         j = _json(corps)
         if code == 200 and isinstance(j, dict) and isinstance(j.get("version"), str):
             return "Glances", j["version"]
-        code, corps, _ = _http(base + "/api/%s/cpu" % v)
+        code, corps, _ = _http(base + "/api/%s/cpu" % v, entetes)
         j = _json(corps)
         if code == 200 and isinstance(j, dict) and "total" in j:
             return "Glances", None

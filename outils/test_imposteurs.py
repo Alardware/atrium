@@ -114,6 +114,11 @@ def vrai_sonarr(chemin):
     return 404, "text/html", b""
 
 
+def glances_protege(chemin, entetes=None):
+    """Le module Glances de Home Assistant : nginx exige un compte HA."""
+    return 401, "text/html", b"<html><head><title>401 Authorization Required</title></head></html>"
+
+
 def vrai_syncthing(chemin):
     if chemin == "/rest/noauth/health":
         return 200, "application/json", json.dumps({"status": "OK"}).encode()
@@ -182,6 +187,48 @@ def main():
                 ECHECS.append("%s non reconnu" % titre)
         finally:
             s.shutdown()
+
+    print("4. un service protege se detecte avec sa cle, pas sans")
+    import base64 as _b64
+    attendu = "Basic " + _b64.b64encode(b"guillaume:secret").decode()
+
+    class H(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):
+            if self.headers.get("Authorization") != attendu:
+                corps = b"<html><title>401 Authorization Required</title></html>"
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", 'Basic realm="Home Assistant Authentication"')
+                self.send_header("Content-Type", "text/html")
+                self.send_header("Content-Length", str(len(corps)))
+                self.end_headers()
+                self.wfile.write(corps)
+                return
+            code, type_contenu, corps = vrai_glances(self.path)
+            self.send_response(code)
+            self.send_header("Content-Type", type_contenu)
+            self.send_header("Content-Length", str(len(corps)))
+            self.end_headers()
+            self.wfile.write(corps)
+
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = "http://127.0.0.1:%d" % srv.server_address[1]
+    try:
+        sans = services.identifier(url, "")
+        avec = services.identifier(url, "guillaume:secret")
+        print("    %-38s %s" % ("sans la cle", sans.get("type") or "(aucun)"))
+        print("    %-38s %s" % ("avec « utilisateur:secret »", avec.get("type") or "(aucun)"))
+        if (avec.get("type") or "") != "glances":
+            ECHECS.append("service protege non detecte avec sa cle")
+        if sans.get("type"):
+            ECHECS.append("service protege detecte sans cle")
+    finally:
+        srv.shutdown()
 
     print()
     if ECHECS:

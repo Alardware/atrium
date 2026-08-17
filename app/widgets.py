@@ -8,12 +8,12 @@ affiche le texte, et aucun des deux n a besoin de connaitre l autre.
 CAPACITES declare, pour chaque type, ce qu il sait lire — de quoi l annoncer
 avant meme la premiere mesure.
 """
-import base64
 import inspect
 import json
 import re
 import urllib.parse
 
+import services
 from metriques import M, libelle
 from services import _chemin, _http, _json
 
@@ -462,18 +462,8 @@ _SEUIL = re.compile(r"crit|alarm|alert|max|min|high|low|limit|warn|target|trip",
 
 
 def _glances_auth(mot):
-    """L en-tete d authentification quand Glances tourne avec un mot de passe.
-
-    Glances signe ses acces en Basic. Le champ de la fiche accepte les deux
-    ecritures rencontrees : « utilisateur:secret », ou le secret seul — auquel
-    cas l utilisateur est « glances », celui que le serveur cree par defaut.
-    """
-    mot = (mot or "").strip()
-    if not mot:
-        return {}
-    couple = mot if ":" in mot else ("glances:" + mot)
-    return {"Authorization": "Basic "
-            + base64.b64encode(couple.encode("utf-8")).decode("ascii")}
+    """L en-tete d authentification, ecrit une seule fois — voir services.basic."""
+    return services.basic(mot)
 
 
 def _glances_lire(base, version, greffon, entetes):
