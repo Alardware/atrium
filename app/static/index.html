@@ -1184,6 +1184,12 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .p-puce{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:6px;
         background:var(--subtle);font:600 10.5px/1.3 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .p-puce .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
+/* La mention d'un compte de secours : une note, pas une alerte — il n'y a rien
+   d'anormal à être connecté dessus. */
+.p-hors{margin-top:14px;padding:11px 14px;border-radius:10px;background:var(--subtle);
+        border:1px solid var(--hair4);font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;
+        color:var(--text-3)}
+.p-hors[hidden]{display:none}
 .p-puce.sans .dot{background:var(--muted-3)}
 .p-puce.actif{background:var(--accent-soft);color:var(--accent)}
 .p-carte-btns{margin-left:auto;display:flex;flex-direction:column;gap:8px;flex:none}
@@ -2074,6 +2080,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               <button class="btn-sm danger" id="p-av-del" type="button" data-i18n="btn.remove">Retirer</button>
             </span>
             <input type="file" id="p-av-file" accept="image/*" hidden>
+          </div>
+
+          <!-- Compte de secours : l'interface le nomme, mais ne le règle pas. -->
+          <div class="p-hors" id="p-hors" hidden data-i18n="profile.hidden">
+            Compte de secours : invisible sur l'écran de connexion. Son nom se
+            définit par la variable ATRIUM_ADMIN ; seul son mot de passe se
+            change ici.
           </div>
 
           <div class="scard" style="margin-top:22px">
@@ -8206,7 +8219,21 @@ function renderConnPanel() {
 }
 
 /* ---------- utilisateurs (page) ---------- */
-const userActif = () => USERS.find((x) => x.nom === ACTIVE) || USERS[0] || null;
+/* Qui est connecté, ici, maintenant.
+
+   La liste locale ne contient que les profils que le serveur veut bien
+   montrer : un compte de secours n'y figure jamais. Se rabattre sur le premier
+   profil venu ferait dire à l'interface le nom de quelqu'un d'autre — c'est
+   arrivé, et l'en-tête annonçait « Guillaume » à un compte caché. Tant qu'une
+   session serveur est ouverte, c'est elle qui nomme. */
+const userActif = () => {
+  const connu = USERS.find((x) => x.nom === ACTIVE);
+  if (connu) return connu;
+  if (SESSION_USER) {
+    return { nom: SESSION_USER, pwd: '1', photo: '', horsListe: true };
+  }
+  return USERS[0] || null;
+};
 function renderAvatar() {
   const av = $('avatar');
   const u = userActif();
@@ -8403,8 +8430,15 @@ function renderProfil() {
   $('p-puce-actif').textContent = t('profile.current');
   renderPrefs();
   marquerPropre();
-  $('p-av-del').disabled = !u.photo;
-  $('p-av-del').style.opacity = u.photo ? '1' : '.45';
+  /* Un compte de secours n'appartient pas à la configuration que le
+     navigateur peut écrire : son nom et sa photo se règlent là où il est
+     défini, pas ici. Le mot de passe, lui, reste changeable — c'est le sien. */
+  $('p-hors').hidden = !u.horsListe;
+  $('p-av-up').disabled = !!u.horsListe;
+  $('p-av-del').disabled = !u.photo || !!u.horsListe;
+  $('p-av-del').style.opacity = (u.photo && !u.horsListe) ? '1' : '.45';
+  $('p-nom').disabled = !!u.horsListe;
+  $('p-save').disabled = !!u.horsListe;
   $('p-nom').value = u.nom;
   ['p-anc', 'p-pwd', 'p-pwd2'].forEach((id) => { $(id).value = ''; $(id).type = 'password'; });
   ['p-anc-eye', 'p-pwd-eye', 'p-pwd2-eye'].forEach((id) => { $(id).textContent = '👁'; });
@@ -8438,7 +8472,7 @@ $('p-reset').addEventListener('click', () => {
 
 function majProfil(modif) {
   const u = userActif();
-  if (!u) return;
+  if (!u || u.horsListe) return;
   modif(u);
   saveUsersLocal();
   pushCfg();
@@ -8463,7 +8497,7 @@ $('p-av-del').addEventListener('click', () => {
 });
 $('p-save').addEventListener('click', () => {
   const u = userActif();
-  if (!u) return;
+  if (!u || u.horsListe) return;
   const nv = $('p-nom').value.trim();
   if (!nv) { toast(t('name.empty')); return; }
   if (nv !== u.nom && USERS.some((x) => x !== u && x.nom.toLowerCase() === nv.toLowerCase())) {
