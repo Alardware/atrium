@@ -20,6 +20,11 @@ COPY app/ /app/
 
 RUN mkdir -p /config
 
+# Atrium n installe aucun paquet a l execution : pip ne sert qu a la
+# construction de l image, et ses failles connues n ont rien a faire dans ce
+# qui tourne chez l utilisateur.
+RUN python -m pip uninstall -y pip setuptools 2>/dev/null || true;     rm -rf /usr/local/lib/python*/ensurepip /usr/local/bin/pip*
+
 # Le conteneur reste en root : les volumes des NAS (Unraid, Synology…) sont
 # montes avec des proprietaires varies (99:100, 1000:1000, root…) et un
 # utilisateur fixe rendrait /config non inscriptible selon l hote.

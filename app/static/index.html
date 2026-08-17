@@ -2890,8 +2890,17 @@ function loadApps() {
     }));
   } catch (e) { return DEFAUTS.map((a) => ({ ...a })); }
 }
+/* Ce qu'on accepte de laisser sur le disque du navigateur.
+
+   Les jetons et clés d'API n'en font pas partie : ils vivent en mémoire le
+   temps de la session et reviennent du serveur au chargement suivant. Écrits
+   dans localStorage, ils survivaient à la déconnexion et se lisaient depuis
+   n'importe quelle extension ou script tiers, alors que le serveur les garde
+   derrière une session. */
+const sansSecrets = (liste) => (liste || []).map((a) => ({ ...a, token: '', apiKey: '' }));
+
 function saveApps() {
-  store.set('apps', JSON.stringify(apps));
+  store.set('apps', JSON.stringify(sansSecrets(apps)));
   pushCfg(); // réplique vers le relais → partagé entre toutes les copies du hub
 }
 
@@ -5582,7 +5591,7 @@ async function pullCfg() {
   }
   if (appsSrv.length && JSON.stringify(appsSrv) !== JSON.stringify(apps)) {
     apps = appsSrv.map(normApp);
-    store.set('apps', JSON.stringify(apps));
+    store.set('apps', JSON.stringify(sansSecrets(apps)));
     refresh();
     fetchStates();
     pollSupervision();
@@ -8866,7 +8875,9 @@ function haWs() {
     const base = haBase() || location.origin;
     const ws = new WebSocket(base.replace(/^http/, 'ws') + '/api/websocket');
     let id = 1;
-    const pend = {};
+    /* Sans prototype : « m.id » vient du réseau, et « __proto__ » y
+       désignerait l'objet de base plutôt qu'une demande en attente. */
+    const pend = Object.create(null);
     ws.onmessage = (ev) => {
       const m = JSON.parse(ev.data);
       if (m.type === 'auth_required') {

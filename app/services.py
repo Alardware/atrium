@@ -28,7 +28,16 @@ def _http(url, entetes=None, methode="GET", corps=None):
     # URL de service mal formee lirait un fichier du conteneur.
     if not reseau.autorise(url):
         return 0, b"", {}
-    req = urllib.request.Request(url, data=corps, method=methode)
+    # On se connecte a l adresse deja validee, pas au nom : entre la
+    # verification et la connexion, une reponse DNS ne peut plus designer une
+    # autre machine. L en-tete Host garde le nom, que les reverse proxies du
+    # reseau local attendent.
+    cible, hote = reseau.adresse_epinglee(url)
+    if not cible:
+        return 0, b"", {}
+    req = urllib.request.Request(cible, data=corps, method=methode)
+    if hote:
+        req.add_header("Host", hote)
     req.add_header("Accept", "application/json")
     req.add_header("User-Agent", "Atrium")
     for k, v in (entetes or {}).items():
