@@ -59,11 +59,22 @@ def _sonder(url, delai=6):
     return True, max(1, round((time.perf_counter() - debut) * 1000))
 
 
+def cle(app):
+    """La clef d une application : son identifiant, jamais son nom.
+
+    Deux fiches peuvent porter le meme nom — un Glances par machine — et le nom
+    ne peut donc pas ranger les etats, les series ni les alertes. Les fiches
+    d avant les identifiants ont recu leur nom comme identifiant : leur
+    historique reste le leur.
+    """
+    return (app or {}).get("id") or (app or {}).get("nom") or ""
+
+
 def sonder_apps(apps):
     """Sonde toutes les applications en parallele : une dizaine de services
     injoignables ne doit pas allonger le cycle a plusieurs minutes."""
-    cibles = [(a.get("nom"), (a.get("url") or "").strip())
-              for a in apps if a.get("nom") and (a.get("url") or "").strip()]
+    cibles = [(cle(a), (a.get("url") or "").strip())
+              for a in apps if cle(a) and (a.get("url") or "").strip()]
     if not cibles:
         return {}
     with ThreadPoolExecutor(max_workers=min(12, len(cibles))) as pool:
@@ -95,7 +106,7 @@ def sonder_apps(apps):
 
 def sonder_un(app):
     """Resonde une seule application, sans attendre le cycle suivant."""
-    nom, url = app.get("nom"), (app.get("url") or "").strip()
+    nom, url = cle(app), (app.get("url") or "").strip()
     if not nom or not url:
         return None
     joignable, latence = _sonder(url)
@@ -139,7 +150,7 @@ def historique(nom):
 
 # --- alertes -----------------------------------------------------------------
 
-def _poser(cle, niveau, service, code, message, param=None):
+def _poser(cle, niveau, service, code, message, param=None, nom=None):
     """Cree ou actualise une alerte. Son anciennete est conservee tant que le
     probleme dure ; elle ne redevient « non lue » qu en cas d aggravation.
 
@@ -154,6 +165,9 @@ def _poser(cle, niveau, service, code, message, param=None):
             "cle": cle,
             "niveau": niveau,
             "service": service,
+            # Ce que l utilisateur lit : le nom de la fiche, qui peut etre
+            # partage par plusieurs applications.
+            "service_nom": nom or (exist or {}).get("service_nom") or service,
             "code": code,
             "param": param or {},
             "message": message,
@@ -167,7 +181,7 @@ def _lever(cle):
         _alertes.pop(cle, None)
 
 
-def _evaluer_tuiles(tuiles):
+def _evaluer_tuiles(tuiles, affichage=None):
     """Applique les seuils declares dans metriques.SEUILS.
 
     Aucune analyse de texte : chaque mesure porte son identifiant et son
@@ -189,7 +203,8 @@ def _evaluer_tuiles(tuiles):
                 _poser(cle, grav, service, "seuil",
                        "%s : %s" % (metriques.libelle(ident), m.get("val")),
                        {"val": m.get("val"), "lab": metriques.libelle(ident),
-                        "metrique": ident})
+                        "metrique": ident},
+                       nom=(affichage or {}).get(service, service))
             else:
                 _lever(cle)
     for cle in [c for c in list(_alertes) if c.startswith("seuil:")]:
@@ -199,12 +214,15 @@ def _evaluer_tuiles(tuiles):
 
 def evaluer(apps, hote, maj, erreurs_integration, tuiles=None):
     """Recalcule l ensemble des alertes a partir de ce que le serveur sait."""
-    noms = {a.get("nom") for a in apps if a.get("nom")}
+    noms = {cle(a) for a in apps if cle(a)}
+    # « service » sert de clef ; l interface a besoin du nom pour l afficher.
+    affichage = {cle(a): (a.get("nom") or cle(a)) for a in apps if cle(a)}
 
     for nom, e in etats().items():
         cle = "hors-ligne:" + nom
         if nom in noms and not e["en_ligne"] and e["echecs"] >= ECHECS_AVANT_ALERTE:
-            _poser(cle, "avertissement", nom, "hors_ligne", "Service injoignable")
+            _poser(cle, "avertissement", nom, "hors_ligne", "Service injoignable",
+                   nom=affichage.get(nom, nom))
         else:
             _lever(cle)
 
@@ -222,7 +240,7 @@ def evaluer(apps, hote, maj, erreurs_integration, tuiles=None):
     for nom, msg in (erreurs_integration or {}).items():
         cle = "integration:" + nom
         if msg and nom in noms:
-            _poser(cle, "surveillance", nom, "cle", msg)
+            _poser(cle, "surveillance", nom, "cle", msg, nom=affichage.get(nom, nom))
         else:
             _lever(cle)
     for cle in [c for c in list(_alertes) if c.startswith("integration:")]:
@@ -237,7 +255,7 @@ def evaluer(apps, hote, maj, erreurs_integration, tuiles=None):
     else:
         _lever("maj")
 
-    _evaluer_tuiles(tuiles)
+    _evaluer_tuiles(tuiles, affichage)
     return alertes()
 
 

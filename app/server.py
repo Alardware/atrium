@@ -17,6 +17,7 @@ Variables d'environnement :
 """
 import hashlib
 import http.cookies
+import secrets
 import io as _io
 import http.server
 import json
@@ -94,6 +95,51 @@ def charger_config():
             return json.load(f)
     except (OSError, ValueError):
         return {}
+
+
+def assurer_ids(cfg):
+    """Donne un identifiant a chaque application qui n en a pas.
+
+    Le nom sert a l affichage, jamais de clef : deux fiches peuvent s appeler
+    « Glances » — une par machine — et rangeraient sinon leurs mesures, leur
+    etat et leur historique au meme endroit.
+
+    La premiere fiche d un nom recoit ce nom comme identifiant : tout ce qui a
+    ete releve avant, range sous ce nom, reste le sien. Les suivantes recoivent
+    un identifiant tire au sort.
+
+    Renvoie True si la configuration a change et merite d etre reecrite.
+    """
+    vus, change = set(), False
+    for a in cfg.get("apps") or []:
+        if not isinstance(a, dict):
+            continue
+        ident = str(a.get("id") or "").strip()
+        if not ident or ident in vus:
+            base = str(a.get("nom") or "").strip() or "app"
+            ident = base if base not in vus else "%s-%s" % (base, secrets.token_hex(3))
+            a["id"] = ident
+            change = True
+        vus.add(ident)
+    return change
+
+
+def cle_app(a):
+    """La clef d une application, telle que la supervision la connait."""
+    return supervision.cle(a)
+
+
+def _ecrire_config_fond(cfg):
+    """Ecrit la configuration depuis la collecte, qui n a pas de requete."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    tmp = CONFIG_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, ensure_ascii=False)
+    os.replace(tmp, CONFIG_FILE)
+    try:
+        os.chmod(CONFIG_FILE, 0o600)
+    except OSError:
+        pass
 
 
 def profil_cache(u):
@@ -222,11 +268,18 @@ _deja_lu = set()   # services ayant deja livre leurs donnees au moins une fois
 
 def _collecter():
     cfg = charger_config()
+    # Les fiches d avant les identifiants en recoivent un ici, une fois pour
+    # toutes : la premiere de chaque nom garde le sien, et son historique avec.
+    if assurer_ids(cfg):
+        try:
+            _ecrire_config_fond(cfg)
+        except OSError:
+            pass          # lecture seule : les identifiants tiendront la session
     apps = cfg.get("apps") or []
     etats_sondes = supervision.sonder_apps(apps)
     # Seuls les services reellement surveilles entrent dans l historique : une
     # fiche sans adresse n est pas « hors ligne », elle n est pas sondee.
-    noms = {a.get("nom") for a in apps if a.get("nom") and (a.get("url") or "").strip()}
+    noms = {cle_app(a) for a in apps if cle_app(a) and (a.get("url") or "").strip()}
     for nom in noms:
         e = etats_sondes.get(nom)
         if e:
@@ -238,10 +291,10 @@ def _collecter():
 
     tuiles, erreurs, maj = {}, {}, 0
     for a in apps:
-        nom, url = a.get("nom"), a.get("url") or ""
+        nom, url = cle_app(a), a.get("url") or ""
         # Les fiches creees avant la detection automatique n'ont pas de type :
         # leur nom sert alors d'indice, faute de quoi elles resteraient muettes.
-        type_service = a.get("type") or services.deviner_type(nom)
+        type_service = a.get("type") or services.deviner_type(a.get("nom"))
         if not nom or not url or not host_allowed(url):
             continue
         # Home Assistant range son jeton dans « token », les autres dans
@@ -629,9 +682,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         vu["donnees"] = widgets.capacites(vu.get("type") or "")
         self.reply(200, json.dumps(vu, ensure_ascii=False).encode())
 
-    def _app_nommee(self, nom):
-        return next((a for a in (charger_config().get("apps") or [])
-                     if a.get("nom") == nom), None)
+    def _app_nommee(self, cle):
+        """L application designee par sa clef.
+
+        Le nom reste accepte pour les appels d avant les identifiants, mais il
+        ne departage plus deux fiches homonymes : c est la clef qui compte.
+        """
+        liste = charger_config().get("apps") or []
+        return (next((a for a in liste if cle_app(a) == cle), None)
+                or next((a for a in liste if a.get("nom") == cle), None))
 
     def sonder_maintenant(self):
         """Resonde une application a la demande, sans attendre le cycle."""
@@ -642,7 +701,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         etat = supervision.sonder_un(app)
         tuiles = dict(_releve["widgets"])
-        type_service = app.get("type") or services.deviner_type(nom)
+        nom = cle_app(app)
+        type_service = app.get("type") or services.deviner_type(app.get("nom"))
         url = app.get("url") or ""
         if type_service in widgets.REGISTRE and url and host_allowed(url):
             cle = (app.get("token") or app.get("apiKey")) if type_service == "ha" \
@@ -680,8 +740,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             heures = 24
         heures = max(1, min(heures, historique.RETENTION))
         cfg = self.lire_config()
-        noms = [a.get("nom") for a in (cfg.get("apps") or [])
-                if a.get("nom") and (a.get("url") or "").strip()]
+        noms = [cle_app(a) for a in (cfg.get("apps") or [])
+                if cle_app(a) and (a.get("url") or "").strip()]
         self.reply(200, json.dumps({
             "heures": heures,
             "services": {n: HISTO.resume(n, heures) for n in noms},
@@ -702,11 +762,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except (ValueError, TypeError):
             heures = 24
         heures = max(1, min(heures, historique.RETENTION))
-        if not self._app_nommee(nom):
+        app = self._app_nommee(nom)
+        if not app:
             self.reply(404, json.dumps({"error": "service inconnu"},
                                        ensure_ascii=False).encode())
             return
-        r = MESURES.resume(nom, ident, heures)
+        r = MESURES.resume(cle_app(app), ident, heures)
         r["heures_demandees"] = heures
         r["nature"] = metriques.nature(ident)
         r["agregats"] = list(metriques.agregats(ident))
@@ -726,15 +787,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 combien = int((q.get("n") or ["200"])[0])
             except (ValueError, TypeError):
                 combien = 200
-            self.reply(200, json.dumps(
-                {"evenements": JOURNAL_SRV.tout(max(1, min(combien, 500)))},
-                ensure_ascii=False).encode())
+            # Les evenements sont ranges par clef ; le journal, lui, se lit.
+            # On y joint donc le nom porte par la fiche, quitte a repeter le
+            # meme pour deux applications homonymes.
+            noms = {cle_app(a): a.get("nom") or cle_app(a)
+                    for a in (self.lire_config().get("apps") or [])}
+            evs = JOURNAL_SRV.tout(max(1, min(combien, 500)))
+            for e in evs:
+                e["service_nom"] = noms.get(e.get("service"), e.get("service"))
+            self.reply(200, json.dumps({"evenements": evs},
+                                       ensure_ascii=False).encode())
             return
-        if not self._app_nommee(nom):
+        app = self._app_nommee(nom)
+        if not app:
             self.reply(404, json.dumps({"error": "service inconnu"},
                                        ensure_ascii=False).encode())
             return
-        self.reply(200, json.dumps({"evenements": JOURNAL_SRV.lister(nom, 20)},
+        self.reply(200, json.dumps({"evenements": JOURNAL_SRV.lister(cle_app(app), 20)},
                                    ensure_ascii=False).encode())
 
     # Ce qui part dans une archive, et ce qui n en part jamais. Les jetons de
@@ -1265,6 +1334,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             propres.append(u)
         recu["users"] = propres + caches
 
+        assurer_ids(recu)
         try:
             self.ecrire_config(recu)
             self.reply(200, b'{"ok":true}')
@@ -1347,6 +1417,13 @@ if __name__ == "__main__":
     print("Configuration : %s" % CONFIG_FILE, flush=True)
     verifier_config_inscriptible()
     installer_admin_cache()
+    _cfg_demarrage = charger_config()
+    if assurer_ids(_cfg_demarrage):
+        try:
+            _ecrire_config_fond(_cfg_demarrage)
+            print("Identifiants d application attribues", flush=True)
+        except OSError:
+            pass
     systeme.demarrer_echantillonnage()
     demarrer_collecte()
     # Ecoute sur toutes les interfaces : dans un conteneur, seul le port

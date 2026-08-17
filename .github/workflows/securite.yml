@@ -154,6 +154,11 @@ jobs:
       - name: Compte de secours
         run: python outils/test_compte_secours.py
 
+      # Deux fiches peuvent porter le même nom : c'est l'identifiant qui range
+      # mesures, état, historique et alertes.
+      - name: Applications homonymes
+        run: python outils/test_homonymes.py
+
       # Une apostrophe droite dans une traduction casse tout le fichier, et
       # l'interface repart alors sur ses clés brutes. Le coût du contrôle est
       # d'une seconde.

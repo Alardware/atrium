@@ -605,9 +605,6 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-foot{flex-wrap:wrap;row-gap:6px}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
-/* Un nom en double est un défaut de configuration, pas une panne du service :
-   la teinte d'avertissement, pas celle du danger. */
-.badge-alert.dup{background:var(--warn-soft);border-color:var(--warn);color:var(--warn-text)}
 .add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
 .add-card:hover{border-color:var(--accent);color:var(--accent)}
 .add-ring{width:34px;height:34px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font:600 17px/1 'Plus Jakarta Sans',sans-serif}
@@ -2824,7 +2821,24 @@ const SLUGS = { 'Paperless': 'paperless-ngx' };
 const icone = (nom) => 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/' +
   (SLUGS[nom] || nom.toLowerCase().replace(/\s+/g, '-')) + '.svg';
 
-const A = (nom, role, cat) => ({ nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '', fav: false, masque: [] });
+const A = (nom, role, cat) => ({ id: nom, nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '', fav: false, masque: [] });
+
+/* La clé d'une application : son identifiant, et son nom pour les fiches
+   d'avant — le serveur leur en attribue un au premier cycle.
+
+   Mesures, états, alertes, historique et journal sont rangés là-dessous. Le
+   nom, lui, ne sert qu'à l'affichage et peut être porté par plusieurs fiches :
+   un Glances par machine s'appelle « Glances » deux fois. */
+const cleApp = (a) => (a && (a.id || a.nom)) || '';
+const nomDeCle = (c) => {
+  const a = apps.find((x) => cleApp(x) === c);
+  return a ? a.nom : c;
+};
+/* Un identifiant pour une fiche créée dans le navigateur : le serveur accepte
+   celui qu'on propose et ne le change plus. */
+const nouvelId = (nom) => (nom || 'app').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-|-$/g, '').slice(0, 24) + '-'
+  + Math.random().toString(36).slice(2, 8);
 
 /* Catalogue proposé au premier lancement. Rien n'est imposé : l'utilisateur
    coche ce qu'il possède, et peut repartir d'une liste vide. */
@@ -3242,7 +3256,11 @@ async function chargerCapacites() {
     if (r.ok) CAPA = await r.json();
   } catch (e) { /* on s'en passe : les tuiles resteront prudentes */ }
 }
-const findApp = (nom) => apps.find((a) => a.nom.toLowerCase() === nom.toLowerCase());
+/* Retrouve une application par sa clé, ou par son nom pour les appels qui
+   parlent encore en clair (« Home Assistant »). Un nom porté par deux fiches
+   rend la première : c'est un repli, pas un chemin normal. */
+const findApp = (cle) => apps.find((a) => cleApp(a) === cle)
+  || apps.find((a) => (a.nom || '').toLowerCase() === String(cle).toLowerCase());
 
 /* ---------- thème ---------- */
 /* « auto » suit le réglage du système ; les deux autres l'imposent. */
@@ -3352,7 +3370,7 @@ function renderSidebar() {
   /* Le compteur ne dit que ce qui va mal. Le nombre d'applications se lit déjà
      dans la grille ; un chiffre permanent noierait le seul qui compte. */
   const compteur = (el, liste) => {
-    const pb = liste.filter((a) => alertesDe(a.nom).length).length;
+    const pb = liste.filter((a) => alertesDe(cleApp(a)).length).length;
     el.classList.toggle('pb', !!pb);
     el.textContent = pb || '';
     el.title = pb ? t(pb > 1 ? 'alert.many' : 'alert.one', { n: pb }) : '';
@@ -3451,7 +3469,7 @@ function derive() {
       const k = normTxt(ap.nom);
       return hayU.includes(k) || hayU.includes(k.replace(/\s+/g, '_')) || hayU.includes(k.replace(/\s+/g, ''));
     });
-    if (app) majByName[app.nom] = true;
+    if (app) majByName[cleApp(app)] = true;
     return {
       nom: a2.title || a2.friendly_name || u.entity_id,
       de: a2.installed_version || '',
@@ -4074,9 +4092,9 @@ async function ouvrirQMenu(bouton, index) {
   }, { inactif: !app.url });
   qitem(menu, '⟳', t('qm.refresh'), () => sonderMaintenant(app));
   qitem(menu, '⧉', t('qm.copy'), () => copier(app.url), { inactif: !app.url });
-  qitem(menu, '◉', t('qm.status'), () => ouvrirFiche(app.nom));
+  qitem(menu, '◉', t('qm.status'), () => ouvrirFiche(cleApp(app)));
   /* Le temps de réponse a quitté la tuile : son historique se demande ici. */
-  qitem(menu, '⤢', t('qm.histo'), () => ouvrirHistorique(app.nom));
+  qitem(menu, '⤢', t('qm.histo'), () => ouvrirHistorique(cleApp(app)));
 
   if (kindOfApp(app) === 'ha') {
     qsep(menu);
@@ -4127,13 +4145,13 @@ async function sonderMaintenant(app, discret) {
     const r = await relayFetch('/api/sonder', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: app.nom }),
+      body: JSON.stringify({ nom: cleApp(app) }),
     });
     if (!r.ok) { if (!discret) toast(t('qm.refresh.fail')); return; }
     const j = await r.json();
-    if (j.etat) SUPER.etats[app.nom] = j.etat;
-    if (j.stats) STATS[app.nom] = j.stats;
-    statusByName[app.nom] = j.etat ? j.etat.en_ligne : statusByName[app.nom];
+    if (j.etat) SUPER.etats[cleApp(app)] = j.etat;
+    if (j.stats) STATS[cleApp(app)] = j.stats;
+    statusByName[cleApp(app)] = j.etat ? j.etat.en_ligne : statusByName[cleApp(app)];
     renderApps();
     if (!discret) {
       toast(j.etat && j.etat.en_ligne
@@ -4796,7 +4814,7 @@ const REGISTRE_W = {
         return true;
       }
       const z = cListe(carte);
-      liste.slice(0, 5).forEach((a) => cRow(z, a.service, age(a.depuis),
+      liste.slice(0, 5).forEach((a) => cRow(z, nomAlerte(a), age(a.depuis),
                                             { pastille: a.niveau, sous: texteAlerte(a) }));
       return true;
     },
@@ -4823,7 +4841,7 @@ const REGISTRE_W = {
     dispo: () => DIRECT.clients != null || !!appByKind('unifi') || NET.length > 0,
     rendre(carte) {
       const un = appByKind('unifi');
-      const pastilles = un ? (STATS[un.nom] || []) : [];
+      const pastilles = un ? (STATS[cleApp(un)] || []) : [];
       const clients = DIRECT.clients != null ? DIRECT.clients
         : (pastilles.find((s) => s.lab === 'CLIENTS') || {}).val;
       if (clients == null && !NET.length && !pastilles.length) return false;
@@ -5115,7 +5133,7 @@ function renderCockpit() {
     if (DIRECT.plexUsers) ligne(t('cock.users'), String(DIRECT.plexUsers));
     /* le débit total n'est connu que si Tautulli est branché */
     const tt = appByKind('tautulli');
-    const deb = tt && (STATS[tt.nom] || []).find((s) => s.lab === 'DÉBIT');
+    const deb = tt && (STATS[cleApp(tt)] || []).find((s) => s.lab === 'DÉBIT');
     if (deb) ligne(t('cock.rate'), deb.val);
     setCardLink(px, pxApp.url);
   }
@@ -5337,15 +5355,20 @@ async function pollSupervision() {
             releve: j.releve || SUPER.releve };
   statusByName = {};
   apps.forEach((a) => {
-    if (!a.url) { statusByName[a.nom] = null; return; }
-    const e = SUPER.etats[a.nom];
-    statusByName[a.nom] = e ? e.en_ligne : undefined;
+    if (!a.url) { statusByName[cleApp(a)] = null; return; }
+    const e = SUPER.etats[cleApp(a)];
+    statusByName[cleApp(a)] = e ? e.en_ligne : undefined;
   });
   if (JSON.stringify(j.widgets || {}) !== JSON.stringify(STATS)) STATS = j.widgets || {};
   renderApps();
   renderSidebar();
   renderAlertes();
 }
+
+/* Le nom lisible d'une alerte : le serveur range par clé et joint le nom de
+   la fiche. Les alertes qui ne visent pas une application — mises à jour,
+   stockage de l'hôte — portent déjà un intitulé, qui passe tel quel. */
+const nomAlerte = (a) => (a && (a.service_nom || nomDeCle(a.service))) || '';
 
 /* Alertes portant sur une application donnée, hors information générale. */
 function alertesDe(nom) {
@@ -5390,13 +5413,13 @@ setInterval(majAges, 10000);
    dans Atrium : on ne fait que l'amener là où le problème est signalé. */
 function actionsPour(a) {
   const liste = [];
-  const app = apps.find((x) => x.nom === a.service);
+  const app = findApp(a.service);
   if (app) {
     if (app.url) {
       liste.push({ lab: t('qm.open'), fn: () => window.open(app.url, '_blank', 'noopener') });
     }
     liste.push({ lab: t('qm.refresh'), fn: () => sonderMaintenant(app) });
-    liste.push({ lab: t('qm.status'), fn: () => ouvrirFiche(app.nom) });
+    liste.push({ lab: t('qm.status'), fn: () => ouvrirFiche(cleApp(app)) });
     const c = DOCKER.actif ? conteneurDe(app) : null;
     if (c) {
       liste.push({ lab: t('qm.restart.go'), chaud: true,
@@ -5424,7 +5447,7 @@ function fermerAlertes() { $('al-pop').hidden = true; }
    prochain cycle de trente secondes. */
 async function diagnostiquer() {
   const noms = [...new Set(SUPER.alertes.alertes
-    .filter((a) => a.niveau !== 'info').map((a) => a.service))];
+    .filter((a) => a.niveau !== 'info').map((a) => nomAlerte(a)))];
   const cibles = apps.filter((a) => noms.includes(a.nom) && a.url);
   if (!cibles.length) { $('al-pop').hidden = false; return; }
   const bouton = $('strip-open');
@@ -5464,7 +5487,7 @@ function renderAlertes() {
   res.alertes.forEach((a) => {
     const row = clone('tpl-al-row');
     row.className = 'al-row ' + a.niveau + (a.lue ? '' : ' neuf');
-    row.querySelector('.al-srv').textContent = a.service;
+    row.querySelector('.al-srv').textContent = nomAlerte(a);
     row.querySelector('.al-msg').textContent = texteAlerte(a);
     const vieux = row.querySelector('.al-age');
     vieux.dataset.depuis = a.depuis;
@@ -5494,7 +5517,7 @@ function renderAlertes() {
     const chips = $('strip-chips');
     chips.textContent = '';
     graves.slice(0, 4).forEach((a) => {
-      const app = apps.find((x) => x.nom === a.service);
+      const app = findApp(a.service);
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 's-chip';
@@ -5502,11 +5525,11 @@ function renderAlertes() {
       chip.className = 'logo-chip s18';
       const cl = document.createElement('span');
       cl.className = 'cl';
-      cl.textContent = (a.service[0] || '?').toUpperCase();
+      cl.textContent = (nomAlerte(a)[0] || '?').toUpperCase();
       chip.appendChild(cl);
       if (app) mountLogo(chip, logoDe(app));
       const nom = document.createElement('span');
-      nom.textContent = a.service;
+      nom.textContent = nomAlerte(a);
       const det = document.createElement('span');
       /* La mesure fautive porte la gravité de son alerte, pas celle du bandeau :
          deux services peuvent y figurer pour deux raisons différentes. */
@@ -5515,7 +5538,7 @@ function renderAlertes() {
       b.appendChild(chip);
       b.appendChild(nom);
       b.appendChild(det);
-      if (app) b.addEventListener('click', () => ouvrirFiche(app.nom));
+      if (app) b.addEventListener('click', () => ouvrirFiche(cleApp(app)));
       chips.appendChild(b);
     });
     if (graves.length > 4) {
@@ -5729,6 +5752,9 @@ function saveUsersLocal() {
    utilisateur agit — jamais au chargement, sinon une nouvelle installation
    hériterait des données d'un autre appareil. */
 const normApp = (a) => ({
+  /* L'identifiant vient du serveur, qui l'attribue une fois pour toutes. Le
+     nom n'est plus une clé : deux fiches peuvent s'appeler « Glances ». */
+  id: a.id || '',
   nom: a.nom || '?', role: a.role || '', cat: a.cat || 'Serveur',
   url: a.url || '', logoUrl: a.logoUrl || '',
   token: a.token || '', apiKey: a.apiKey || '', tempEntity: a.tempEntity || '',
@@ -5999,21 +6025,13 @@ async function pollDirect() {
 }
 
 /* ---------- grille d'apps ---------- */
-/* Les noms portés par plus d'une fiche, recalculés à chaque rendu : la liste
-   est courte et change à chaque modification. */
-function nomEnDouble(nom) {
-  const cle = String(nom || '').trim().toLowerCase();
-  if (!cle) return false;
-  return apps.filter((a) => String(a.nom || '').trim().toLowerCase() === cle).length > 1;
-}
-
 function appCard(app, index) {
   const a = clone('tpl-app-card');
   i18n.appliquer(a);            // les gabarits clonés portent aussi des libellés
   a.querySelector('.cl').textContent = (app.nom || '?')[0].toUpperCase();
   a.querySelector('.app-name').textContent = app.nom;
   a.querySelector('.app-role').textContent = app.role;
-  if (majByName[app.nom]) a.querySelector('.badge-maj').hidden = false;
+  if (majByName[cleApp(app)]) a.querySelector('.badge-maj').hidden = false;
 
   /* Mettre en favori vit dans le menu ⋮, avec les autres commandes : une
      étoile posée sur la tuile se lisait comme une décoration. */
@@ -6021,29 +6039,19 @@ function appCard(app, index) {
 
   /* « hors ligne » est déjà dit par le bas de la tuile : le bandeau d'alerte
      ne sert qu'à signaler ce que l'on ne verrait pas autrement. */
-  const souci = alertesDe(app.nom).filter((x) => x.code !== 'hors_ligne');
+  const souci = alertesDe(cleApp(app)).filter((x) => x.code !== 'hors_ligne');
   if (souci.length) {
     const b = a.querySelector('.badge-alert');
     b.hidden = false;
     b.title = souci.map(texteAlerte).join(' · ');
   }
-  /* Deux fiches du même nom écrivent dans la même case : mesures, état,
-     historique et alertes sont rangés par nom. La tuile le dit plutôt que de
-     laisser croire à deux relevés distincts qui se ressemblent. */
-  if (nomEnDouble(app.nom)) {
-    const b = a.querySelector('.badge-alert');
-    b.hidden = false;
-    b.textContent = '⚠';
-    b.title = t('app.name.dup', { nom: app.nom });
-    b.classList.add('dup');
-  }
 
-  const etat = SUPER.etats[app.nom];
-  const st = statusByName[app.nom];
+  const etat = SUPER.etats[cleApp(app)];
+  const st = statusByName[cleApp(app)];
   /* « masque » liste ce que l'utilisateur a décoché sur cette fiche ; vide ou
      absent, tout s'affiche — les configurations existantes ne changent pas. */
   const cache = (id) => (app.masque || []).includes(id);
-  const sant = sante(app.nom);
+  const sant = sante(cleApp(app));
   /* L'état est ce qu'on regarde en premier quand quelque chose cloche : il mène
      au détail de la supervision, là où se lisent la latence moyenne, la durée
      de l'état courant et les alertes en cours. */
@@ -6079,7 +6087,7 @@ function appCard(app, index) {
      L'absence est écrite, elle aussi : une carte muette a la même structure
      qu'une carte bavarde, et un vide ne se confond plus avec une panne. */
   const chiffres = voirStats
-    ? (STATS[app.nom] || []).filter((x) => !cache(cleInfo(x)) && !cache('st:' + x.lab))
+    ? (STATS[cleApp(app)] || []).filter((x) => !cache(cleInfo(x)) && !cache('st:' + x.lab))
     : null;
   let texte = '';
   if (chiffres) {
@@ -6098,7 +6106,7 @@ function appCard(app, index) {
          déclarée sinon. Aucun classement à tenir par intégration — celle-ci
          met déjà en tête ce qu'elle a de plus parlant, et son ordre est le
          même qui range les lignes par famille juste en dessous. */
-      const ennuis = alertesDe(app.nom);
+      const ennuis = alertesDe(cleApp(app));
       const enCause = (niv) => ennuis.filter((x) => (x.niveau === 'critique') === niv)
         .map((x) => x.param && x.param.metrique).filter(Boolean);
       const graves = enCause(true);
@@ -6172,7 +6180,7 @@ function appCard(app, index) {
       /* Quatre situations, quatre phrases. Dire « aucune métrique remontée »
          partout laissait croire à un échec là où, le plus souvent, il n'y a
          simplement rien à remonter. */
-      const brut = STATS[app.nom] || [];
+      const brut = STATS[cleApp(app)] || [];
       const type = kindOfApp(app);
       const su = CAPA && CAPA[type];
       const cle = !!(app.token || app.apiKey);
@@ -6245,9 +6253,9 @@ function appCard(app, index) {
       if (act.dataset.act === 'fav') basculerFavori(index);
       else if (act.dataset.act === 'menu') ouvrirQMenu(act, index);
       else if (act.dataset.act === 'edit' || act.dataset.act === 'cfg') openAppModal(index);
-      else if (act.dataset.act === 'histo') ouvrirHistorique(app.nom);
-      else if (act.dataset.act === 'etat') ouvrirFiche(app.nom);
-      else if (act.dataset.act === 'mes') ouvrirFiche(app.nom, act.dataset.mes);
+      else if (act.dataset.act === 'histo') ouvrirHistorique(cleApp(app));
+      else if (act.dataset.act === 'etat') ouvrirFiche(cleApp(app));
+      else if (act.dataset.act === 'mes') ouvrirFiche(cleApp(app), act.dataset.mes);
       else openDelModal(index);
       return;
     }
@@ -6300,7 +6308,9 @@ let AP = { nom: '', mes: '', h: 168, points: null, journal: null };
 function ouvrirFiche(nom, mes) {
   const app = findApp(nom);
   if (!app) return;
-  AP = { nom: nom, mes: mes || '', jours: null, journal: null };
+  /* « nom » peut arriver sous forme de nom : on range la clé, seule capable de
+     désigner une fiche parmi deux homonymes. */
+  AP = { nom: cleApp(app), mes: mes || '', jours: null, journal: null };
   $('ov-statut').hidden = true;
   $('spage').hidden = true;
   $('srvpage').hidden = true;
@@ -6391,7 +6401,7 @@ function fmtMesure(v, nature) {
 function peindreFiche() {
   const app = findApp(AP.nom);
   if (!app) { fermerFiche(); return; }
-  const nom = app.nom;
+  const nom = cleApp(app);
   const e = SUPER.etats[nom];
   const sant = sante(nom);
   const ennuis = alertesDe(nom);
@@ -6400,7 +6410,7 @@ function peindreFiche() {
   const legeres = ennuis.filter((x) => x.niveau !== 'critique')
     .map((x) => x.param && x.param.metrique).filter(Boolean);
 
-  $('ap-nom').textContent = nom;
+  $('ap-nom').textContent = app.nom;
   const et = $('ap-etat');
   et.className = sant === 'off' ? 'fa-badge alerte' : 'fa-badge';
   et.textContent = t(sant === 'off' ? 'app.offline' : sant === 'warn' ? 'app.degraded'
@@ -6416,7 +6426,7 @@ function peindreFiche() {
     b.title = a.nom;
     b.textContent = (a.nom[0] || '?').toUpperCase();
     mountLogo(b, logoDe(a));
-    b.addEventListener('click', () => ouvrirFiche(a.nom));
+    b.addEventListener('click', () => ouvrirFiche(cleApp(a)));
     chips.appendChild(b);
   });
 
@@ -6436,12 +6446,13 @@ function peindreFiche() {
   chip.className = 'logo-chip s40';
   const cl = document.createElement('span');
   cl.className = 'cl';
-  cl.textContent = (nom[0] || '?').toUpperCase();
+  /* L'en-tête porte le nom de la fiche ; « nom » n'est ici que sa clé. */
+  cl.textContent = ((app.nom || '?')[0] || '?').toUpperCase();
   chip.appendChild(cl);
   mountLogo(chip, logoDe(app));
   const ident = document.createElement('div');
   const h3 = document.createElement('h3');
-  h3.textContent = nom;
+  h3.textContent = app.nom;
   const sous = document.createElement('div');
   sous.className = 'fa-sous';
   sous.textContent = [app.role, app.url, app.version].filter(Boolean).join(' · ');
@@ -6905,11 +6916,13 @@ $('ap-back').addEventListener('click', fermerFiche);
 let HI_NOM = '';
 let HI_H = 24;
 async function ouvrirHistorique(nom) {
-  HI_NOM = nom;
-  $('ov-histo').hidden = false;
   const app = findApp(nom);
-  $('hi-nom').textContent = nom;
-  $('hi-chip').querySelector('.cl').textContent = (nom[0] || '?').toUpperCase();
+  /* La série est rangée sous la clé ; l'en-tête, lui, porte le nom lisible. */
+  HI_NOM = app ? cleApp(app) : nom;
+  const affiche = app ? app.nom : nom;
+  $('ov-histo').hidden = false;
+  $('hi-nom').textContent = affiche;
+  $('hi-chip').querySelector('.cl').textContent = (affiche[0] || '?').toUpperCase();
   mountLogo($('hi-chip'), app ? logoDe(app) : '');
   peindreHistorique();
 }
@@ -7031,7 +7044,7 @@ function renderApps() {
      existent — le compteur à côté du titre le dit déjà — mais combien ne vont
      pas bien. Les applications sans URL ne comptent ni d'un côté ni de
      l'autre : elles ne sont pas surveillées. */
-  const jauges = shown.map(([a]) => sante(a.nom)).filter((x) => x !== 'na');
+  const jauges = shown.map(([a]) => sante(cleApp(a))).filter((x) => x !== 'na');
   const ko = jauges.filter((x) => x !== 'on').length;
   $('apps-tally').textContent = jauges.length
     ? t(ko ? 'apps.tally' : 'apps.tally.ok', { on: jauges.length - ko, ko: ko })
@@ -7208,7 +7221,7 @@ function renderInfos(app) {
   /* Ce que le service remonte en ce moment, complété par ce que l'intégration
      déclare savoir lire : on peut ainsi régler une tuile avant même que la
      première mesure ait abouti. */
-  const mesure = STATS[app.nom] || [];
+  const mesure = STATS[cleApp(app)] || [];
   /* conversion des anciennes clés, tant qu'on tient le libellé et l'identifiant
      de la même mesure sous la main */
   mesure.forEach((m) => {
@@ -7297,21 +7310,11 @@ $('m-cancel').addEventListener('click', closeAppModal);
 $('m-save').addEventListener('click', () => {
   const nom = $('m-nom').value.trim();
   if (!nom) { $('m-nom').classList.add('err'); $('m-nom').focus(); return; }
-  /* Le nom identifie l'application partout : mesures, état, alertes,
-     historique et journal en dépendent. Deux fiches du même nom partagent donc
-     tout — deux serveurs surveillés par Glances afficheraient les chiffres du
-     même. On refuse plutôt que de laisser fusionner en silence. */
-  const jumeau = apps.some((a, i) => i !== editIndex
-    && (a.nom || '').trim().toLowerCase() === nom.toLowerCase());
-  if (jumeau) {
-    $('m-nom').classList.add('err');
-    $('m-nom').focus();
-    $('m-nom').select();
-    toast(t('app.name.taken', { nom }));
-    return;
-  }
   const prev = editIndex !== null ? apps[editIndex] : {};
   const app = {
+    /* Une fiche garde son identifiant à vie : c'est lui qui tient son
+       historique. Une nouvelle en reçoit un, distinct même à nom égal. */
+    id: prev.id || nouvelId(nom),
     nom,
     role: $('m-role').value.trim(),
     cat: $('m-cat').value,
@@ -7426,22 +7429,25 @@ async function renderJournal() {
     const srv = document.createElement('span');
     srv.className = 'srv';
     const app = findApp(ev.service);
+    /* Le serveur range par clé et joint le nom porté par la fiche : c'est lui
+       qu'on lit, quitte à voir deux fois « Glances » pour deux machines. */
+    const affiche = ev.service_nom || (app ? app.nom : ev.service);
     const chip = document.createElement('span');
     chip.className = 'logo-chip s18';
     const cl = document.createElement('span');
     cl.className = 'cl';
-    cl.textContent = (ev.service[0] || '?').toUpperCase();
+    cl.textContent = (affiche[0] || '?').toUpperCase();
     chip.appendChild(cl);
     if (app) mountLogo(chip, logoDe(app));
     const nom = document.createElement('span');
-    nom.textContent = ev.service;
+    nom.textContent = affiche;
     srv.appendChild(chip);
     srv.appendChild(nom);
     /* Le service mène à sa fiche : un journal sans porte de sortie oblige à
        retrouver la carte à la main. */
     if (app) {
       srv.style.cursor = 'pointer';
-      srv.addEventListener('click', () => { closeSettings(); ouvrirFiche(app.nom); });
+      srv.addEventListener('click', () => { closeSettings(); ouvrirFiche(cleApp(app)); });
     }
     const tx = document.createElement('span');
     tx.className = 't';
@@ -7614,7 +7620,7 @@ function peindreApercu() {
   /* on prend d'abord celles qui remontent des chiffres : une tuile vide
      n'apprendrait rien sur l'effet des réglages */
   const choix = apps.slice().sort((a, b) =>
-    ((STATS[b.nom] || []).length) - ((STATS[a.nom] || []).length)).slice(0, 4);
+    ((STATS[cleApp(b)] || []).length) - ((STATS[cleApp(a)] || []).length)).slice(0, 4);
   choix.forEach((a) => {
     const tu = document.createElement('div');
     tu.className = 'ap-tuile';
@@ -7630,7 +7636,7 @@ function peindreApercu() {
     tu.appendChild(h);
     /* Le même réglage que les vraies tuiles : sans lui, l'aperçu montrerait
        des mesures que la grille n'affiche plus. */
-    const mes = voirStats ? (STATS[a.nom] || []).slice(0, 2) : [];
+    const mes = voirStats ? (STATS[cleApp(a)] || []).slice(0, 2) : [];
     if (mes.length) {
       const ch = document.createElement('div');
       ch.className = 'ch';
@@ -7909,7 +7915,7 @@ function majPastillesReglages() {
   $('nq-profil').textContent = u ? u.nom : '';
   $('nq-sec').textContent = SESSIONS_N ? t('sess.count', { n: SESSIONS_N }) : '';
   const types = apps.filter((a) => kindOfApp(a)).length;
-  const vus = apps.filter((a) => kindOfApp(a) && (STATS[a.nom] || []).length).length;
+  const vus = apps.filter((a) => kindOfApp(a) && (STATS[cleApp(a)] || []).length).length;
   $('nq-conn').textContent = types ? vus + '/' + types : '';
   $('nq-lang').textContent = (i18n.langue || 'fr').toUpperCase();
 }
@@ -8260,8 +8266,8 @@ function renderConnPanel() {
      bande, et la cacher reviendrait à perdre son historique. */
   const sources = apps.map((a) => ({ app: a, kind: kindOfApp(a) }))
     .filter((x) => x.kind || (x.app.url || '').trim());
-  const actives = sources.filter((x) => branchee(x.kind, x.app.nom));
-  const dormantes = sources.filter((x) => !branchee(x.kind, x.app.nom));
+  const actives = sources.filter((x) => branchee(x.kind, cleApp(x.app)));
+  const dormantes = sources.filter((x) => !branchee(x.kind, cleApp(x.app)));
 
   /* --- bilan --- */
   const bilan = $('conn-bilan');
@@ -8280,7 +8286,7 @@ function renderConnPanel() {
 
   /* Latence moyenne des seules sources qui répondent : y mêler les injoignables
      n'aurait pas de sens, elles n'ont pas de temps de réponse. */
-  const lats = actives.map((x) => (SUPER.etats[x.app.nom] || {}).latence_moy)
+  const lats = actives.map((x) => (SUPER.etats[cleApp(x.app)] || {}).latence_moy)
     .filter((v) => v != null);
   carreau(t('conn.latency'),
           lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) + ' ms' : '—',
@@ -8289,11 +8295,11 @@ function renderConnPanel() {
   /* Dernière erreur : celle qui court en ce moment. Les erreurs passées ne sont
      pas conservées — annoncer « il y a 2 jours » demanderait un journal. */
   const souci = SUPER.alertes.alertes
-    .filter((a) => a.niveau !== 'info' && sources.some((x) => x.app.nom === a.service))
+    .filter((a) => a.niveau !== 'info' && sources.some((x) => cleApp(x.app) === a.service))
     .sort((a, b) => b.depuis - a.depuis)[0];
   carreau(t('conn.lasterror'),
           souci ? ageCourt(souci.depuis) : t('conn.noerror'),
-          souci ? souci.service + ' · ' + texteAlerte(souci) : t('conn.allgood'),
+          souci ? nomAlerte(souci) + ' · ' + texteAlerte(souci) : t('conn.allgood'),
           !!souci);
 
   /* --- sources actives --- */
@@ -8309,7 +8315,7 @@ function renderConnPanel() {
   tete.textContent = '';
   if (HISTO && HISTO.services) {
     const inc = actives.reduce(
-      (n, x) => n + (((HISTO.services[x.app.nom] || {}).incidents) || 0), 0);
+      (n, x) => n + (((HISTO.services[cleApp(x.app)] || {}).incidents) || 0), 0);
     if (inc) {
       const p = document.createElement('span');
       p.className = 'puce-inc';
@@ -8351,7 +8357,7 @@ function renderConnPanel() {
     }
     const bas = document.createElement('span');
     bas.className = 'conn-detail';
-    bas.textContent = detail(x.kind, a.nom);
+    bas.textContent = detail(x.kind, cleApp(a));
     bloc.appendChild(haut);
     bloc.appendChild(bas);
     const bande = bandeSante(a.nom);
@@ -8359,9 +8365,9 @@ function renderConnPanel() {
 
     const mesure = document.createElement('span');
     mesure.className = 'conn-mesure';
-    const etat = SUPER.etats[a.nom];
+    const etat = SUPER.etats[cleApp(a)];
     if (etat) {
-      const trace = courbe(etat.courbe, sante(a.nom) === 'off' ? 'off' : 'on');
+      const trace = courbe(etat.courbe, sante(cleApp(a)) === 'off' ? 'off' : 'on');
       if (trace) {
         const z = document.createElement('span');
         z.className = 'spark on';
@@ -8395,7 +8401,7 @@ function renderConnPanel() {
   /* La légende explique les couleurs : sans une seule bande à l'écran, elle
      n'explique rien. */
   const avecBande = actives.some(
-    (x) => ((HISTO && HISTO.services && HISTO.services[x.app.nom]) || {}).seaux);
+    (x) => ((HISTO && HISTO.services && HISTO.services[cleApp(x.app)]) || {}).seaux);
   const legende = $('conn-legende');
   legende.hidden = !avecBande;
   legende.textContent = avecBande ? t('sante.pied') : '';
@@ -8422,7 +8428,7 @@ function renderConnPanel() {
     const btn = document.createElement('button');
     btn.className = 'btn-sm';
     btn.textContent = t('conn.plug');
-    btn.title = detail(x.kind, a.nom);
+    btn.title = detail(x.kind, cleApp(a));
     btn.addEventListener('click', () => {
       closeSettings();
       openAppModal(apps.indexOf(a));
