@@ -7276,6 +7276,19 @@ $('m-cancel').addEventListener('click', closeAppModal);
 $('m-save').addEventListener('click', () => {
   const nom = $('m-nom').value.trim();
   if (!nom) { $('m-nom').classList.add('err'); $('m-nom').focus(); return; }
+  /* Le nom identifie l'application partout : mesures, état, alertes,
+     historique et journal en dépendent. Deux fiches du même nom partagent donc
+     tout — deux serveurs surveillés par Glances afficheraient les chiffres du
+     même. On refuse plutôt que de laisser fusionner en silence. */
+  const jumeau = apps.some((a, i) => i !== editIndex
+    && (a.nom || '').trim().toLowerCase() === nom.toLowerCase());
+  if (jumeau) {
+    $('m-nom').classList.add('err');
+    $('m-nom').focus();
+    $('m-nom').select();
+    toast(t('app.name.taken', { nom }));
+    return;
+  }
   const prev = editIndex !== null ? apps[editIndex] : {};
   const app = {
     nom,

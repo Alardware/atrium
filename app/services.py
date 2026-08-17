@@ -125,12 +125,30 @@ def s_unraid(base, cle):
 
 
 def s_unifi(base, cle):
+    """Reconnait un controleur UniFi, et rien d autre.
+
+    Un 401 ne prouve rien : n importe quel service qui demande une
+    authentification repond 401 sur une adresse inconnue — l ingress de Home
+    Assistant le premier, ce qui faisait passer un module Glances pour un
+    controleur UniFi. On exige donc une reponse qui ressemble a UniFi : la
+    liste des sites servie par la cle, ou la page d etat, que le controleur
+    publie sans authentification.
+    """
     for racine in ("/proxy/network/integration/v1", "/integration/v1"):
         code, corps, _ = _http(base + racine + "/sites", {"X-API-KEY": cle})
-        if code in (200, 401, 403):
+        if code == 200:
             j = _json(corps)
-            n = len(_chemin(j, "data") or []) if code == 200 else 0
-            return ("UniFi" + (" — %d site(s)" % n if n else "")), None
+            sites = _chemin(j, "data")
+            if isinstance(sites, list):
+                return ("UniFi" + (" — %d site(s)" % len(sites) if sites else "")), None
+
+    # « /status » : sans cle, un controleur annonce sa version et son etat.
+    code, corps, _ = _http(base + "/status")
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict):
+        meta = j.get("meta") or {}
+        if isinstance(meta, dict) and (meta.get("server_version") or meta.get("up")):
+            return "UniFi", meta.get("server_version")
     return None
 
 

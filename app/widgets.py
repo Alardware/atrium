@@ -457,6 +457,9 @@ def w_unifi(base, cle):
 # doublerait les appels pour une reponse qui ne change pas.
 _GLANCES = {}
 
+# Etiquettes de seuils, a ne pas confondre avec une mesure.
+_SEUIL = re.compile(r"crit|alarm|alert|max|min|high|low|limit|warn|target|trip", re.I)
+
 
 def _glances_auth(mot):
     """L en-tete d authentification quand Glances tourne avec un mot de passe.
@@ -548,6 +551,16 @@ def w_glances(base, mot_de_passe=""):
             continue
         unite = str(d.get("unit") or "")
         if unite not in ("C", "°C"):
+            continue
+        # Les cartes annoncent aussi leurs seuils : « Composite Critical » a
+        # beau etre en degres, 108 °C est la limite du disque, pas sa
+        # temperature. Un seuil pris pour une mesure declenche une alerte qui
+        # ne retombera jamais.
+        etiquette = str(d.get("label") or "").lower()
+        if _SEUIL.search(etiquette):
+            continue
+        genre = str(d.get("type") or "")
+        if genre and "temp" not in genre.lower():
             continue
         try:
             v = float(d.get("value"))
