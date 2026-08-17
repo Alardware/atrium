@@ -104,7 +104,9 @@ def session():
         with urllib.request.urlopen(r, timeout=20) as rep:
             c = http.cookies.SimpleCookie(rep.headers.get("Set-Cookie"))
     except urllib.error.HTTPError as e:
-        print("connexion refusee : %s" % e.code)
+        print("connexion refusee (%s) : « %s » n existe pas sur cette instance.\n"
+              "Donnez un profil connu par ATRIUM_AUDIT_USER et ATRIUM_AUDIT_PASS,\n"
+              "ou lancez l audit sur une installation neuve." % (e.code, PROFIL))
         sys.exit(2)
     return "atrium_session=" + c["atrium_session"].value
 
