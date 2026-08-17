@@ -1047,6 +1047,33 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .srv-tab-h .puce[hidden]{display:none}
 .srv-filtre{margin-left:auto;display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;
             border:1px solid var(--border-2);background:var(--surface-2);color:var(--muted-3)}
+/* ---- attente du relevé Docker ----
+   Le squelette reprend la grille de la vraie table : mêmes colonnes, mêmes
+   hauteurs de ligne. Quand les mesures arrivent, rien ne saute. */
+@keyframes dk-luire{0%{background-position:180% 0}100%{background-position:-80% 0}}
+@keyframes dk-monte{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes dk-tourne{to{transform:rotate(360deg)}}
+.dk-progress{height:2px;background:var(--track,var(--subtle));overflow:hidden}
+.dk-progress > i{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--acc),var(--ok));
+  transition:width .5s cubic-bezier(.4,0,.2,1)}
+.dk-badge{display:inline-flex;align-items:center;gap:7px;padding:3px 9px 3px 8px;border-radius:7px;
+  background:var(--accent-soft);color:var(--acc);
+  font:600 10.5px/1.6 'IBM Plex Mono',monospace;white-space:nowrap}
+.dk-badge svg{width:11px;height:11px;animation:dk-tourne .9s linear infinite}
+.dk-step{font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
+/* Les barres n'ont pas toutes la même largeur ni le même départ : un miroitement
+   parfaitement synchrone fait mécanique. */
+.dk-skel{display:inline-block;height:9px;border-radius:5px;vertical-align:middle;
+  background:linear-gradient(90deg,var(--subtle) 14%,var(--border-2) 34%,var(--subtle) 54%);
+  background-size:260% 100%;animation:dk-luire 1.5s ease-in-out infinite}
+.dk-skel-row .dk-skel{animation-delay:calc(var(--i) * 90ms)}
+.dk-skel--dot{width:6px;height:6px;border-radius:50%;background:var(--muted-3);animation:none;margin-right:9px}
+.dk-skel--gauge{width:56px;height:3px;border-radius:2px;background:var(--muted-3);animation:none}
+.dk-skel--btn{width:24px;height:24px;border-radius:7px;border:1px solid var(--border);
+  background:var(--surface-2);animation:none;margin-left:6px}
+.dk-arrivee{animation:dk-monte .34s ease both;animation-delay:calc(var(--i) * 26ms)}
+.srv-filtre.att{opacity:.45}
 .srv-filtre input{width:120px;border:0;background:none;outline:none;color:var(--text);
                   font:500 12px/1 'Plus Jakarta Sans',sans-serif}
 .srv-tab-vide{padding:18px 14px;text-align:center;font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
@@ -1186,6 +1213,17 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .p-puce .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
 /* La mention d'un compte de secours : une note, pas une alerte — il n'y a rien
    d'anormal à être connecté dessus. */
+.p-avatars{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.p-av-lab{font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--t4);text-transform:none}
+.p-av-liste{display:flex;gap:10px}
+.p-av-choix{width:38px;height:38px;border-radius:50%;overflow:hidden;padding:0;border:2px solid transparent;
+            background:var(--subtle);display:grid;place-items:center;
+            font:700 13px/1 'Plus Jakarta Sans',sans-serif;color:#fff;
+            transition:border-color .15s,transform .12s}
+.p-av-choix img{width:100%;height:100%;object-fit:cover;display:block}
+.p-av-choix:hover{transform:translateY(-1px)}
+.p-av-choix.on{border-color:var(--acc)}
+.p-avatars[hidden]{display:none}
 .p-hors{margin-top:14px;padding:11px 14px;border-radius:10px;background:var(--subtle);
         border:1px solid var(--hair4);font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;
         color:var(--text-3)}
@@ -2080,6 +2118,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
               <button class="btn-sm danger" id="p-av-del" type="button" data-i18n="btn.remove">Retirer</button>
             </span>
             <input type="file" id="p-av-file" accept="image/*" hidden>
+          </div>
+
+          <!-- Choisir une figure plutôt qu'une photo : rien à téléverser, et
+               les profils d'une maison se distinguent d'un coup d'œil. -->
+          <div class="p-avatars" id="p-avatars">
+            <span class="p-av-lab" data-i18n="profile.avatars">Ou choisir une figure</span>
+            <span class="p-av-liste" id="p-av-liste"></span>
           </div>
 
           <!-- Compte de secours : l'interface le nomme, mais ne le règle pas. -->
@@ -3006,6 +3051,41 @@ const avColor = (nom) => {
 const initiales = (nom) => nom.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 /* peint un avatar : photo de l'utilisateur si elle existe, sinon ses initiales */
+/* Avatars fournis avec Atrium. Un profil en retient l'identifiant, pas le
+   dessin : la configuration reste courte, et le trait peut être repris sans
+   toucher aux fiches déjà enregistrées. « admin » est réservé au compte de
+   secours ; les autres se choisissent dans Mon profil. */
+const AVATARS = {
+  admin:    { fond: '#101826', trait: '#F5F7FA', chevron: '#E8622A' },
+  ardoise:  { fond: '#CBD3DE', trait: '#39435A' },
+  brique:   { fond: '#E6D6D0', trait: '#6B4A3F' },
+  vert:     { fond: '#D2DED6', trait: '#3E5A4A' },
+  sable:    { fond: '#E4DCCE', trait: '#6B5C46' },
+};
+const AVATARS_CHOIX = ['ardoise', 'brique', 'vert', 'sable'];
+
+function dessinAvatar(id) {
+  const a = AVATARS[id];
+  if (!a) return '';
+  const chevron = a.chevron
+    ? '<path d="M53 113 L64 103 L75 113" fill="none" stroke="' + a.chevron
+      + '" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    : '';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">'
+    + '<defs><clipPath id="c"><circle cx="64" cy="64" r="64"/></clipPath></defs>'
+    + '<g clip-path="url(#c)">'
+    + '<rect width="128" height="128" fill="' + a.fond + '"/>'
+    + '<circle cx="64" cy="45" r="17" fill="' + a.trait + '"/>'
+    + '<path d="M26 128 V96.08 a38 25.08 0 0 1 76 0 V128 Z" fill="' + a.trait + '"/>'
+    + chevron + '</g></svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+/* « av:nom » désigne un avatar fourni ; tout le reste est une photo envoyée
+   par l'utilisateur, déjà réduite et stockée telle quelle. */
+const sourceAvatar = (photo) => (String(photo || '').startsWith('av:')
+  ? dessinAvatar(String(photo).slice(3)) : photo);
+
 function peindreAvatar(el, u) {
   if (!el) return;
   el.querySelectorAll('img').forEach((i) => i.remove());
@@ -3014,7 +3094,7 @@ function peindreAvatar(el, u) {
     el.style.background = 'var(--subtle)';
     const img = new Image();
     img.alt = '';
-    img.src = u.photo;
+    img.src = sourceAvatar(u.photo);
     img.onerror = () => { img.remove(); el.textContent = initiales(u.nom); el.style.background = avColor(u.nom); };
     el.appendChild(img);
   } else if (u) {
@@ -4286,16 +4366,101 @@ function menuConteneur(bouton, c) {
   poserQMenu(menu, bouton);
 }
 
+/* L'attente du relevé Docker.
+
+   Les étapes sont datées depuis l'instant où l'attente a commencé, pas
+   enchaînées par des minuteries : la page Serveurs se redessine toutes les
+   2,5 s tant que la mesure n'est pas là, et une chaîne de setTimeout serait
+   annulée à chaque fois — le squelette resterait figé au premier palier. */
+const DOCKER_ETAPES = [
+  [0, 6, 'dk.socket'], [260, 18, 'dk.liste'], [700, 44, 'dk.stats'],
+  [1240, 72, 'dk.stats'], [1800, 92, 'dk.mem'], [2200, 100, 'dk.fini'],
+];
+let DOCKER_DEBUT = 0;
+
+function etapeDocker() {
+  if (!DOCKER_DEBUT) DOCKER_DEBUT = Date.now();
+  const ecoule = Date.now() - DOCKER_DEBUT;
+  const e = DOCKER_ETAPES.filter((x) => ecoule >= x[0]).pop() || DOCKER_ETAPES[0];
+  return { pct: e[1], cle: e[2] };
+}
+
+function squeletteDocker() {
+  const tab = clone('tpl-srv-tab');
+  tab.querySelector('.l').textContent = t('srv.docker.title');
+  /* Ni « 23 actifs » ni « Rafraîchir » avant l'heure : on n'affiche pas un
+     chiffre qu'on ne connaît pas encore. */
+  tab.querySelector('.puce.ok').hidden = true;
+  const filtre = tab.querySelector('.srv-filtre');
+  filtre.classList.add('att');
+  filtre.querySelector('input').disabled = true;
+
+  const badge = document.createElement('span');
+  badge.className = 'dk-badge';
+  badge.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true">'
+    + '<circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"'
+    + ' stroke-linecap="round" stroke-dasharray="26 12"/></svg>';
+  const btx = document.createElement('span');
+  btx.textContent = t('dk.badge');
+  badge.appendChild(btx);
+  tab.querySelector('.puce.ok').after(badge);
+
+  const pas = document.createElement('span');
+  pas.className = 'dk-step';
+  badge.after(pas);
+
+  const barre = document.createElement('div');
+  barre.className = 'dk-progress';
+  const jus = document.createElement('i');
+  barre.appendChild(jus);
+  tab.querySelector('.srv-tab-h').after(barre);
+
+  const th = tab.querySelectorAll('th');
+  [t('srv.col.name'), t('srv.col.state'), 'CPU', t('srv.col.mem'), t('srv.col.actions')]
+    .forEach((x, i) => { th[i].textContent = x; });
+
+  /* Autant de lignes que de conteneurs connus : la liste des noms se lit vite,
+     seules les mesures sont lentes. Sans elle, une hauteur plausible. */
+  const combien = Math.min(12, Math.max(4, (DOCKER.noms || []).length || 7));
+  const tbody = tab.querySelector('tbody');
+  const largeurs = [72, 58, 84, 66, 90, 61, 78, 54, 88, 63, 75, 69];
+  for (let i = 0; i < combien; i++) {
+    const tr = document.createElement('tr');
+    tr.className = 'dk-skel-row';
+    tr.style.setProperty('--i', String(i));
+    tr.innerHTML = '<td class="nom"><span class="dk-skel dk-skel--dot"></span>'
+      + '<span class="dk-skel" style="width:' + largeurs[i % largeurs.length] + '%"></span></td>'
+      + '<td><span class="dk-skel" style="width:64%"></span></td>'
+      + '<td class="num"><span class="dk-skel" style="width:34px"></span></td>'
+      + '<td class="num"><span class="dk-skel dk-skel--gauge"></span>'
+      + '<span class="dk-skel" style="width:46px;margin-left:8px"></span></td>'
+      + '<td class="num actions"><span class="dk-skel dk-skel--btn"></span>'
+      + '<span class="dk-skel dk-skel--btn"></span></td>';
+    tbody.appendChild(tr);
+  }
+
+  const peindre = () => {
+    const e = etapeDocker();
+    jus.style.width = e.pct + '%';
+    pas.textContent = t(e.cle, { n: (DOCKER.noms || []).length });
+  };
+  peindre();
+  /* Un seul intervalle, arrêté dès que le squelette quitte la page. */
+  const tic = setInterval(() => {
+    if (!document.body.contains(barre)) { clearInterval(tic); return; }
+    peindre();
+  }, 110);
+  return tab;
+}
+
 function tableauDocker(bloc, liste, actif, mesure) {
   const zone = bloc.querySelector('.srv-docker');
   zone.hidden = false;
   if (actif && !mesure) {
-    /* socket montée mais aucune mesure encore aboutie : le dire, plutôt que
-       de montrer un tableau vide qui passerait pour un serveur sans conteneur */
-    const n = document.createElement('div');
-    n.className = 'srv-note';
-    n.textContent = t('srv.docker.wait');
-    zone.appendChild(n);
+    /* Socket montée, mesure pas encore aboutie. Relever la consommation coûte
+       un appel au démon par conteneur : deux à trois secondes de blanc, qui se
+       lisent comme une panne. On montre la table à venir plutôt qu'un mot. */
+    zone.appendChild(squeletteDocker());
     return;
   }
   if (!actif) {
@@ -4328,8 +4493,12 @@ function tableauDocker(bloc, liste, actif, mesure) {
     ? HOTE.memoire.total_go * 1024 * 1024 * 1024 : null;
   const plusGros = Math.max(1, ...liste.map((c) => c.memoire || 0));
   const tbody = tab.querySelector('tbody');
-  liste.forEach((c) => {
+  /* Le relevé est arrivé : la prochaine attente repartira de zéro. */
+  DOCKER_DEBUT = 0;
+  liste.forEach((c, rang) => {
     const tr = clone('tpl-srv-ligne');
+    tr.classList.add('dk-arrivee');
+    tr.style.setProperty('--i', String(rang));
     const enMarche = c.etat === 'running';
     if (!enMarche) tr.classList.add('off');
     tr.querySelector('.dot').classList.toggle('off', !enMarche);
@@ -8243,7 +8412,7 @@ const userActif = () => {
   const connu = USERS.find((x) => x.nom === ACTIVE);
   if (connu) return connu;
   if (SESSION_USER) {
-    return { nom: SESSION_USER, pwd: '1', photo: '', horsListe: true };
+    return { nom: SESSION_USER, pwd: '1', photo: 'av:admin', horsListe: true };
   }
   return USERS[0] || null;
 };
@@ -8423,6 +8592,38 @@ function renderPrefs() {
   });
 }
 
+/* Les figures proposées, plus « la lettre » qui est l'état d'origine. Le
+   dessin du compte de secours n'y figure pas : il ne se choisit pas, il
+   accompagne ce compte. */
+function renderAvatars(u) {
+  const z = $('p-av-liste');
+  z.textContent = '';
+  const poser = (id, titre) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'p-av-choix';
+    b.title = titre;
+    if (id) {
+      const img = new Image();
+      img.alt = '';
+      img.src = dessinAvatar(id);
+      b.appendChild(img);
+    } else {
+      b.textContent = initiales(u.nom);
+      b.style.background = avColor(u.nom);
+    }
+    const choisi = id ? u.photo === 'av:' + id : !u.photo;
+    b.classList.toggle('on', choisi);
+    b.addEventListener('click', () => {
+      majProfil((x) => { x.photo = id ? 'av:' + id : ''; });
+      toast(t(id ? 'photo.updated' : 'photo.removed'));
+    });
+    z.appendChild(b);
+  };
+  poser('', t('profile.letter'));
+  AVATARS_CHOIX.forEach((id) => poser(id, t('profile.avatar.' + id)));
+}
+
 function renderProfil() {
   const u = userActif();
   $('p-vide').hidden = !!u;
@@ -8447,6 +8648,9 @@ function renderProfil() {
      navigateur peut écrire : son nom et sa photo se règlent là où il est
      défini, pas ici. Le mot de passe, lui, reste changeable — c'est le sien. */
   $('p-hors').hidden = !u.horsListe;
+  /* Le compte de secours garde sa figure : elle vient de l'installation. */
+  $('p-avatars').hidden = !!u.horsListe;
+  if (!u.horsListe) renderAvatars(u);
   $('p-av-up').disabled = !!u.horsListe;
   $('p-av-del').disabled = !u.photo || !!u.horsListe;
   $('p-av-del').style.opacity = (u.photo && !u.horsListe) ? '1' : '.45';

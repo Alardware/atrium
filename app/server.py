@@ -142,11 +142,18 @@ def installer_admin_cache():
               "Choisissez un autre nom." % nom, flush=True)
         return
     if u is None:
-        users.append({"nom": nom, "pwd": auth.hacher(mdp), "photo": "", "cache": True})
+        # « av:admin » : la figure fournie pour ce compte, celle qui porte le
+        # chevron. Elle se distingue au premier coup d oeil des profils
+        # ordinaires, qui gardent leur initiale.
+        users.append({"nom": nom, "pwd": auth.hacher(mdp), "photo": "av:admin",
+                      "cache": True})
         action = "cree"
     else:
         u["pwd"] = auth.hacher(mdp)
         u["cache"] = True
+        u.setdefault("photo", "")
+        if not u["photo"]:
+            u["photo"] = "av:admin"
         action = "mis a jour"
     cfg["users"] = users
     try:
