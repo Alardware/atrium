@@ -2897,7 +2897,11 @@ function loadApps() {
    dans localStorage, ils survivaient à la déconnexion et se lisaient depuis
    n'importe quelle extension ou script tiers, alors que le serveur les garde
    derrière une session. */
-const sansSecrets = (liste) => (liste || []).map((a) => ({ ...a, token: '', apiKey: '' }));
+const sansSecrets = (liste) => (liste || []).map((a) => ({
+  nom: a.nom, role: a.role, cat: a.cat, url: a.url, logoUrl: a.logoUrl,
+  tempEntity: a.tempEntity, type: a.type, fav: !!a.fav,
+  masque: Array.isArray(a.masque) ? a.masque : [],
+}));
 
 function saveApps() {
   store.set('apps', JSON.stringify(sansSecrets(apps)));
@@ -8875,9 +8879,10 @@ function haWs() {
     const base = haBase() || location.origin;
     const ws = new WebSocket(base.replace(/^http/, 'ws') + '/api/websocket');
     let id = 1;
-    /* Sans prototype : « m.id » vient du réseau, et « __proto__ » y
-       désignerait l'objet de base plutôt qu'une demande en attente. */
-    const pend = Object.create(null);
+    /* Une Map plutôt qu'un objet : « m.id » vient du réseau, et une clé de
+       Map n'est pas un nom de propriété — ni « __proto__ » ni rien d'autre
+       n'y atteint l'objet de base. */
+    const pend = new Map();
     ws.onmessage = (ev) => {
       const m = JSON.parse(ev.data);
       if (m.type === 'auth_required') {
@@ -8886,16 +8891,16 @@ function haWs() {
         resolve({
           call: (payload) => new Promise((res, rej) => {
             const i = id++;
-            pend[i] = { res, rej };
+            pend.set(i, { res, rej });
             ws.send(JSON.stringify({ id: i, ...payload }));
           }),
           close: () => ws.close(),
         });
       } else if (m.type === 'auth_invalid') {
         reject(new Error('token invalide'));
-      } else if (m.type === 'result' && pend[m.id]) {
-        const p = pend[m.id];
-        delete pend[m.id];
+      } else if (m.type === 'result' && pend.has(m.id)) {
+        const p = pend.get(m.id);
+        pend.delete(m.id);
         if (m.success) p.res(m.result);
         else p.rej(new Error((m.error || {}).message || 'erreur HA'));
       }
