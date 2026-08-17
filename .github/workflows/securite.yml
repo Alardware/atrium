@@ -79,11 +79,15 @@ jobs:
           sarif_file: gitleaks.sarif
           category: gitleaks
 
+  # Aucun « needs » entre les travaux : le CDN des actions répond parfois
+  # « 429 Too Many Requests », et enchaîner les travaux transformait un
+  # téléchargement raté en trois travaux non exécutés. Indépendants, ils
+  # échouent seuls et se relancent seuls.
+
   # ---- dépendances, image et infrastructure --------------------------------
   image:
     name: Image et infrastructure — Trivy
     runs-on: ubuntu-latest
-    needs: bandit
     steps:
       - uses: actions/checkout@v4
 
@@ -124,7 +128,6 @@ jobs:
   matrice:
     name: DAST — matrice des routes
     runs-on: ubuntu-latest
-    needs: bandit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
