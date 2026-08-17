@@ -156,7 +156,20 @@ def main():
         finally:
             s.shutdown()
 
-    print("2. les vrais services restent reconnus")
+    print("2. l adresse d un module vue depuis Home Assistant se nomme")
+    s, url = servir(accueil)
+    try:
+        vu = services.identifier(url, "")
+        verdict = vu.get("indice") or "(aucun indice)"
+        ok = verdict == "ha_frontend"
+        print("    %-38s %s" % ("page de Home Assistant reconnue comme telle",
+                                verdict if ok else "!!! " + verdict))
+        if not ok:
+            ECHECS.append("indice ha_frontend absent")
+    finally:
+        s.shutdown()
+
+    print("3. les vrais services restent reconnus")
     for titre, fn, attendu in vrais:
         s, url = servir(fn)
         try:

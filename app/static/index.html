@@ -6800,7 +6800,8 @@ function peindreFiche() {
       if (!r.ok) { dire('bad', d.error || ('HTTP ' + r.status)); return; }
       if (!d.trouve) {
         dire(d.joignable ? '' : 'bad',
-             d.joignable ? t('f.test.unknown') : t('f.test.unreachable'));
+             !d.joignable ? t('f.test.unreachable')
+               : d.indice === 'ha_frontend' ? t('f.test.hafront') : t('f.test.unknown'));
         return;
       }
       /* La version relevée au test est conservée : c'est le seul moment où le
@@ -7137,7 +7138,8 @@ async function detecterEtTester() {
     peindreDonnees();
     syncKind();
     majTest(d.joignable ? 'na' : 'bad',
-      d.joignable ? t('f.test.unknown') : t('f.test.unreachable'));
+      !d.joignable ? t('f.test.unreachable')
+        : d.indice === 'ha_frontend' ? t('f.test.hafront') : t('f.test.unknown'));
     return;
   }
 

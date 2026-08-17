@@ -679,5 +679,19 @@ def identifier(url, cle=""):
                 "cle_libelle": libelle_cle,
                 "cle_requise": bool(libelle_cle),
             }
-    # joignable mais non reconnu : la tuile fonctionnera en simple raccourci
-    return {"trouve": False, "type": "", "joignable": True, "code": code_racine}
+    # joignable mais non reconnu : la tuile fonctionnera en simple raccourci.
+    # Un cas revient assez souvent pour meriter d etre nomme : l adresse d un
+    # module vue depuis l interface de Home Assistant. Elle rend la page de
+    # Home Assistant, jamais l API du module — quelle que soit l adresse
+    # demandee derriere. Le dire evite de chercher une cle qui n existe pas.
+    return {"trouve": False, "type": "", "joignable": True, "code": code_racine,
+            "indice": "ha_frontend" if _page_home_assistant(base) else ""}
+
+
+def _page_home_assistant(base):
+    """Cette adresse rend-elle l interface de Home Assistant ?"""
+    code, corps, entetes = _http(base)
+    if code != 200 or "html" not in str(entetes.get("Content-Type", "")).lower():
+        return False
+    bas = corps.lower()
+    return b"<title>home assistant</title>" in bas or b"/frontend_latest/" in bas
