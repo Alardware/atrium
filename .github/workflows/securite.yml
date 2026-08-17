@@ -159,6 +159,11 @@ jobs:
       - name: Applications homonymes
         run: python outils/test_homonymes.py
 
+      # Une signature qui se contente d'une réponse quelconque fait passer un
+      # service pour un autre, et réclame la clé d'une API inexistante.
+      - name: "Détection : aucune signature complaisante"
+        run: python outils/test_imposteurs.py
+
       # Une apostrophe droite dans une traduction casse tout le fichier, et
       # l'interface repart alors sur ses clés brutes. Le coût du contrôle est
       # d'une seconde.

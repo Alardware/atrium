@@ -169,10 +169,15 @@ def s_arr(produit):
 
 
 def s_qbittorrent(base, cle):
+    """La version en clair, ou le refus caracteristique de l API.
+
+    Un 403 nu ne prouve rien : beaucoup de serveurs refusent ainsi une adresse
+    inconnue. Celui de qBittorrent nomme sa raison.
+    """
     code, corps, _ = _http(base + "/api/v2/app/version")
     if code == 200 and re.match(rb"^v?\d", corps.strip()):
         return "qBittorrent", corps.decode("utf-8", "replace").strip()
-    if code == 403:
+    if code == 403 and b"forbidden" in corps.lower():
         return "qBittorrent", None
     return None
 
@@ -186,12 +191,18 @@ def s_portainer(base, cle):
 
 
 def s_pihole(base, cle):
+    # « status » seul est un mot bien trop commun : on exige la valeur que
+    # Pi-hole y met, « enabled » ou « disabled ».
     code, corps, _ = _http(base + "/admin/api.php?status")
     j = _json(corps)
-    if code == 200 and isinstance(j, dict) and "status" in j:
+    if code == 200 and isinstance(j, dict)             and str(j.get("status", "")).lower() in ("enabled", "disabled"):
         return "Pi-hole", None
+    # Pi-hole 6 rend un objet « version ». Chercher le mot dans la reponse
+    # suffisait a reconnaitre n importe quelle page web qui le contient — une
+    # application a page unique repond la meme page a toutes les adresses.
     code, corps, _ = _http(base + "/api/info/version")
-    if code in (200, 401) and b"version" in corps.lower():
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("version"), (dict, str)):
         return "Pi-hole", None
     return None
 
@@ -294,8 +305,17 @@ def s_sabnzbd(base, cle):
 
 
 def s_syncthing(base, cle):
+    """L etat rendu par l API, pas les deux lettres « OK » d une page.
+
+    « /rest/noauth/health » repond un objet JSON : l exiger evite de prendre
+    pour Syncthing toute page qui contient ce mot.
+    """
     code, corps, _ = _http(base + "/rest/noauth/health")
-    if code == 200 and b"OK" in corps:
+    j = _json(corps)
+    # La reponse de Syncthing ne contient que cette clef. Accepter n importe
+    # quel objet qui porte « status: ok » reconnaitrait la sonde de sante de
+    # tout autre service.
+    if code == 200 and isinstance(j, dict) and list(j) == ["status"]             and str(j.get("status", "")).upper() == "OK":
         return "Syncthing", None
     return None
 
@@ -380,13 +400,19 @@ def s_netdata(base, cle):
 
 
 def s_glances(base, cle):
+    """L API de Glances repond en JSON ; une page web ne le fait pas.
+
+    Se contenter d un 200 sur « /api/4/status » reconnaissait n importe quel
+    serveur qui rend la meme page a toutes les adresses.
+    """
     for v in ("4", "3"):
         code, corps, _ = _http(base + "/api/%s/status" % v)
-        if code == 200:
-            return "Glances", None
-        code, corps, _ = _http(base + "/api/%s/all" % v)
         j = _json(corps)
-        if code == 200 and isinstance(j, dict) and "cpu" in j and "mem" in j:
+        if code == 200 and isinstance(j, dict) and isinstance(j.get("version"), str):
+            return "Glances", j["version"]
+        code, corps, _ = _http(base + "/api/%s/cpu" % v)
+        j = _json(corps)
+        if code == 200 and isinstance(j, dict) and "total" in j:
             return "Glances", None
     return None
 
