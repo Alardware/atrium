@@ -153,3 +153,9 @@ jobs:
 
       - name: Compte de secours
         run: python outils/test_compte_secours.py
+
+      # Une apostrophe droite dans une traduction casse tout le fichier, et
+      # l'interface repart alors sur ses clés brutes. Le coût du contrôle est
+      # d'une seconde.
+      - name: Traductions lisibles par le navigateur
+        run: node --check app/static/i18n.js

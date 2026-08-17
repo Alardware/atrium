@@ -605,6 +605,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-foot{flex-wrap:wrap;row-gap:6px}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
+/* Un nom en double est un défaut de configuration, pas une panne du service :
+   la teinte d'avertissement, pas celle du danger. */
+.badge-alert.dup{background:var(--warn-soft);border-color:var(--warn);color:var(--warn-text)}
 .add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
 .add-card:hover{border-color:var(--accent);color:var(--accent)}
 .add-ring{width:34px;height:34px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font:600 17px/1 'Plus Jakarta Sans',sans-serif}
@@ -5996,6 +5999,14 @@ async function pollDirect() {
 }
 
 /* ---------- grille d'apps ---------- */
+/* Les noms portés par plus d'une fiche, recalculés à chaque rendu : la liste
+   est courte et change à chaque modification. */
+function nomEnDouble(nom) {
+  const cle = String(nom || '').trim().toLowerCase();
+  if (!cle) return false;
+  return apps.filter((a) => String(a.nom || '').trim().toLowerCase() === cle).length > 1;
+}
+
 function appCard(app, index) {
   const a = clone('tpl-app-card');
   i18n.appliquer(a);            // les gabarits clonés portent aussi des libellés
@@ -6015,6 +6026,16 @@ function appCard(app, index) {
     const b = a.querySelector('.badge-alert');
     b.hidden = false;
     b.title = souci.map(texteAlerte).join(' · ');
+  }
+  /* Deux fiches du même nom écrivent dans la même case : mesures, état,
+     historique et alertes sont rangés par nom. La tuile le dit plutôt que de
+     laisser croire à deux relevés distincts qui se ressemblent. */
+  if (nomEnDouble(app.nom)) {
+    const b = a.querySelector('.badge-alert');
+    b.hidden = false;
+    b.textContent = '⚠';
+    b.title = t('app.name.dup', { nom: app.nom });
+    b.classList.add('dup');
   }
 
   const etat = SUPER.etats[app.nom];
