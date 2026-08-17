@@ -111,7 +111,9 @@ jobs:
 
       - name: Dockerfile et compose
         run: |
-          /tmp/trivy config --no-progress --format sarif --output trivy-config.sarif .
+          # « --no-progress » n'existe que pour « trivy image » : sur « config »,
+          # il fait échouer la commande avec « unknown flag ». C'est « -q ».
+          /tmp/trivy config -q --format sarif --output trivy-config.sarif .
 
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
