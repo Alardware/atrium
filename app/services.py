@@ -31,7 +31,23 @@ _CTX.check_hostname = False
 _CTX.verify_mode = ssl.CERT_NONE     # equipements locaux : certificats auto-signes
 
 
-def _http(url, entetes=None, methode="GET", corps=None):
+class _SansSuite(urllib.request.HTTPRedirectHandler):
+    """Un ouvreur qui laisse la redirection visible au lieu de la suivre.
+
+    Certaines identifications se jouent la : Jackett protege par un mot de
+    passe d administration renvoie tout vers sa page de connexion, et c est
+    justement ce renvoi qui le nomme.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_OUVREUR_DIRECT = urllib.request.build_opener(
+    _SansSuite, urllib.request.HTTPSHandler(context=_CTX))
+
+
+def _http(url, entetes=None, methode="GET", corps=None, suivre=True):
     # Les appelants verifient deja la destination ; on la reverifie ici parce
     # que ce lecteur sert a toutes les integrations et qu un appel ajoute plus
     # tard oublierait la garde. urlopen accepte « file:// » et « ftp:// » : une
@@ -55,6 +71,9 @@ def _http(url, entetes=None, methode="GET", corps=None):
             req.add_header(k, v)
     try:
         # Destination et schema deja valides ci-dessus par reseau.autorise.
+        if not suivre:
+            with _OUVREUR_DIRECT.open(req, timeout=_delai) as r:  # nosec B310
+                return r.status, r.read(200000), dict(r.headers)
         with urllib.request.urlopen(req, timeout=_delai, context=_CTX) as r:  # nosec B310
             return r.status, r.read(200000), dict(r.headers)
     except urllib.error.HTTPError as e:
@@ -503,22 +522,35 @@ def s_bazarr(base, cle):
 
 
 def s_jackett(base, cle):
-    """Jackett : la liste de ses indexeurs, qui n existe nulle part ailleurs.
+    """Jackett, dont la cle voyage dans l adresse et non dans un en-tete.
 
-    Sans cle, l API repond 401 : c est deja la preuve qu on parle a un Jackett,
-    a condition que le refus vienne de son API et non d un serveur quelconque.
-    On verifie donc aussi la page de configuration, qui porte son nom.
+    Deux cas se presentent selon la configuration :
+
+    - sans mot de passe d administration, la liste des indexeurs repond ;
+    - avec, tout est renvoye vers « /UI/Login » — sauf l adresse de recherche,
+      qui refuse proprement en 401. Ce couple ne ressemble a rien d autre.
     """
-    code, corps, _ = _http(base + "/api/v2.0/indexers?configured=true",
-                           {"X-Api-Key": cle})
-    j = _json(corps)
-    if code == 200 and isinstance(j, list):
+    code, corps, _ = _http(_jackett_url(base, "indexers?configured=true", cle))
+    if code == 200 and isinstance(_json(corps), list):
         return "Jackett", None
-    if code in (401, 403):
-        code2, corps2, _ = _http(base + "/UI/Dashboard")
-        if code2 == 200 and b"jackett" in corps2.lower():
+
+    code, _, entetes = _http(base + "/api/v2.0/indexers?configured=true", suivre=False)
+    if code in (301, 302, 303, 307, 308) and "/ui/login" in str(
+            entetes.get("Location", "")).lower():
+        # L adresse de recherche authentifie par la cle, pas par le cookie :
+        # sans cle valable elle refuse, ce qui suffit a reconnaitre Jackett
+        # sans declencher la moindre recherche.
+        code2, _, _ = _http(base + "/api/v2.0/indexers/all/results?apikey=&Query=")
+        if code2 in (400, 401, 403):
             return "Jackett", None
     return None
+
+
+def _jackett_url(base, chemin, cle):
+    """Jackett attend sa cle dans l adresse : « ?apikey=… »."""
+    joint = "&" if "?" in chemin else "?"
+    return "%s/api/v2.0/%s%sapikey=%s" % (base, chemin, joint,
+                                          urllib.parse.quote(cle or ""))
 
 
 def s_seerr(base, cle):

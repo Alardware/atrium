@@ -141,17 +141,27 @@ def w_seerr(base, cle):
     return stats or None
 
 
-def w_jackett(base, cle):
-    """Les indexeurs configures, et ceux qui repondent encore.
+def w_jackett(base, cle, diag=None):
+    """Les indexeurs configures, et ceux qui ne repondent plus.
 
-    Jackett ne compte pas ses indexeurs : il les liste. On les compte donc
-    ici, et l on distingue ceux qu il declare en erreur — un indexeur casse
-    fait echouer les recherches sans rien dire.
+    Jackett ne compte pas ses indexeurs : il les liste. On les compte donc ici,
+    et l on distingue ceux qu il declare en erreur — un indexeur casse fait
+    echouer les recherches sans rien dire.
+
+    Sa cle voyage dans l adresse. Et si un mot de passe d administration est
+    pose, cette liste devient inaccessible : Jackett renvoie tout vers sa page
+    de connexion, cle ou pas. On le dit plutot que de laisser une tuile vide.
     """
-    code, corps, _ = _http(base + "/api/v2.0/indexers?configured=true",
-                           {"X-Api-Key": cle})
+    code, corps, entetes = _http(services._jackett_url(
+        base, "indexers?configured=true", cle))
     j = _json(corps)
     if code != 200 or not isinstance(j, list):
+        prot = _http(base + "/api/v2.0/indexers?configured=true", suivre=False)
+        if prot[0] in (301, 302, 303, 307, 308) and "/ui/login" in str(
+                prot[2].get("Location", "")).lower() and diag is not None:
+            diag.setdefault("refus", []).append(
+                "mot de passe d administration Jackett : la liste des "
+                "indexeurs n est pas lisible par la cle")
         return None
     casses = sum(1 for i in j if isinstance(i, dict)
                  and (i.get("last_error") or "").strip())

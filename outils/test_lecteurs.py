@@ -164,6 +164,45 @@ try:
 finally:
     s.shutdown()
 
+def jackett_protege(chemin, entetes):
+    """Jackett avec un mot de passe d administration : tout part vers /UI/Login."""
+    return None
+
+
+print("5. Jackett protege par un mot de passe d administration")
+
+
+class _Jackett(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        if self.path.startswith("/api/v2.0/indexers/all/results"):
+            self.send_response(401)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self.send_response(302)
+        self.send_header("Location", "/UI/Login?ReturnUrl=%2Fapi")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+
+_srv = ThreadingHTTPServer(("127.0.0.1", 0), _Jackett)
+threading.Thread(target=_srv.serve_forever, daemon=True).start()
+_u = "http://127.0.0.1:%d" % _srv.server_address[1]
+try:
+    verifier("reconnu malgre le mot de passe",
+             services.identifier(_u, "cle").get("type"), "jackett")
+    _diag = {}
+    verifier("aucune mesure inventee", widgets.mesurer("jackett", _u, "cle", _diag), None)
+    verifier("le motif est nomme",
+             bool([r for r in _diag.get("refus", []) if "mot de passe" in r]), True)
+finally:
+    _srv.shutdown()
+
 print()
 if ECHECS:
     print("RESUME : %d point(s) a corriger" % len(ECHECS))
