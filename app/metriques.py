@@ -45,6 +45,10 @@ METRIQUES = {
     "auteurs": ("AUTEURS", NOMBRE),
     "episodes": ("ÉPISODES", NOMBRE),
     "indexeurs": ("INDEXEURS", NOMBRE),
+    # demandes de media (Seerr et ses ancetres)
+    "en_attente": ("EN ATTENTE", NOMBRE),
+    "approuvees": ("APPROUVÉES", NOMBRE),
+    "disponibles": ("DISPONIBLES", NOMBRE),
     # reseau
     "requetes": ("REQUÊTES", NOMBRE),
     "bloquees": ("BLOQUÉES", NOMBRE),
@@ -52,6 +56,7 @@ METRIQUES = {
     "equipements": ("ÉQUIPEMENTS", NOMBRE),
     "bornes": ("BORNES WIFI", NOMBRE),
     # conteneurs et supervision
+    "erreurs": ("EN ERREUR", NOMBRE),
     "actifs": ("ACTIFS", NOMBRE),
     "arretes": ("ARRÊTÉS", NOMBRE),
     "en_ligne": ("EN LIGNE", NOMBRE),
@@ -89,6 +94,8 @@ SINGULIER = {
     "auteurs": "AUTEUR",
     "episodes": "ÉPISODE",
     "indexeurs": "INDEXEUR",
+    "approuvees": "APPROUVÉE",
+    "disponibles": "DISPONIBLE",
     "requetes": "REQUÊTE",
     "bloquees": "BLOQUÉE",
     "clients": "CLIENT",

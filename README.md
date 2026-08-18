@@ -171,9 +171,10 @@ fiche de son application (mode création → ✎ → **Tester**).
 | Domaine | Services | Ce qu'Atrium en tire |
 |---|---|---|
 | **Média** | Plex, Jellyfin, Tautulli | Lectures, spectateurs, transcodages, débit, bibliothèques |
-| **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs, débit |
+| **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Jackett, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs et indexeurs en erreur, débit |
+| **Demandes** | Seerr *(et ses ancêtres Overseerr, Jellyseerr)* | Demandes en attente, approuvées, disponibles |
 | **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
-| **Machines** | Unraid *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
+| **Machines** | Unraid, Glances *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
 | **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
 | **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |
 | **Outils** | Portainer, Uptime Kuma | Conteneurs actifs, services surveillés |

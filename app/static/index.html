@@ -2928,7 +2928,7 @@ const CATEGORIES = [
    Atrium sait ce qu'est l'application avant de la classer. */
 const CAT_PAR_TYPE = {
   plex: 'Média', jellyfin: 'Média', kodi: 'Média', navidrome: 'Média',
-  audiobookshelf: 'Média', tautulli: 'Média', seerr: 'Média',
+  audiobookshelf: 'Média', tautulli: 'Média', seerr: 'Média', jackett: 'Média',
   jellyseerr: 'Média', overseerr: 'Média',
   sonarr: 'Média', radarr: 'Média', lidarr: 'Média',
   readarr: 'Média', whisparr: 'Média', prowlarr: 'Média', bazarr: 'Média',
@@ -3030,6 +3030,7 @@ const NOMS_CONNUS = [
   ['bazarr', 'bazarr'], ['sabnzbd', 'sabnzbd'], ['qbittorrent', 'qbittorrent'],
   ['deluge', 'deluge'], ['transmission', 'transmission'], ['nzbget', 'nzbget'],
   ['jellyseerr', 'jellyseerr'], ['overseerr', 'overseerr'], ['seerr', 'seerr'],
+  ['jackett', 'jackett'],
   ['adguard', 'adguard'], ['pi-hole', 'pihole'], ['pihole', 'pihole'],
   ['nginx proxy manager', 'npm'], ['wg-easy', 'wgeasy'],
   ['portainer', 'portainer'], ['uptime kuma', 'uptimekuma'],
@@ -7371,7 +7372,11 @@ $('m-save').addEventListener('click', () => {
   if (kind === 'ha') {
     app.token = key;
     app.tempEntity = $('m-temp').value.trim();
-  } else if (kind) {
+  } else {
+    /* La clé est conservée même sans intégration reconnue : elle appartient à
+       l'utilisateur, pas à notre catalogue. La jeter en silence obligeait à la
+       ressaisir le jour où le service devient reconnu — et donnait à croire
+       qu'elle avait été enregistrée. */
     app.apiKey = key;
   }
   if (editIndex === null) apps.push(app);

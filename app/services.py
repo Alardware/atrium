@@ -502,6 +502,25 @@ def s_bazarr(base, cle):
     return None
 
 
+def s_jackett(base, cle):
+    """Jackett : la liste de ses indexeurs, qui n existe nulle part ailleurs.
+
+    Sans cle, l API repond 401 : c est deja la preuve qu on parle a un Jackett,
+    a condition que le refus vienne de son API et non d un serveur quelconque.
+    On verifie donc aussi la page de configuration, qui porte son nom.
+    """
+    code, corps, _ = _http(base + "/api/v2.0/indexers?configured=true",
+                           {"X-Api-Key": cle})
+    j = _json(corps)
+    if code == 200 and isinstance(j, list):
+        return "Jackett", None
+    if code in (401, 403):
+        code2, corps2, _ = _http(base + "/UI/Dashboard")
+        if code2 == 200 and b"jackett" in corps2.lower():
+            return "Jackett", None
+    return None
+
+
 def s_seerr(base, cle):
     """Seerr, et ses deux ancetres.
 
@@ -607,6 +626,7 @@ CATALOGUE = [
     ("tautulli", s_tautulli, "Clé API"),
     # Une seule signature pour Seerr et ses ancetres : c est la meme API.
     ("seerr", s_seerr, "Clé API"),
+    ("jackett", s_jackett, "Clé API"),
     # suite *arr
     ("sonarr", s_arr("Sonarr"), "Clé API"),
     ("radarr", s_arr("Radarr"), "Clé API"),
@@ -679,6 +699,7 @@ NOMS_CONNUS = (
     ("bazarr", "bazarr"), ("sabnzbd", "sabnzbd"), ("qbittorrent", "qbittorrent"),
     ("deluge", "deluge"), ("transmission", "transmission"), ("nzbget", "nzbget"),
     ("jellyseerr", "jellyseerr"), ("overseerr", "overseerr"), ("seerr", "seerr"),
+    ("jackett", "jackett"),
     ("adguard", "adguard"), ("pi-hole", "pihole"), ("pihole", "pihole"),
     ("nginx proxy manager", "npm"), ("wg-easy", "wgeasy"),
     ("portainer", "portainer"), ("uptime kuma", "uptimekuma"),

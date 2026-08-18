@@ -120,6 +120,46 @@ def _w_arr(nom_collection, ident):
     return widget
 
 
+def w_seerr(base, cle):
+    """Les demandes de media : ce qu on attend, ce qui a ete accorde.
+
+    Seerr, Jellyseerr et Overseerr partagent cette API. Le compteur donne
+    l etat de la file en un appel — c est ce qu on regarde en passant : y a-t-il
+    quelque chose a valider.
+    """
+    code, corps, _ = _http(base + "/api/v1/request/count", {"X-Api-Key": cle})
+    j = _json(corps)
+    if code != 200 or not isinstance(j, dict):
+        return None
+    stats = []
+    for ident, champ in (("en_attente", "pending"), ("approuvees", "approved"),
+                         ("disponibles", "available")):
+        v = j.get(champ)
+        if isinstance(v, (int, float)):
+            stats.append(M(ident, int(v)))
+    return stats or None
+
+
+def w_jackett(base, cle):
+    """Les indexeurs configures, et ceux qui repondent encore.
+
+    Jackett ne compte pas ses indexeurs : il les liste. On les compte donc
+    ici, et l on distingue ceux qu il declare en erreur — un indexeur casse
+    fait echouer les recherches sans rien dire.
+    """
+    code, corps, _ = _http(base + "/api/v2.0/indexers?configured=true",
+                           {"X-Api-Key": cle})
+    j = _json(corps)
+    if code != 200 or not isinstance(j, list):
+        return None
+    casses = sum(1 for i in j if isinstance(i, dict)
+                 and (i.get("last_error") or "").strip())
+    stats = [M("indexeurs", len(j))]
+    if casses:
+        stats.append(M("erreurs", casses))
+    return stats
+
+
 def w_prowlarr(base, cle):
     code, corps, _ = _http(base + "/api/v1/indexer", {"X-Api-Key": cle})
     j = _json(corps)
@@ -616,6 +656,10 @@ REGISTRE = {
     "unraid": w_unraid,
     "unifi": w_unifi,
     "glances": w_glances,
+    "seerr": w_seerr,
+    "jellyseerr": w_seerr,
+    "overseerr": w_seerr,
+    "jackett": w_jackett,
 }
 
 
@@ -646,6 +690,10 @@ CAPACITES = {
     "unraid": ["cpu", "ram", "disque", "temp", "uptime", "docker"],
     "unifi": ["clients", "equipements", "bornes", "cpu", "ram"],
     "glances": ["cpu", "ram", "disque", "temp", "uptime", "docker"],
+    "seerr": ["en_attente", "approuvees", "disponibles"],
+    "jellyseerr": ["en_attente", "approuvees", "disponibles"],
+    "overseerr": ["en_attente", "approuvees", "disponibles"],
+    "jackett": ["indexeurs", "erreurs"],
 }
 
 
