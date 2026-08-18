@@ -180,6 +180,11 @@ fiche de son application (mode création → ✎ → **Tester**).
 | **Outils** | Portainer, Uptime Kuma, Netdata, Syncthing | Conteneurs actifs, services surveillés, charge et alarmes, dossiers et appareils |
 | **Maison & vidéo** | Frigate | Caméras suivies, détections des dernières 24 h |
 | **Virtualisation** | Proxmox | CPU, mémoire, uptime, machines en marche |
+| **Bibliothèques** | Kodi, Navidrome, Audiobookshelf, Mylar3, Kapowarr | Lectures, titres, livres, séries suivies |
+| **Machines & NAS** | TrueNAS, OpenMediaVault, CasaOS, Proxmox | Grappes, remplissage, uptime, machines en marche |
+| **Domotique** | openHAB, Domoticz, ioBroker | Objets, équipements, appareils allumés |
+| **Réseau & accès** | Nginx Proxy Manager, Cosmos, wg-easy, Authentik, Vaultwarden | Hôtes servis, clients WireGuard, comptes |
+| **Développement** | Gitea, Grafana, Filebrowser | Dépôts, tableaux de bord, alertes |
 | **Toute autre app** | — | En ligne / hors ligne, temps de réponse |
 
 La machine qui héberge Atrium n'a pas sa place dans cette table : elle ne demande

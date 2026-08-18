@@ -340,6 +340,438 @@ def w_proxmox(base, cle):
     return stats or None
 
 
+# --- services restes longtemps muets ----------------------------------------
+#
+# Trois familles d authentification se partagent ce qui suit : la cle dans un
+# en-tete, la cle dans l adresse, et le couple « utilisateur:motdepasse » qu il
+# faut echanger contre un jeton. La derniere passe par _session_jeton, ecrit une
+# fois pour toutes.
+
+
+def _couple(cle):
+    """« utilisateur:motdepasse » -> (utilisateur, motdepasse)."""
+    cle = (cle or "").strip()
+    if ":" not in cle:
+        return "", cle
+    u, _, m = cle.partition(":")
+    return u.strip(), m
+
+
+def _poster(url, corps, entetes=None):
+    """Un POST JSON, et sa reponse decodee."""
+    tetes = {"Content-Type": "application/json"}
+    tetes.update(entetes or {})
+    code, brut, ent = _http(url, tetes, "POST", json.dumps(corps).encode())
+    return code, _json(brut), ent
+
+
+def w_kodi(base, cle):
+    """Lectures en cours, films et series de la mediatheque."""
+    def rpc(methode, params=None):
+        code, j, _ = _poster(base + "/jsonrpc",
+                             {"jsonrpc": "2.0", "id": 1, "method": methode,
+                              "params": params or {}},
+                             services.basic(cle, "kodi") if cle else None)
+        return j.get("result") if code == 200 and isinstance(j, dict) else None
+
+    joueurs = rpc("Player.GetActivePlayers")
+    if joueurs is None:
+        return None
+    stats = [M("lectures", len(joueurs) if isinstance(joueurs, list) else 0)]
+    for methode, ident in (("VideoLibrary.GetMovies", "films"),
+                           ("VideoLibrary.GetTVShows", "series")):
+        r = rpc(methode, {"limits": {"start": 0, "end": 1}})
+        total = _chemin(r or {}, "limits", "total")
+        if isinstance(total, int):
+            stats.append(M(ident, total))
+    return stats
+
+
+def w_navidrome(base, cle):
+    """Titres de la bibliotheque, par l API Subsonic.
+
+    La cle s ecrit « utilisateur:motdepasse » : Subsonic n a pas de jeton, il
+    signe chaque appel avec le mot de passe.
+    """
+    utilisateur, motdepasse = _couple(cle)
+    if not utilisateur or not motdepasse:
+        return None
+    url = (base + "/rest/getScanStatus?u=%s&p=%s&v=1.16.1&c=atrium&f=json"
+           % (urllib.parse.quote(utilisateur), urllib.parse.quote(motdepasse)))
+    code, corps, _ = _http(url)
+    j = _json(corps)
+    compte = _chemin(j or {}, "subsonic-response", "scanStatus", "count")
+    if code != 200 or not isinstance(compte, (int, float)):
+        return None
+    return [M("titres", int(compte))]
+
+
+def w_audiobookshelf(base, cle):
+    """Bibliotheques declarees et livres qu elles contiennent."""
+    if not cle:
+        return None
+    entetes = {"Authorization": "Bearer " + cle}
+    code, corps, _ = _http(base + "/api/libraries", entetes)
+    j = _json(corps)
+    biblios = (j or {}).get("libraries") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(biblios, list):
+        return None
+    stats = [M("bibliotheques", len(biblios))]
+    total = 0
+    lus = False
+    for b in biblios[:6]:      # au-dela, le compte coute plus qu il ne dit
+        ident = (b or {}).get("id")
+        if not ident:
+            continue
+        code, corps, _ = _http(base + "/api/libraries/%s/items?limit=1" % ident, entetes)
+        j = _json(corps)
+        n = (j or {}).get("total") if isinstance(j, dict) else None
+        if isinstance(n, int):
+            total += n
+            lus = True
+    if lus:
+        stats.append(M("livres", total))
+    return stats
+
+
+def w_mylar(base, cle):
+    """Series suivies par Mylar."""
+    code, corps, _ = _http(base + "/api?apikey=%s&cmd=getIndex"
+                           % urllib.parse.quote(cle or ""))
+    j = _json(corps)
+    liste = (j or {}).get("data") if isinstance(j, dict) else j
+    if code != 200 or not isinstance(liste, list):
+        return None
+    return [M("series", len(liste))]
+
+
+def w_kapowarr(base, cle):
+    """Volumes suivis par Kapowarr."""
+    code, corps, _ = _http(base + "/api/volumes?api_key=%s"
+                           % urllib.parse.quote(cle or ""))
+    j = _json(corps)
+    liste = (j or {}).get("result") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(liste, list):
+        return None
+    return [M("series", len(liste))]
+
+
+def w_truenas(base, cle):
+    """Grappes, remplissage et duree de marche."""
+    if not cle:
+        return None
+    entetes = {"Authorization": "Bearer " + cle}
+    stats = []
+    code, corps, _ = _http(base + "/api/v2.0/pool", entetes)
+    grappes = _json(corps)
+    if code == 200 and isinstance(grappes, list) and grappes:
+        stats.append(M("grappes", len(grappes)))
+        pleins = []
+        for g in grappes:
+            libre = _chemin(g or {}, "free")
+            taille = _chemin(g or {}, "size")
+            if isinstance(libre, (int, float)) and isinstance(taille, (int, float)) and taille:
+                pleins.append((taille - libre) * 100.0 / taille)
+        if pleins:
+            stats.append(M("disque", max(pleins)))
+    code, corps, _ = _http(base + "/api/v2.0/system/info", entetes)
+    j = _json(corps)
+    marche = (j or {}).get("uptime_seconds") if isinstance(j, dict) else None
+    if isinstance(marche, (int, float)) and marche > 0:
+        jours = int(marche // 86400)
+        stats.append(M("uptime", marche,
+                       ("%d j" % jours) if jours else ("%d h" % int(marche // 3600))))
+    return stats or None
+
+
+def w_openhab(base, cle):
+    """Objets et equipements declares dans openHAB."""
+    entetes = {"Authorization": "Bearer " + cle} if cle else None
+    stats = []
+    for chemin, ident in (("/rest/items?fields=name", "objets"),
+                          ("/rest/things?summary=true", "equipements")):
+        code, corps, _ = _http(base + chemin, entetes)
+        j = _json(corps)
+        if code == 200 and isinstance(j, list):
+            stats.append(M(ident, len(j)))
+    return stats or None
+
+
+def w_domoticz(base, cle):
+    """Appareils utilises, et ceux qui sont allumes."""
+    entetes = services.basic(cle, "admin") if cle else None
+    code, corps, _ = _http(base + "/json.htm?type=devices&used=true&filter=all",
+                           entetes)
+    j = _json(corps)
+    liste = (j or {}).get("result") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(liste, list):
+        return None
+    stats = [M("appareils", len(liste))]
+    allumes = sum(1 for d in liste if isinstance(d, dict)
+                  and str(d.get("Status", "")).lower().startswith("on"))
+    if allumes:
+        stats.append(M("actifs", allumes))
+    return stats
+
+
+def w_iobroker(base, cle):
+    """Instances d adaptateurs declarees, par l adaptateur « simple-api »."""
+    code, corps, _ = _http(base + "/objects?pattern=system.adapter.*&type=instance"
+                           + ("&user=%s" % urllib.parse.quote(cle) if cle else ""))
+    j = _json(corps)
+    if code != 200 or not isinstance(j, dict) or not j:
+        return None
+    return [M("actifs", len(j))]
+
+
+def w_grafana(base, cle):
+    """Tableaux de bord publies et alertes en cours."""
+    if not cle:
+        return None
+    entetes = {"Authorization": "Bearer " + cle}
+    stats = []
+    code, corps, _ = _http(base + "/api/search?type=dash-db&limit=1000", entetes)
+    j = _json(corps)
+    if code != 200 or not isinstance(j, list):
+        return None
+    stats.append(M("tableaux", len(j)))
+    code, corps, _ = _http(base + "/api/alertmanager/grafana/api/v2/alerts", entetes)
+    j = _json(corps)
+    if code == 200 and isinstance(j, list):
+        stats.append(M("alarmes", len(j)))
+    return stats
+
+
+def w_gitea(base, cle):
+    """Depots visibles par cette cle.
+
+    Le compte total voyage dans un en-tete : le corps ne rend qu une page.
+    """
+    if not cle:
+        return None
+    code, corps, entetes = _http(base + "/api/v1/repos/search?limit=1",
+                                 {"Authorization": "token " + cle})
+    j = _json(corps)
+    if code != 200 or not isinstance(j, dict):
+        return None
+    total = entetes.get("X-Total-Count") or entetes.get("x-total-count")
+    try:
+        total = int(total)
+    except (TypeError, ValueError):
+        donnees = j.get("data")
+        total = len(donnees) if isinstance(donnees, list) else None
+    if total is None:
+        return None
+    return [M("depots", total)]
+
+
+def w_authentik(base, cle):
+    """Comptes et evenements, tels que l API les denombre."""
+    if not cle:
+        return None
+    entetes = {"Authorization": "Bearer " + cle}
+    stats = []
+    for chemin, ident in (("/api/v3/core/users/?page_size=1", "utilisateurs"),
+                          ("/api/v3/events/events/?page_size=1", "evenements")):
+        code, corps, _ = _http(base + chemin, entetes)
+        j = _json(corps)
+        compte = _chemin(j or {}, "pagination", "count")
+        if code == 200 and isinstance(compte, int):
+            stats.append(M(ident, compte))
+    return stats or None
+
+
+def _session_jeton(base, chemin, corps, ou):
+    """Echange un couple contre un jeton, et le rend.
+
+    « ou » nomme le champ ou le jeton se trouve dans la reponse — chaque
+    service a le sien, et aucun ne l appelle pareil.
+    """
+    code, j, _ = _poster(base + chemin, corps)
+    if code not in (200, 201) or not isinstance(j, dict):
+        return None
+    for champ in ou:
+        v = _chemin(j, *champ) if isinstance(champ, tuple) else j.get(champ)
+        if isinstance(v, str) and v:
+            return v
+    return None
+
+
+def w_npm(base, cle):
+    """Hotes servis par Nginx Proxy Manager, et ceux qui sont eteints.
+
+    La cle s ecrit « courriel:motdepasse » : ce service n a pas de cle d API,
+    il delivre un jeton contre les identifiants.
+    """
+    utilisateur, motdepasse = _couple(cle)
+    if not utilisateur or not motdepasse:
+        return None
+    jeton = _session_jeton(base, "/api/tokens",
+                           {"identity": utilisateur, "secret": motdepasse},
+                           ["token"])
+    if not jeton:
+        return None
+    code, corps, _ = _http(base + "/api/nginx/proxy-hosts",
+                           {"Authorization": "Bearer " + jeton})
+    j = _json(corps)
+    if code != 200 or not isinstance(j, list):
+        return None
+    stats = [M("hotes", len(j))]
+    eteints = sum(1 for h in j if isinstance(h, dict) and not h.get("enabled", True))
+    if eteints:
+        stats.append(M("arretes", eteints))
+    return stats
+
+
+def w_wgeasy(base, cle):
+    """Clients WireGuard declares, et ceux qui ont parle recemment.
+
+    Selon la version, l interface demande un mot de passe ou rien du tout : on
+    tente la session, puis la lecture directe.
+    """
+    entetes = {}
+    if cle:
+        code, j, ent = _poster(base + "/api/session", {"password": cle})
+        biscuit = ent.get("Set-Cookie") if code in (200, 204) else None
+        if biscuit:
+            entetes["Cookie"] = biscuit.split(";")[0]
+    code, corps, _ = _http(base + "/api/wireguard/client", entetes or None)
+    j = _json(corps)
+    if code != 200 or not isinstance(j, list):
+        return None
+    stats = [M("clients", len(j))]
+    recents = 0
+    for c in j:
+        vu = (c or {}).get("latestHandshakeAt") if isinstance(c, dict) else None
+        if isinstance(vu, str) and vu:
+            recents += 1
+    if recents:
+        stats.append(M("actifs", recents))
+    return stats
+
+
+def w_filebrowser(base, cle):
+    """Elements a la racine du navigateur de fichiers.
+
+    La cle s ecrit « utilisateur:motdepasse » ; Filebrowser rend un jeton en
+    texte brut, que l on repasse en en-tete.
+    """
+    utilisateur, motdepasse = _couple(cle)
+    if not utilisateur or not motdepasse:
+        return None
+    code, brut, _ = _http(base + "/api/login", {"Content-Type": "application/json"},
+                          "POST", json.dumps({"username": utilisateur,
+                                              "password": motdepasse,
+                                              "recaptcha": ""}).encode())
+    jeton = brut.decode("utf-8", "replace").strip() if code == 200 else ""
+    if not jeton or len(jeton) > 4096 or "<" in jeton:
+        return None
+    code, corps, _ = _http(base + "/api/resources/?auth=" + urllib.parse.quote(jeton),
+                           {"X-Auth": jeton})
+    j = _json(corps)
+    items = (j or {}).get("items") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(items, list):
+        return None
+    return [M("fichiers", len(items))]
+
+
+def w_omv(base, cle):
+    """Systemes de fichiers montes et leur remplissage.
+
+    OpenMediaVault n a pas de cle d API : on ouvre une session avec
+    « utilisateur:motdepasse », puis on interroge son RPC.
+    """
+    utilisateur, motdepasse = _couple(cle)
+    if not utilisateur or not motdepasse:
+        return None
+    code, j, ent = _poster(base + "/rpc.php",
+                           {"service": "Session", "method": "login",
+                            "params": {"username": utilisateur, "password": motdepasse}})
+    if code != 200 or not isinstance(j, dict) or _chemin(j, "response", "authenticated") is not True:
+        return None
+    biscuit = (ent.get("Set-Cookie") or "").split(";")[0]
+    entetes = {"Cookie": biscuit} if biscuit else None
+    code, j, _ = _poster(base + "/rpc.php",
+                         {"service": "FileSystemMgmt",
+                          "method": "enumerateMountedFilesystems",
+                          "params": {"includeroot": False}}, entetes)
+    liste = (j or {}).get("response") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(liste, list) or not liste:
+        return None
+    stats = [M("grappes", len(liste))]
+    pleins = []
+    for f in liste:
+        pc = (f or {}).get("percentage") if isinstance(f, dict) else None
+        try:
+            pleins.append(float(pc))
+        except (TypeError, ValueError):
+            continue
+    if pleins:
+        stats.append(M("disque", max(pleins)))
+    return stats
+
+
+def w_casaos(base, cle):
+    """Charge de la machine, telle que CasaOS la publie."""
+    entetes = {"Authorization": cle} if cle else None
+    for chemin in ("/v1/sys/hardware/usage", "/v1/sys/utilization"):
+        code, corps, _ = _http(base + chemin, entetes)
+        j = _json(corps)
+        donnees = (j or {}).get("data") if isinstance(j, dict) else None
+        if code != 200 or not isinstance(donnees, dict):
+            continue
+        stats = []
+        cpu = _chemin(donnees, "cpu", "percent")
+        if isinstance(cpu, (int, float)):
+            stats.append(M("cpu", float(cpu)))
+        mem = _chemin(donnees, "mem", "usedPercent")
+        if isinstance(mem, (int, float)):
+            stats.append(M("ram", float(mem)))
+        if stats:
+            return stats
+    return None
+
+
+def w_cosmos(base, cle):
+    """Routes servies par Cosmos, et celles qui sont eteintes."""
+    entetes = {"Authorization": "Bearer " + cle} if cle else None
+    code, corps, _ = _http(base + "/cosmos/api/config", entetes)
+    j = _json(corps)
+    routes = _chemin(j or {}, "data", "HTTPConfig", "ProxyConfig", "Routes")
+    if code != 200 or not isinstance(routes, list):
+        return None
+    stats = [M("hotes", len(routes))]
+    eteintes = sum(1 for r in routes if isinstance(r, dict) and r.get("Disabled"))
+    if eteintes:
+        stats.append(M("arretes", eteintes))
+    return stats
+
+
+def w_vaultwarden(base, cle):
+    """Comptes du coffre, par la console d administration.
+
+    La cle attendue est le jeton d administration (ADMIN_TOKEN) : Vaultwarden
+    n expose aucun compte sans lui.
+    """
+    if not cle:
+        return None
+    code, _, ent = _http(base + "/admin", {"Content-Type": "application/x-www-form-urlencoded"},
+                         "POST", urllib.parse.urlencode({"token": cle}).encode())
+    biscuit = (ent.get("Set-Cookie") or "").split(";")[0]
+    if code not in (200, 302) or not biscuit:
+        return None
+    code, corps, _ = _http(base + "/admin/users", {"Cookie": biscuit,
+                                                   "Accept": "application/json"})
+    j = _json(corps)
+    if code != 200 or not isinstance(j, list):
+        return None
+    stats = [M("utilisateurs", len(j))]
+    actifs = sum(1 for u in j if isinstance(u, dict) and not u.get("userEnabled") is False)
+    if actifs and actifs != len(j):
+        stats.append(M("actifs", actifs))
+    return stats
+
+
 def w_prowlarr(base, cle):
     code, corps, _ = _http(base + "/api/v1/indexer", {"X-Api-Key": cle})
     j = _json(corps)
@@ -844,6 +1276,25 @@ REGISTRE = {
     "netdata": w_netdata,
     "syncthing": w_syncthing,
     "proxmox": w_proxmox,
+    "kodi": w_kodi,
+    "navidrome": w_navidrome,
+    "audiobookshelf": w_audiobookshelf,
+    "mylar": w_mylar,
+    "kapowarr": w_kapowarr,
+    "truenas": w_truenas,
+    "omv": w_omv,
+    "casaos": w_casaos,
+    "cosmos": w_cosmos,
+    "openhab": w_openhab,
+    "domoticz": w_domoticz,
+    "iobroker": w_iobroker,
+    "npm": w_npm,
+    "wgeasy": w_wgeasy,
+    "filebrowser": w_filebrowser,
+    "grafana": w_grafana,
+    "gitea": w_gitea,
+    "vaultwarden": w_vaultwarden,
+    "authentik": w_authentik,
 }
 
 
@@ -882,6 +1333,25 @@ CAPACITES = {
     "netdata": ["cpu", "ram", "alarmes"],
     "syncthing": ["dossiers", "appareils", "uptime"],
     "proxmox": ["cpu", "ram", "uptime", "machines"],
+    "kodi": ["lectures", "films", "series"],
+    "navidrome": ["titres"],
+    "audiobookshelf": ["bibliotheques", "livres"],
+    "mylar": ["series"],
+    "kapowarr": ["series"],
+    "truenas": ["grappes", "disque", "uptime"],
+    "omv": ["grappes", "disque"],
+    "casaos": ["cpu", "ram"],
+    "cosmos": ["hotes", "arretes"],
+    "openhab": ["objets", "equipements"],
+    "domoticz": ["appareils", "actifs"],
+    "iobroker": ["actifs"],
+    "npm": ["hotes", "arretes"],
+    "wgeasy": ["clients", "actifs"],
+    "filebrowser": ["fichiers"],
+    "grafana": ["tableaux", "alarmes"],
+    "gitea": ["depots"],
+    "vaultwarden": ["utilisateurs"],
+    "authentik": ["utilisateurs", "evenements"],
 }
 
 

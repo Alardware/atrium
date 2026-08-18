@@ -179,3 +179,6 @@ jobs:
       # API — travers compris.
       - name: Lecteurs d'intégration
         run: python outils/test_lecteurs.py
+
+      - name: Lecteurs des intégrations branchées en dernier
+        run: python outils/test_lecteurs_muets.py
