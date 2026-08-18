@@ -43,7 +43,13 @@ import supervision
 import systeme
 import widgets
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
+
+# Empreinte de la construction, posee par la chaine qui publie l image : le
+# commit exact et le jour. Vides quand Atrium tourne depuis les sources — on ne
+# fabrique pas une empreinte qu on n a pas.
+BUILD = os.environ.get("ATRIUM_BUILD", "").strip()
+BUILD_DATE = os.environ.get("ATRIUM_BUILD_DATE", "").strip()
 PORT = int(os.environ.get("ATRIUM_PORT", "8420"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATIC = os.path.join(HERE, "static")
@@ -1157,6 +1163,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         avec_url = sum(1 for a in apps if (a.get("url") or "").strip())
         self.reply(200, json.dumps({
             "version": VERSION,
+            # De quoi savoir si le conteneur qui tourne est celui d hier ou
+            # celui d aujourd hui : la version seule ne le dit pas.
+            "build": BUILD,
+            "build_date": BUILD_DATE,
             "config": {"ok": inscriptible, "chemin": CONFIG_FILE},
             "mesures": {"ok": _releve["hote"].get("disponible", False)},
             "docker": {"ok": conteneurs.disponible()},

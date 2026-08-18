@@ -20,6 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Une image étiquetée d'après le tag mais qui s'annonce autrement dans son
+      # propre écran ne se rattrape pas : on vérifie avant de construire.
+      - name: Version cohérente
+        run: python3 outils/verifier_version.py
+
       - name: Configurer QEMU (compilation multi-architecture)
         uses: docker/setup-qemu-action@v3
 
@@ -32,6 +37,14 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # L'image porte son commit : l'interface l'affiche, et l'on sait alors si
+      # le conteneur qui tourne est celui du jour.
+      - name: Empreinte de la construction
+        id: empreinte
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: Métadonnées de l'image
         id: meta
@@ -53,5 +66,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ATRIUM_BUILD=${{ steps.empreinte.outputs.sha }}
+            ATRIUM_BUILD_DATE=${{ steps.empreinte.outputs.date }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

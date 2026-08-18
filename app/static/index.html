@@ -8575,7 +8575,11 @@ async function renderAPropos() {
     tz.appendChild(c);
   };
   if (d) {
-    carreau(t('about.t.version'), d.version, t('about.t.version.d'));
+    /* La version dit ce qu'on a voulu publier ; l'empreinte dit ce qui tourne
+       vraiment. Sans elle, deux conteneurs a un mois d'ecart s'annoncent pareil. */
+    carreau(t('about.t.version'), d.version,
+            d.build ? d.build + (d.build_date ? ' · ' + d.build_date : '')
+                    : t('about.t.version.src'));
     carreau(t('about.uptime'), inst.demarre ? duree(Date.now() / 1000 - inst.demarre) : '—',
             t('about.uptime.d'));
     /* La mémoire n'est lisible que sous Linux : ailleurs, on le dit. */

@@ -32,6 +32,14 @@ RUN python -m pip uninstall -y pip setuptools 2>/dev/null || true;     rm -rf /u
 VOLUME ["/config"]
 EXPOSE 8420
 
+# Le commit et le jour de la construction, poses par la chaine de publication.
+# Places en fin de fichier : ils changent a chaque commit, et invalideraient
+# toutes les couches precedentes s ils etaient plus haut.
+ARG ATRIUM_BUILD=""
+ARG ATRIUM_BUILD_DATE=""
+ENV ATRIUM_BUILD=$ATRIUM_BUILD \
+    ATRIUM_BUILD_DATE=$ATRIUM_BUILD_DATE
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8420/api/health',timeout=3).status==200 else 1)"
 

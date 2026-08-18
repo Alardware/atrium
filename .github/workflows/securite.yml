@@ -170,6 +170,11 @@ jobs:
       - name: Traductions lisibles par le navigateur
         run: node --check app/static/i18n.js
 
+      # Le serveur et le module Home Assistant annoncent la même version, sans
+      # quoi l'un des deux ment sur ce qu'il est.
+      - name: Version cohérente
+        run: python outils/verifier_version.py
+
       # Les logos viennent d'un catalogue extérieur, qui renomme parfois ses
       # dessins. Le contrôle s'abstient si le catalogue est injoignable.
       - name: Chaque nom trouve son logo
