@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install bandit[sarif]
@@ -97,6 +97,20 @@ jobs:
       # Trivy est installé depuis sa version publiée plutôt que par une action :
       # une archive de moins à demander au CDN des actions, qui a déjà répondu
       # « 429 Too Many Requests » deux fois, et un téléchargement qui réessaie.
+      # Changer d'image de base ne se voit pas dans une analyse statique : elle
+      # dirait « aucune vulnérabilité » d'un conteneur qui ne démarre plus. On
+      # le lance donc, et on attend qu'il réponde de lui-même.
+      - name: L'image démarre et répond
+        run: |
+          docker run -d --name atrium-essai -p 8420:8420 atrium:analyse
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8420/api/health; then echo; break; fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8420/api/health > /dev/null
+          docker exec atrium-essai python -c "import sys; print('python de l image :', sys.version)"
+          docker rm -f atrium-essai
+
       - name: Installer Trivy
         run: |
           version=0.74.0
@@ -132,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
