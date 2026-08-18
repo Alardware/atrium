@@ -82,9 +82,9 @@ Quatre familles d'étiquettes, selon ce que l'on veut suivre :
 | Étiquette | Ce qu'elle suit |
 |---|---|
 | `latest` | la dernière poussée sur `main` |
-| `1.1.1` | cette version exacte, figée |
-| `1.1` | les correctifs de cette version mineure |
-| `sha-2476714` | un commit précis |
+| `1.2.0` | cette version exacte, figée |
+| `1.2` | les correctifs de cette version mineure |
+| `sha-350d2eb` | un commit précis |
 
 Réglages → À propos affiche la version **et l'empreinte du commit** dont l'image
 est issue : de quoi savoir si le conteneur qui tourne est bien celui qu'on croit.
