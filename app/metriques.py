@@ -55,6 +55,14 @@ METRIQUES = {
     "clients": ("CLIENTS", NOMBRE),
     "equipements": ("ÉQUIPEMENTS", NOMBRE),
     "bornes": ("BORNES WIFI", NOMBRE),
+    # video-surveillance
+    "cameras": ("CAMÉRAS", NOMBRE),
+    "detections": ("DÉTECTIONS", NOMBRE),
+    # synchronisation et virtualisation
+    "dossiers": ("DOSSIERS", NOMBRE),
+    "appareils": ("APPAREILS", NOMBRE),
+    "machines": ("MACHINES", NOMBRE),
+    "alarmes": ("ALARMES", NOMBRE),
     # conteneurs et supervision
     "erreurs": ("EN ERREUR", NOMBRE),
     "actifs": ("ACTIFS", NOMBRE),
@@ -94,6 +102,12 @@ SINGULIER = {
     "auteurs": "AUTEUR",
     "episodes": "ÉPISODE",
     "indexeurs": "INDEXEUR",
+    "cameras": "CAMÉRA",
+    "detections": "DÉTECTION",
+    "dossiers": "DOSSIER",
+    "appareils": "APPAREIL",
+    "machines": "MACHINE",
+    "alarmes": "ALARME",
     "approuvees": "APPROUVÉE",
     "disponibles": "DISPONIBLE",
     "requetes": "REQUÊTE",

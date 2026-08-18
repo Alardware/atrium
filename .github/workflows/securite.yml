@@ -174,3 +174,8 @@ jobs:
       # dessins. Le contrôle s'abstient si le catalogue est injoignable.
       - name: Chaque nom trouve son logo
         run: python outils/verifier_icones.py
+
+      # Les lecteurs d'intégration, face à des serveurs qui imitent les vraies
+      # API — travers compris.
+      - name: Lecteurs d'intégration
+        run: python outils/test_lecteurs.py

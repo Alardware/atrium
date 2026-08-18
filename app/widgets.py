@@ -11,6 +11,7 @@ avant meme la premiere mesure.
 import inspect
 import json
 import re
+import time
 import urllib.parse
 
 import services
@@ -158,6 +159,156 @@ def w_jackett(base, cle):
     if casses:
         stats.append(M("erreurs", casses))
     return stats
+
+
+# --- video-surveillance, supervision, synchronisation, virtualisation --------
+
+def w_frigate(base, cle):
+    """Les cameras suivies et ce qu elles ont vu depuis hier.
+
+    « /api/stats » donne l etat du service ; les evenements se comptent a part,
+    sur vingt-quatre heures — c est la question qu on se pose en passant : est-ce
+    que quelque chose a bouge cette nuit.
+    """
+    entetes = {"X-Api-Key": cle} if cle else None
+    code, corps, _ = _http(base + "/api/stats", entetes)
+    j = _json(corps)
+    if code != 200 or not isinstance(j, dict):
+        return None
+    stats = []
+    cameras = j.get("cameras")
+    if isinstance(cameras, dict):
+        stats.append(M("cameras", len(cameras)))
+    marche = _chemin(j, "service", "uptime")
+    if isinstance(marche, (int, float)) and marche > 0:
+        jours = int(marche // 86400)
+        stats.append(M("uptime", marche,
+                       ("%d j" % jours) if jours else ("%d h" % int(marche // 3600))))
+
+    depuis = int(time.time()) - 86400
+    code, corps, _ = _http(base + "/api/events?limit=500&after=%d" % depuis, entetes)
+    evs = _json(corps)
+    if code == 200 and isinstance(evs, list):
+        stats.append(M("detections", len(evs)))
+    return stats or None
+
+
+def _netdata_serie(base, chart, cle):
+    """La derniere valeur d un graphe, dimension par dimension."""
+    code, corps, _ = _http(
+        base + "/api/v1/data?chart=%s&after=-1&points=1&format=json" % chart,
+        {"X-Api-Key": cle} if cle else None)
+    j = _json(corps)
+    if code != 200 or not isinstance(j, dict):
+        return {}
+    etiquettes = j.get("labels") or []
+    lignes = j.get("data") or []
+    if not etiquettes or not lignes or not isinstance(lignes[0], list):
+        return {}
+    # La premiere colonne est l horodatage ; les suivantes portent leur nom.
+    return {etiquettes[i]: lignes[0][i]
+            for i in range(1, min(len(etiquettes), len(lignes[0])))
+            if isinstance(lignes[0][i], (int, float))}
+
+
+def w_netdata(base, cle):
+    """Charge de la machine et alarmes en cours, telles que Netdata les voit."""
+    stats = []
+    cpu = _netdata_serie(base, "system.cpu", cle)
+    if cpu:
+        # Netdata detaille l occupation par mode ; l inverse du repos est ce
+        # qu on lit ailleurs sous le nom de « CPU ».
+        repos = cpu.get("idle")
+        if isinstance(repos, (int, float)):
+            stats.append(M("cpu", max(0.0, 100.0 - float(repos))))
+        else:
+            stats.append(M("cpu", float(sum(cpu.values()))))
+    ram = _netdata_serie(base, "system.ram", cle)
+    total = sum(v for v in ram.values() if isinstance(v, (int, float)))
+    if total > 0 and "used" in ram:
+        stats.append(M("ram", float(ram["used"]) * 100 / total))
+
+    code, corps, _ = _http(base + "/api/v1/info", {"X-Api-Key": cle} if cle else None)
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("alarms"), dict):
+        al = j["alarms"]
+        stats.append(M("alarmes", sum(int(al.get(k) or 0)
+                                      for k in ("warning", "critical"))))
+    return stats or None
+
+
+def w_syncthing(base, cle):
+    """Dossiers partages, appareils joignables, et depuis quand ca tourne."""
+    if not cle:
+        return None
+    entetes = {"X-API-Key": cle}
+    stats = []
+    code, corps, _ = _http(base + "/rest/config/folders", entetes)
+    j = _json(corps)
+    if code == 200 and isinstance(j, list):
+        stats.append(M("dossiers", len(j)))
+
+    code, corps, _ = _http(base + "/rest/system/connections", entetes)
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("connections"), dict):
+        liens = j["connections"]
+        joints = sum(1 for c in liens.values()
+                     if isinstance(c, dict) and c.get("connected"))
+        # « 2 / 3 » plutot que « 2 » : un appareil absent est ce qu on cherche.
+        stats.append(M("appareils", joints, "%d / %d" % (joints, len(liens))))
+
+    code, corps, _ = _http(base + "/rest/system/status", entetes)
+    j = _json(corps)
+    if code == 200 and isinstance(j, dict) and isinstance(j.get("uptime"), (int, float)):
+        marche = j["uptime"]
+        jours = int(marche // 86400)
+        stats.append(M("uptime", marche,
+                       ("%d j" % jours) if jours else ("%d h" % int(marche // 3600))))
+    return stats or None
+
+
+def w_proxmox(base, cle):
+    """Charge du noeud et machines en marche.
+
+    La cle attendue est un jeton d API complet — « utilisateur@pam!nom=secret ».
+    Proxmox le veut prefixe : on ajoute le prefixe si l utilisateur ne l a pas
+    recopie, ce que personne ne fait de memoire.
+    """
+    if not cle:
+        return None
+    jeton = cle if cle.lower().startswith("pveapitoken=") else ("PVEAPIToken=" + cle)
+    entetes = {"Authorization": jeton}
+    code, corps, _ = _http(base + "/api2/json/nodes", entetes)
+    j = _json(corps)
+    noeuds = j.get("data") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(noeuds, list) or not noeuds:
+        return None
+    stats = []
+    # Un serveur Proxmox n a le plus souvent qu un noeud ; s il en a plusieurs,
+    # on montre le plus charge — c est celui qui posera probleme.
+    charges = [n.get("cpu") for n in noeuds if isinstance(n.get("cpu"), (int, float))]
+    if charges:
+        stats.append(M("cpu", max(charges) * 100))
+    memoires = [(n["mem"], n["maxmem"]) for n in noeuds
+                if isinstance(n.get("mem"), (int, float))
+                and isinstance(n.get("maxmem"), (int, float)) and n.get("maxmem")]
+    if memoires:
+        stats.append(M("ram", max(m * 100.0 / t for m, t in memoires)))
+    marches = [n.get("uptime") for n in noeuds if isinstance(n.get("uptime"), (int, float))]
+    if marches:
+        marche = max(marches)
+        jours = int(marche // 86400)
+        stats.append(M("uptime", marche,
+                       ("%d j" % jours) if jours else ("%d h" % int(marche // 3600))))
+
+    code, corps, _ = _http(base + "/api2/json/cluster/resources?type=vm", entetes)
+    j = _json(corps)
+    vms = j.get("data") if isinstance(j, dict) else None
+    if code == 200 and isinstance(vms, list) and vms:
+        actives = sum(1 for v in vms
+                      if str((v or {}).get("status", "")).lower() == "running")
+        stats.append(M("machines", actives, "%d / %d" % (actives, len(vms))))
+    return stats or None
 
 
 def w_prowlarr(base, cle):
@@ -660,6 +811,10 @@ REGISTRE = {
     "jellyseerr": w_seerr,
     "overseerr": w_seerr,
     "jackett": w_jackett,
+    "frigate": w_frigate,
+    "netdata": w_netdata,
+    "syncthing": w_syncthing,
+    "proxmox": w_proxmox,
 }
 
 
@@ -694,6 +849,10 @@ CAPACITES = {
     "jellyseerr": ["en_attente", "approuvees", "disponibles"],
     "overseerr": ["en_attente", "approuvees", "disponibles"],
     "jackett": ["indexeurs", "erreurs"],
+    "frigate": ["cameras", "detections", "uptime"],
+    "netdata": ["cpu", "ram", "alarmes"],
+    "syncthing": ["dossiers", "appareils", "uptime"],
+    "proxmox": ["cpu", "ram", "uptime", "machines"],
 }
 
 

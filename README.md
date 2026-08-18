@@ -177,7 +177,9 @@ fiche de son application (mode création → ✎ → **Tester**).
 | **Machines** | Unraid, Glances *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
 | **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
 | **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |
-| **Outils** | Portainer, Uptime Kuma | Conteneurs actifs, services surveillés |
+| **Outils** | Portainer, Uptime Kuma, Netdata, Syncthing | Conteneurs actifs, services surveillés, charge et alarmes, dossiers et appareils |
+| **Maison & vidéo** | Frigate | Caméras suivies, détections des dernières 24 h |
+| **Virtualisation** | Proxmox | CPU, mémoire, uptime, machines en marche |
 | **Toute autre app** | — | En ligne / hors ligne, temps de réponse |
 
 La machine qui héberge Atrium n'a pas sa place dans cette table : elle ne demande
