@@ -1387,6 +1387,7 @@ def profils():
         sortie[type_service] = {
             "donnees": [{"id": i, "lab": libelle(i)} for i in ids],
             "cle": bool(fn) and _demande_une_cle(fn),
+            "format": services.format_cle(type_service),
         }
     return sortie
 

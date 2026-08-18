@@ -1944,6 +1944,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
         <div class="mblock-b">
           <div class="field">
             <label for="m-key" id="m-key-label" data-i18n="f.key">Clé API ou jeton</label>
+            <span class="fhint" id="m-key-aide" hidden></span>
             <span class="pwd-wrap">
               <input id="m-key" type="password" data-i18n-ph="f.key.ph" placeholder="facultatif" autocomplete="off">
               <button class="pwd-eye" id="m-key-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher le mot de passe">👁</button>
@@ -7151,10 +7152,28 @@ const KIND_UI = {
 };
 /* Les champs propres à une intégration n'apparaissent qu'une fois le service
    reconnu. Rien à choisir : Atrium identifie le service depuis son URL. */
+/* Ce que le champ attend, dit sous le champ. « Clé API » ne dit pas qu'il
+   faut écrire « utilisateur:motdepasse », et personne ne le devine. */
+function aideCle(kind) {
+  const aide = $('m-key-aide');
+  const champ = $('m-key');
+  const forme = kind ? (((CAPA || {})[kind] || {}).format || 'cle') : '';
+  const propre = kind && t('f.cle.' + kind) !== 'f.cle.' + kind ? t('f.cle.' + kind) : '';
+  const general = forme && t('f.forme.' + forme) !== 'f.forme.' + forme
+    ? t('f.forme.' + forme) : '';
+  const texte = [general, propre].filter(Boolean).join(' ');
+  aide.hidden = !texte;
+  aide.textContent = texte;
+  /* Le format attendu se lit aussi dans le champ lui-même, avant la saisie. */
+  champ.placeholder = forme === 'couple' ? 'utilisateur:motdepasse'
+    : forme === 'aucun' ? t('f.key.none') : t('f.key.ph');
+}
+
 function syncKind() {
   const kind = $('m-type').value;
   $('f-temp').hidden = kind !== 'ha';
   $('f-sysmon').hidden = kind !== 'ha';
+  aideCle(kind);
 }
 
 function majTest(etat, msg) {
@@ -7204,6 +7223,13 @@ async function detecterEtTester() {
      un choix de l'utilisateur, la détection n'a pas à la défaire. */
   if (editIndex === null && CAT_PAR_TYPE[d.type]) $('m-cat').value = CAT_PAR_TYPE[d.type];
   if (d.cle_libelle) $('m-key-label').textContent = d.cle_libelle;
+  /* La détection connaît la forme attendue : on l'affiche sans attendre la
+     table des capacités, qui n'arrive qu'au cycle suivant. */
+  if (d.cle_format) {
+    CAPA = CAPA || {};
+    CAPA[d.type] = Object.assign({}, CAPA[d.type], { format: d.cle_format });
+  }
+  aideCle(d.type);
 
   /* La version est relevée par la sonde de détection ; sans être conservée
      ici, elle disparaissait avec la fenêtre. */

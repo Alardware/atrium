@@ -794,6 +794,42 @@ def _ordre(base, nom=""):
     return sorted(CATALOGUE, key=lambda e: rang.get(e[0], len(tete)))
 
 
+# Ce que le champ « cle » attend, service par service. Le libelle seul ne
+# suffit pas : « Cle API » ne dit pas qu il faut ecrire « utilisateur:motdepasse »,
+# et personne ne peut le deviner. L interface traduit ces formes.
+#
+#   cle      une chaine delivree par le service
+#   jeton    un jeton porteur (Bearer)
+#   couple   « utilisateur:motdepasse », faute de cle d API
+#   mdp      un mot de passe seul
+#   admin    le jeton d administration du service
+FORMATS = {
+    "ha": "jeton", "plex": "cle", "jellyfin": "cle", "tautulli": "cle",
+    "sonarr": "cle", "radarr": "cle", "lidarr": "cle", "readarr": "cle",
+    "whisparr": "cle", "prowlarr": "cle", "bazarr": "cle", "jackett": "cle",
+    "seerr": "cle", "jellyseerr": "cle", "overseerr": "cle",
+    "sabnzbd": "cle", "qbittorrent": "couple", "deluge": "mdp",
+    "transmission": "couple", "nzbget": "couple",
+    "adguard": "couple", "pihole": "cle", "unifi": "cle", "npm": "couple",
+    "wgeasy": "mdp", "cosmos": "jeton",
+    "portainer": "cle", "uptimekuma": "cle", "grafana": "cle", "gitea": "jeton",
+    "authentik": "jeton", "vaultwarden": "admin", "netdata": "aucun",
+    "glances": "couple", "unraid": "cle", "proxmox": "jeton", "truenas": "jeton",
+    "omv": "couple", "casaos": "aucun", "syncthing": "cle",
+    "immich": "cle", "paperless": "cle", "nextcloud": "couple",
+    "filebrowser": "couple", "frigate": "aucun",
+    "kodi": "aucun", "navidrome": "couple", "audiobookshelf": "jeton",
+    "mylar": "cle", "kapowarr": "cle",
+    "openhab": "aucun", "domoticz": "aucun", "iobroker": "aucun",
+    "zigbee2mqtt": "aucun", "esphome": "aucun",
+}
+
+
+def format_cle(type_service):
+    """La forme attendue par ce service, ou « cle » a defaut."""
+    return FORMATS.get(type_service or "", "cle")
+
+
 def identifier(url, cle="", nom=""):
     """Sonde l URL et renvoie le service reconnu."""
     base = (url or "").strip().rstrip("/")
@@ -835,6 +871,7 @@ def _parcourir(base, cle, nom, code_racine, depart):
                 "version": version,
                 "cle_libelle": libelle_cle,
                 "cle_requise": bool(libelle_cle),
+                "cle_format": format_cle(type_reel),
             }
     # joignable mais non reconnu : la tuile fonctionnera en simple raccourci.
     # Un cas revient assez souvent pour meriter d etre nomme : l adresse d un
