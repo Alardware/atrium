@@ -314,14 +314,6 @@ def s_tautulli(base, cle):
     return None
 
 
-def s_overseerr(base, cle):
-    code, corps, _ = _http(base + "/api/v1/status", {"X-Api-Key": cle})
-    j = _json(corps)
-    if code == 200 and isinstance(j, dict) and j.get("version"):
-        return "Overseerr", j.get("version")
-    return None
-
-
 def s_sabnzbd(base, cle):
     code, corps, _ = _http(base + "/api?mode=version&output=json")
     j = _json(corps)
@@ -510,25 +502,43 @@ def s_bazarr(base, cle):
     return None
 
 
-def s_jellyseerr(base, cle):
-    """Jellyseerr et Overseerr partagent l API ; on les distingue par les
-    reglages exposes."""
+def s_seerr(base, cle):
+    """Seerr, et ses deux ancetres.
+
+    Overseerr et Jellyseerr ont fusionne en fevrier 2026 pour donner Seerr,
+    qui poursuit la numerotation de Jellyseerr : une version 3 ou plus est un
+    Seerr, une version 2 un Jellyseerr, une version 1 un Overseerr. Les trois
+    partagent la meme API, on ne peut donc les distinguer qu ainsi — et par
+    les reglages, ou seul Jellyseerr et son successeur nomment Jellyfin.
+
+    Le nom rendu est celui que l instance se donne quand il differe : c est
+    celui que l utilisateur lit dans son navigateur.
+    """
     code, corps, _ = _http(base + "/api/v1/status", {"X-Api-Key": cle})
     j = _json(corps)
     if code != 200 or not isinstance(j, dict) or not j.get("version"):
         return None
+    version = str(j.get("version") or "")
     code2, corps2, _ = _http(base + "/api/v1/settings/public", {"X-Api-Key": cle})
-    txt = (corps2 or b"").decode("utf-8", "replace").lower()
-    produit = "Jellyseerr" if "jellyfin" in txt else "Overseerr"
-    # Ces applications portent le nom que leur proprietaire leur a donne : si
-    # l instance s appelle « Seerr », c est « Seerr » qu il faut annoncer, pas
-    # le nom du logiciel dont elle est issue.
     reglages = _json(corps2)
+    txt = (corps2 or b"").decode("utf-8", "replace").lower()
+
+    majeure = 0
+    m = re.match(r"v?(\d+)", version)
+    if m:
+        majeure = int(m.group(1))
+    if majeure >= 3:
+        produit, ident = "Seerr", "seerr"
+    elif "jellyfin" in txt:
+        produit, ident = "Jellyseerr", "jellyseerr"
+    else:
+        produit, ident = "Overseerr", "overseerr"
+
     titre = (reglages or {}).get("applicationTitle") if isinstance(reglages, dict) else None
     titre = (titre or "").strip()
-    if titre and titre.lower() not in (produit.lower(), "overseerr", "jellyseerr"):
-        return "%s (%s)" % (titre, produit), j.get("version")
-    return produit, j.get("version")
+    if titre and titre.lower() != produit.lower():
+        return "%s (%s)" % (titre, produit), version, ident
+    return produit, version, ident
 
 
 def s_mylar(base, cle):
@@ -595,8 +605,8 @@ CATALOGUE = [
     ("navidrome", s_navidrome, ""),
     ("audiobookshelf", s_audiobookshelf, "Jeton d'API"),
     ("tautulli", s_tautulli, "Clé API"),
-    ("jellyseerr", s_jellyseerr, "Clé API"),
-    ("overseerr", s_overseerr, "Clé API"),
+    # Une seule signature pour Seerr et ses ancetres : c est la meme API.
+    ("seerr", s_seerr, "Clé API"),
     # suite *arr
     ("sonarr", s_arr("Sonarr"), "Clé API"),
     ("radarr", s_arr("Radarr"), "Clé API"),
@@ -695,7 +705,7 @@ def deviner_type(nom):
 # detection immediate et une detection qui se fait attendre.
 PORTS = {
     32400: ("plex",), 8096: ("jellyfin",), 8920: ("jellyfin",), 8123: ("ha",),
-    61208: ("glances",), 5055: ("jellyseerr", "overseerr"), 5056: ("jellyseerr",),
+    61208: ("glances",), 5055: ("seerr",), 5056: ("seerr",),
     8989: ("sonarr",), 7878: ("radarr",), 8686: ("lidarr",), 8787: ("readarr",),
     9696: ("prowlarr",), 6767: ("bazarr",), 8181: ("tautulli",),
     8080: ("sabnzbd", "qbittorrent"), 8081: ("qbittorrent",), 8112: ("deluge",),

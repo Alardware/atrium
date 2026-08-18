@@ -125,6 +125,23 @@ def vrai_syncthing(chemin):
     return 403, "text/plain", b"CSRF Error"
 
 
+def seerr(version, titre, jellyfin=True):
+    """La famille Seerr : meme API pour les trois, la version les separe."""
+    public = {"initialized": True, "applicationTitle": titre, "mediaServerType": 1,
+              "localLogin": True}
+    if jellyfin:
+        public["jellyfinExternalHost"] = ""
+        public["jellyfinForgotPasswordUrl"] = ""
+
+    def repondre(chemin):
+        if chemin.startswith("/api/v1/status"):
+            return 200, "application/json", json.dumps({"version": version}).encode()
+        if chemin.startswith("/api/v1/settings/public"):
+            return 200, "application/json", json.dumps(public).encode()
+        return 404, "text/html", b""
+    return repondre
+
+
 def vrai_portainer(chemin):
     if chemin == "/api/status":
         return 200, "application/json", json.dumps(
@@ -230,7 +247,27 @@ def main():
     finally:
         srv.shutdown()
 
-    print("5. la detection va au but, et renonce quand l hote se tait")
+    print("5. la famille Seerr : le successeur et ses deux ancetres")
+    for titre, fn, type_attendu, nom_attendu in (
+            ("Seerr 3.4.1", seerr("3.4.1", "Seerr"), "seerr", "Seerr"),
+            ("Seerr renomme « Demandes »", seerr("3.4.1", "Demandes"), "seerr",
+             "Demandes (Seerr)"),
+            ("Jellyseerr 2.5.0", seerr("2.5.0", "Jellyseerr"), "jellyseerr", "Jellyseerr"),
+            ("Overseerr 1.33.2", seerr("1.33.2", "Overseerr", jellyfin=False),
+             "overseerr", "Overseerr")):
+        s, url = servir(fn)
+        try:
+            vu = services.identifier(url, "")
+            ok = (vu.get("type") == type_attendu) and (vu.get("nom") == nom_attendu)
+            print("    %-38s %s" % (titre, "%s / %s" % (vu.get("type"), vu.get("nom"))
+                                    if ok else "!!! %s / %s (attendu %s / %s)"
+                                    % (vu.get("type"), vu.get("nom"), type_attendu, nom_attendu)))
+            if not ok:
+                ECHECS.append(titre)
+        finally:
+            s.shutdown()
+
+    print("6. la detection va au but, et renonce quand l hote se tait")
     import socket as _s
     tarpit = _s.socket()
     tarpit.bind(("127.0.0.1", 0))
