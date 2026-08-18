@@ -182,3 +182,7 @@ jobs:
 
       - name: Lecteurs des intégrations branchées en dernier
         run: python outils/test_lecteurs_muets.py
+
+      # Prévenir sur bascule, et se taire le reste du temps.
+      - name: Notifications
+        run: python outils/test_notifications.py

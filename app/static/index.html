@@ -1226,6 +1226,12 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .p-puce .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
 /* La mention d'un compte de secours : une note, pas une alerte — il n'y a rien
    d'anormal à être connecté dessus. */
+.opt-case{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-top:1px solid var(--divider)}
+.opt-case:first-child{border-top:0}
+.opt-case input{margin-top:2px;flex:none}
+.opt-case span b{display:block;font:600 13px/1.4 'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.opt-case span span{font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
+.sp-note{margin:14px 0 0;font:500 12px/1.6 'Plus Jakarta Sans',sans-serif;color:var(--muted-2)}
 .p-avatars{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
 .p-av-lab{font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--t4);text-transform:none}
 .p-av-liste{display:flex;gap:10px}
@@ -2103,6 +2109,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       <button data-p="conn"><span class="ic">🔗</span><span data-i18n="set.conn">Connexions</span><span class="q" id="nq-conn"></span></button>
       <button data-p="lang"><span class="ic">🌐</span><span data-i18n="set.lang">Langue</span><span class="q" id="nq-lang"></span></button>
       <button data-p="journal"><span class="ic">🗒</span><span data-i18n="set.journal">Journal</span><span class="q" id="nq-jrn"></span></button>
+      <button data-p="notif"><span class="ic">🔔</span><span data-i18n="set.notif">Notifications</span><span class="q" id="nq-notif"></span></button>
       <button data-p="sauvegarde"><span class="ic">💾</span><span data-i18n="set.backup">Sauvegarde</span></button>
       <button data-p="about"><span class="ic">ℹ</span><span data-i18n="set.about">À propos</span></button>
     </nav>
@@ -2458,6 +2465,57 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
       </section>
 
       <!-- SAUVEGARDE -->
+      <section class="spanel sp-inner" id="sp-notif" hidden>
+        <div>
+          <h3 data-i18n="notif.title">Notifications</h3>
+          <p class="sp-sous" data-i18n="notif.sub">Être prévenu quand un service
+            tombe ou qu’une mesure franchit son seuil, sans avoir à regarder.</p>
+        </div>
+
+        <div class="scard">
+          <h4><span data-i18n="notif.where">Où prévenir</span></h4>
+          <div class="scard-body">
+            <div class="field">
+              <label for="nt-url" data-i18n="notif.url">Adresse du crochet</label>
+              <span class="fhint" data-i18n="notif.url.d">Discord, ntfy, Gotify ou
+                n’importe quel service qui accepte un POST. L’adresse peut être
+                sur votre réseau comme sur Internet — c’est le seul endroit
+                d’Atrium qui en sort, et il faut l’avoir demandé.</span>
+              <input id="nt-url" type="text" autocomplete="off"
+                     placeholder="https://ntfy.sh/mon-sujet">
+            </div>
+            <div class="opt-row">
+              <span class="opt-tx"><b data-i18n="notif.on">Envoyer les notifications</b>
+                <span data-i18n="notif.on.d">Rien ne part tant que ceci est éteint.</span></span>
+              <label class="bascule"><input type="checkbox" id="nt-actif"><span></span></label>
+            </div>
+            <div class="etat-row">
+              <span class="etat-p" id="nt-puce"></span>
+              <span class="etat-tx" id="nt-etat"></span>
+              <button class="btn-sm" id="nt-test" type="button" data-i18n="notif.test">Envoyer un essai</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="scard">
+          <h4><span data-i18n="notif.what">De quoi être prévenu</span></h4>
+          <div class="scard-body">
+            <label class="opt-case"><input type="checkbox" id="nt-hors">
+              <span><b data-i18n="notif.off">Un service ne répond plus</b>
+                <span data-i18n="notif.off.d">Après trois échecs consécutifs, comme pour l’alerte.</span></span></label>
+            <label class="opt-case"><input type="checkbox" id="nt-seuil">
+              <span><b data-i18n="notif.threshold">Une mesure franchit son seuil</b>
+                <span data-i18n="notif.threshold.d">Disque, mémoire, température.</span></span></label>
+            <label class="opt-case"><input type="checkbox" id="nt-retour">
+              <span><b data-i18n="notif.back">Un service revient</b>
+                <span data-i18n="notif.back.d">Décoché par défaut : savoir qu’il est tombé importe davantage.</span></span></label>
+            <p class="sp-note" data-i18n="notif.mute">Un service qui bascule sans
+              arrêt est mis en sourdine un quart d’heure : une notification qu’on
+              finit par couper ne prévient plus de rien.</p>
+          </div>
+        </div>
+      </section>
+
       <section class="spanel sp-inner" id="sp-sauvegarde" hidden>
         <div class="sp-head">
           <div class="sp-title" data-i18n="set.backup">Sauvegarde</div>
@@ -5792,8 +5850,12 @@ async function pushCfg() {
     await relayFetch('/cfg', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apps, users: USERS,
-                              widgets: WIDGETS, widgetsAuto: AUTO_W }),
+      body: JSON.stringify(Object.assign(
+        { apps, users: USERS, widgets: WIDGETS, widgetsAuto: AUTO_W },
+        NOTIF ? { notif: {
+          url: NOTIF.url || '', actif: !!NOTIF.actif,
+          hors_ligne: NOTIF.hors_ligne !== false, seuil: NOTIF.seuil !== false,
+          retour: !!NOTIF.retour } } : {})),
     });
   } catch (e) { /* relais absent : la config reste locale */ }
 }
@@ -7697,13 +7759,17 @@ function spNav(p) {
   document.querySelectorAll('#sp-nav button').forEach((b) => b.classList.toggle('on', b.dataset.p === p));
   /* Six pages : « Utilisateurs » vit dans Mon profil et « Sessions » dans
      Sécurité — ce sont deux facettes du même sujet, pas deux destinations. */
-  ['profil', 'security', 'look', 'conn', 'lang', 'journal', 'sauvegarde', 'about']
+  ['profil', 'security', 'look', 'conn', 'lang', 'journal', 'notif',
+   'sauvegarde', 'about']
     .forEach((k) => { $('sp-' + k).hidden = k !== p; });
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
   majPastillesReglages();
   if (p === 'journal') {
     renderJournal();
+  }
+  if (p === 'notif') {
+    chargerNotif();
   }
   if (p === 'profil') {
     renderProfil();
@@ -8090,6 +8156,85 @@ function majPastillesReglages() {
   $('nq-conn').textContent = types ? vus + '/' + types : '';
   $('nq-lang').textContent = (i18n.langue || 'fr').toUpperCase();
 }
+
+/* ---------- Notifications ---------- */
+/* Les réglages vivent dans la configuration du serveur, comme les clés : c'est
+   lui qui envoie, le navigateur ne fait que dire quoi et où. */
+let NOTIF = null;
+
+async function chargerNotif() {
+  try {
+    const r = await relayFetch('/api/securite');
+    if (r.ok) {
+      SECU = await r.json();
+      if (SECU && SECU.notif) NOTIF = SECU.notif;
+    }
+  } catch (e) { /* on garde ce qu'on avait */ }
+  renderNotif();
+}
+
+function renderNotif() {
+  const n = NOTIF || {};
+  $('nt-url').value = n.url || '';
+  $('nt-actif').checked = !!n.actif;
+  $('nt-hors').checked = n.hors_ligne !== false;
+  $('nt-seuil').checked = n.seuil !== false;
+  $('nt-retour').checked = !!n.retour;
+  const puce = $('nt-puce');
+  const etat = $('nt-etat');
+  const sourds = (n.sourdine || []).length;
+  if (!n.url) {
+    puce.className = 'etat-p';
+    etat.textContent = t('notif.none');
+  } else if (n.erreur) {
+    puce.className = 'etat-p bad';
+    etat.textContent = t('notif.failed', { e: n.erreur });
+  } else if (n.dernier) {
+    puce.className = 'etat-p ok';
+    etat.textContent = t('notif.last', { q: age(n.dernier) })
+      + (sourds ? ' · ' + t('notif.muted', { n: sourds }) : '');
+  } else {
+    puce.className = 'etat-p';
+    etat.textContent = t('notif.never');
+  }
+  $('nq-notif').textContent = n.actif ? t('notif.badge.on') : '';
+}
+
+function majNotif() {
+  NOTIF = Object.assign({}, NOTIF, {
+    url: $('nt-url').value.trim(),
+    actif: $('nt-actif').checked,
+    hors_ligne: $('nt-hors').checked,
+    seuil: $('nt-seuil').checked,
+    retour: $('nt-retour').checked,
+  });
+  pushCfg();
+  renderNotif();
+}
+
+['nt-actif', 'nt-hors', 'nt-seuil', 'nt-retour'].forEach((id) =>
+  $(id).addEventListener('change', majNotif));
+$('nt-url').addEventListener('change', majNotif);
+$('nt-test').addEventListener('click', async () => {
+  const b = $('nt-test');
+  b.disabled = true;
+  try {
+    const r = await relayFetch('/api/notif/essai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: $('nt-url').value.trim() }),
+    });
+    const j = await r.json();
+    toast(j.ok ? t('notif.sent') : t('notif.failed', { e: j.motif || j.error || '' }));
+    if (j.ok) { NOTIF = Object.assign({}, NOTIF, { dernier: Date.now() / 1000, erreur: '' }); }
+    else NOTIF = Object.assign({}, NOTIF, { erreur: j.motif || '' });
+    renderNotif();
+  } catch (e) {
+    toast(t('notif.failed', { e: String(e.message || e) }));
+  } finally {
+    b.disabled = false;
+  }
+});
 
 /* ---------- Sessions ---------- */
 /* L'agent utilisateur n'est pas fiable, mais c'est ce que le navigateur a

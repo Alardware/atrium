@@ -197,6 +197,20 @@ résout le nom d'hôte, vérifie que **toutes** les adresses obtenues sont priv�
 puis se connecte à l'adresse validée — il refuse les redirections. Il ne peut pas
 servir de rebond vers Internet.
 
+### Notifications
+
+Un tableau de bord qui surveille sans rien dire ne sert qu'à celui qui le
+regarde. Réglages → **Notifications** : une adresse de crochet — Discord, ntfy,
+Gotify, ou n'importe quel service acceptant un POST — et le choix de ce qui
+mérite un message : un service qui tombe, une mesure qui franchit son seuil,
+un service qui revient.
+
+Trois règles tiennent l'ensemble : on ne prévient que sur une **bascule**,
+jamais à chaque cycle ; un service qui clignote est mis en sourdine un quart
+d'heure ; et rien ne part tant que l'envoi n'a pas été demandé. C'est le seul
+endroit d'Atrium qui sort du réseau local, et l'adresse est celle que vous avez
+donnée — la réponse du destinataire ne remonte jamais au navigateur.
+
 ### Logos
 
 Chaque application porte le logo que le catalogue [dashboard-icons](https://github.com/homarr-labs/dashboard-icons)

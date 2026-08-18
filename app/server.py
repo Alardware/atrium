@@ -36,6 +36,7 @@ import auth
 import conteneurs
 import historique
 import metriques
+import notifications
 import reseau
 import services
 import supervision
@@ -403,17 +404,31 @@ def _collecter():
 
     _releve.update(widgets=tuiles, hote=hote, maj=maj, a=time.time())
     supervision.evaluer(apps, hote, maj, erreurs, tuiles)
-    _noter_evenements(noms, etats_sondes)
+    # Le nom lisible accompagne la clef : c est lui qui partira en notification.
+    _noter_evenements(noms, etats_sondes, cfg,
+                      {cle_app(a): (a.get("nom") or cle_app(a)) for a in apps})
 
 
-def _noter_evenements(noms, etats_sondes):
+def _noter_evenements(noms, etats_sondes, cfg=None, affichage=None):
     """Consigne ce qui a change, et seulement ce qui a change.
 
     Un journal qui reciterait chaque sonde toutes les trente secondes serait
     illisible : mille lignes par nuit disant que tout va bien. On n y garde que
     les bascules d etat, les seuils franchis et rentres dans l ordre, et la
     premiere apparition d un service.
+
+    Ces memes bascules — et elles seules — partent en notification quand
+    l utilisateur en a demande.
     """
+    affichage = affichage or {}
+
+    def prevenir(cle, code, param=None):
+        try:
+            notifications.sur_evenement(cfg, affichage.get(cle, cle), code, param)
+        except Exception:
+            # Une notification qui echoue ne doit pas interrompre la collecte :
+            # le journal, lui, a deja son entree.
+            pass
     graves = {}
     for a in supervision.alertes():
         if a.get("code") == "seuil" and a.get("service"):
@@ -427,17 +442,20 @@ def _noter_evenements(noms, etats_sondes):
         if avant is None:
             JOURNAL_SRV.noter(nom, "suivi")
         elif avant.get("en_ligne") != e.get("en_ligne"):
-            JOURNAL_SRV.noter(nom, "en_ligne" if e.get("en_ligne") else "hors_ligne",
-                              {"echecs": e.get("echecs", 0)})
+            code = "en_ligne" if e.get("en_ligne") else "hors_ligne"
+            JOURNAL_SRV.noter(nom, code, {"echecs": e.get("echecs", 0)})
+            prevenir(nom, code)
         # Seuils : franchi, aggrave, ou rentre dans l ordre.
         anciens = (avant or {}).get("seuils") or {}
         courants = graves.get(nom, {})
         for mes, niveau in courants.items():
             if anciens.get(mes) != niveau:
                 JOURNAL_SRV.noter(nom, "seuil", {"metrique": mes, "niveau": niveau})
+                prevenir(nom, "seuil", {"metrique": mes, "niveau": niveau})
         for mes in anciens:
             if mes not in courants:
                 JOURNAL_SRV.noter(nom, "seuil_fin", {"metrique": mes})
+                prevenir(nom, "seuil_fin", {"metrique": mes})
         _vu[nom] = {"en_ligne": e.get("en_ligne"), "seuils": courants}
 
     for perdu in [n for n in _vu if n not in noms]:
@@ -712,6 +730,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/restauration":
             if self.exiger_session():
                 self.restauration_post()
+        elif route == "/api/notif/essai":
+            if self.exiger_session():
+                self.notif_essai()
         elif route == "/api/alertes/lues":
             if self.exiger_session():
                 supervision.marquer_lues()
@@ -756,6 +777,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         liste = charger_config().get("apps") or []
         return (next((a for a in liste if cle_app(a) == cle), None)
                 or next((a for a in liste if a.get("nom") == cle), None))
+
+    def notif_essai(self):
+        """Envoie une notification d essai a l adresse enregistree.
+
+        La reponse du receveur ne remonte pas au navigateur : seulement si
+        l envoi a abouti, et le code rendu. Atrium n a pas a servir de moyen de
+        lire ce qu une adresse quelconque repond.
+        """
+        d = self.json_recu() or {}
+        url = str(d.get("url") or "").strip()
+        if not url:
+            url = notifications.reglages(self.lire_config())["url"]
+        if not url:
+            self.reply(400, json.dumps({"error": "Aucune adresse enregistrée."},
+                                       ensure_ascii=False).encode())
+            return
+        ok, motif = notifications.envoyer(
+            url, "Atrium — essai",
+            "Si vous lisez ceci, les notifications d Atrium fonctionnent.", "info")
+        self.reply(200 if ok else 502, json.dumps(
+            {"ok": ok, "motif": motif}, ensure_ascii=False).encode())
 
     def sonder_maintenant(self):
         """Resonde une application a la demande, sans attendre le cycle."""
@@ -1055,6 +1097,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                       "relaye": relaye, "portail": portail or ""},
             "echecs": echecs[-20:],
             "iterations": auth.ITERATIONS,
+            "notif": dict(notifications.reglages(cfg), **notifications.etat()),
         }, ensure_ascii=False).encode())
 
     def sessions_get(self):
@@ -1400,6 +1443,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         recu["users"] = propres + caches
 
         assurer_ids(recu)
+        # Ce que le navigateur ne connait pas, il ne doit pas l effacer : les
+        # reglages de notification vivent dans le meme fichier.
+        for garde in ("notif",):
+            if garde not in recu and garde in actuel:
+                recu[garde] = actuel[garde]
         try:
             self.ecrire_config(recu)
             self.reply(200, b'{"ok":true}')
