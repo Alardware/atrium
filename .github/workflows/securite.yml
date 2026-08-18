@@ -169,3 +169,8 @@ jobs:
       # d'une seconde.
       - name: Traductions lisibles par le navigateur
         run: node --check app/static/i18n.js
+
+      # Les logos viennent d'un catalogue extérieur, qui renomme parfois ses
+      # dessins. Le contrôle s'abstient si le catalogue est injoignable.
+      - name: Chaque nom trouve son logo
+        run: python outils/verifier_icones.py

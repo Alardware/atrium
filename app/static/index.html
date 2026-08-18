@@ -2817,9 +2817,42 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 'use strict';
 
 /* ---------- apps (nom, rôle, catégorie, url, logo — le reste est détecté) ---------- */
-const SLUGS = { 'Paperless': 'paperless-ngx' };
-const icone = (nom) => 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/' +
-  (SLUGS[nom] || nom.toLowerCase().replace(/\s+/g, '-')) + '.svg';
+/* Les logos viennent du catalogue « dashboard-icons ». Le nom de fichier s'y
+   déduit presque toujours du nom du service — mais pas toujours : le catalogue
+   dit « pi-hole » et non « pihole », « adguard-home » et non « adguard ».
+   Cette table ne contient que ces écarts, relevés sur le catalogue lui-même ;
+   outils/verifier_icones.py la contrôle. */
+const SLUGS = {
+  paperless: 'paperless-ngx',
+  pihole: 'pi-hole',
+  adguard: 'adguard-home',
+  'adguard-home': 'adguard-home',
+  hass: 'home-assistant',
+  hassio: 'home-assistant',
+  homeassistant: 'home-assistant',
+  'wg-easy': 'wireguard',
+  wgeasy: 'wireguard',
+  omv: 'openmediavault',
+  npm: 'nginx-proxy-manager',
+  'uptime-kuma': 'uptime-kuma',
+  uptimekuma: 'uptime-kuma',
+  /* Seerr n'a pas encore son dessin au catalogue : celui de Jellyseerr, dont
+     il est le successeur, vaut mieux qu'une lettre dans un carré. */
+  seerr: 'jellyseerr',
+};
+
+/* Le nom, réduit à ce qu'un nom de fichier accepte : sans accents, sans
+   ponctuation, les espaces devenus tirets. « Pi-Hole », « pi hole » et
+   « PiHole » ne doivent pas donner trois résultats différents. */
+function slugIcone(nom) {
+  const brut = String(nom || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return SLUGS[brut] || SLUGS[brut.replace(/-/g, '')] || brut;
+}
+const icone = (nom) => 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/'
+  + slugIcone(nom) + '.svg';
 
 const A = (nom, role, cat) => ({ id: nom, nom, role, cat, url: '', logoUrl: '', token: '', apiKey: '', tempEntity: '', fav: false, masque: [] });
 
