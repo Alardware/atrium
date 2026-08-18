@@ -2990,6 +2990,40 @@ const SLUGS = {
   seerr: 'jellyseerr',
 };
 
+/* Ce qui joue sur la télé n'est pas un service d'Atrium : YouTube, Netflix,
+   la TV de l'opérateur… Home Assistant en donne le nom, et le catalogue en
+   connaît souvent le dessin — sous un autre nom que celui affiché.
+
+   Les entrées ci-dessous sont celles que le nom seul ne retrouverait pas.
+   Pour les autres, le nom suffit : « YouTube » donne « youtube ». */
+const SOURCES_MEDIA = {
+  'free-tv': 'free-sas',
+  free: 'free-sas',
+  oqee: 'free-sas',
+  'oqee-by-free': 'free-sas',
+  'disney': 'disney-plus',
+  'disney-plus': 'disney-plus',
+  'prime-video': 'prime-video',
+  'amazon-prime-video': 'prime-video',
+  'apple-tv': 'apple-tv-plus',
+  'apple-tv-plus': 'apple-tv-plus',
+  'google-tv': 'google-tv',
+  'youtube-music': 'youtube-music',
+  'youtube-kids': 'youtube-kids',
+};
+
+/* L'adresse du dessin d'une source, ou rien si son nom ne donne pas de piste.
+   Un dessin absent du catalogue rend une image en erreur, et la pastille
+   revient à sa lettre : c'est le comportement d'avant, pas une régression. */
+function iconeSource(nom) {
+  const brut = String(nom || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\+/g, '-plus')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!brut) return '';
+  return icone(SOURCES_MEDIA[brut] || brut);
+}
+
 /* Le nom, réduit à ce qu'un nom de fichier accepte : sans accents, sans
    ponctuation, les espaces devenus tirets. « Pi-Hole », « pi hole » et
    « PiHole » ne doivent pas donner trois résultats différents. */
@@ -3907,7 +3941,7 @@ function renderLive() {
     const matched = matchApp(MEDIA);
     $('np-name').textContent = MEDIA.appLabel;
     chipCl.textContent = (MEDIA.appLabel[0] || '▶').toUpperCase();
-    mountLogo($('np-chip'), matched ? logoDe(matched) : '');
+    mountLogo($('np-chip'), matched ? logoDe(matched) : iconeSource(MEDIA.appLabel));
     const live = $('np-live');
     live.hidden = false;
     live.className = MEDIA.etat === 'playing' ? 'badge-live' : 'badge-na';
@@ -3945,13 +3979,16 @@ function renderLive() {
         im.onerror = () => im.remove();
         im.src = m.poster;
         chip.appendChild(im);
-      } else if (m2) {
-        const im = new Image();
-        im.className = 'logo';
-        im.alt = '';
-        im.onerror = () => im.remove();
-        im.src = logoDe(m2);
-        chip.appendChild(im);
+      } else {
+        const src = m2 ? logoDe(m2) : iconeSource(m.appLabel);
+        if (src) {
+          const im = new Image();
+          im.className = 'logo';
+          im.alt = '';
+          im.onerror = () => im.remove();
+          im.src = src;
+          chip.appendChild(im);
+        }
       }
       const titre = document.createElement('span');
       titre.className = 'mr-t';
