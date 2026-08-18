@@ -85,6 +85,13 @@ METRIQUES = {
     "lumieres": ("LUMIÈRES", NOMBRE),
     "ouvertures": ("OUVERTURES", NOMBRE),
     "presents": ("PRÉSENTS", NOMBRE),
+    # onduleur
+    "batterie": ("BATTERIE", POURCENT),
+    "autonomie": ("AUTONOMIE", LIBRE),
+    "charge_ups": ("CHARGE", POURCENT),
+    "alim": ("ALIMENTATION", LIBRE),
+    "tension": ("TENSION", LIBRE),
+    "puissance": ("PUISSANCE", LIBRE),
     # fichiers
     "photos": ("PHOTOS", NOMBRE),
     "videos": ("VIDÉOS", NOMBRE),
@@ -154,6 +161,13 @@ SEUILS = {
     # constructeur sort de sa plage. Le processeur n est pas concerne : un pic
     # a 80 y est normal, et « cpu » n a donc pas de seuil.
     "temp": ((60, "critique"), (55, "avertissement"), (50, "surveillance")),
+}
+
+# Certaines grandeurs se jugent a l envers : une batterie ne devient inquietante
+# qu en descendant. Ecrit dans une table separee plutot qu avec un signe ou une
+# convention a retenir — la regle se lit telle qu on la dirait.
+SEUILS_BAS = {
+    "batterie": ((10, "critique"), (25, "avertissement"), (50, "surveillance")),
 }
 
 
@@ -248,13 +262,20 @@ def historisable(ident):
 
 def niveau(ident, num):
     """Gravite atteinte par cette metrique, ou None si elle n est pas surveillee."""
-    table = SEUILS.get(ident)
-    if not table or num is None:
+    if num is None:
         return None
-    for limite, grav in table:
+    for limite, grav in SEUILS.get(ident) or ():
         if num >= limite:
             return grav
+    for limite, grav in SEUILS_BAS.get(ident) or ():
+        if num <= limite:
+            return grav
     return None
+
+
+def surveille(ident):
+    """Cette metrique a-t-elle une regle, dans un sens ou dans l autre ?"""
+    return ident in SEUILS or ident in SEUILS_BAS
 
 
 def libelle(ident):

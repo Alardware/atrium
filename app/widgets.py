@@ -14,6 +14,7 @@ import re
 import time
 import urllib.parse
 
+import nut
 import services
 from metriques import M, libelle
 from services import _chemin, _http, _json
@@ -1244,7 +1245,100 @@ def maj_ha(base, cle):
         return None
 
 
+# --- onduleurs ---------------------------------------------------------------
+
+def _duree_courte(secondes):
+    """4320 -> « 1 h 12 ». Une autonomie se lit en duree, pas en secondes."""
+    try:
+        n = int(float(secondes))
+    except (TypeError, ValueError):
+        return None
+    if n < 0:
+        return None
+    if n >= 5400:
+        h, reste = divmod(n, 3600)
+        return "%d h%s" % (h, (" %02d" % (reste // 60)) if reste >= 60 else "")
+    return "%d min" % round(n / 60.0)
+
+
+def _nombre(vars_, *cles):
+    for cle in cles:
+        brut = vars_.get(cle)
+        if brut in (None, ""):
+            continue
+        try:
+            return float(str(brut).split()[0])
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+# Les mots de « ups.status », dans l ordre ou ils comptent : ce qui presse
+# d abord, l ordinaire ensuite. OB veut dire « on battery », OL « on line ».
+_ETATS_UPS = [
+    ("LB", "batterie basse"),
+    ("OB", "sur batterie"),
+    ("RB", "batterie a changer"),
+    ("OVER", "surcharge"),
+    ("OL", "sur secteur"),
+    ("BYPASS", "contournement"),
+    ("OFF", "eteint"),
+]
+
+
+def w_nut(base, cle, diag=None):
+    """Un onduleur, lu chez le demon qui le publie — sans nuage ni cle d API."""
+    p = urllib.parse.urlparse(base if "://" in base else "http://" + base)
+    hote, port = p.hostname or "", p.port or nut.PORT
+    if not hote:
+        return None
+    try:
+        _, vars_ = nut.variables(hote, port, cle)
+    except nut.Refus as e:
+        if diag is not None:
+            diag.setdefault("refus", []).append(str(e))
+        return None
+    except OSError:
+        return None
+    if not vars_:
+        return None
+
+    stats = []
+    charge = _nombre(vars_, "battery.charge")
+    if charge is not None:
+        stats.append(M("batterie", charge))
+
+    duree = _duree_courte(vars_.get("battery.runtime"))
+    if duree:
+        stats.append(M("autonomie", None, duree))
+
+    etat = (vars_.get("ups.status") or "").upper().split()
+    mot = next((texte for code, texte in _ETATS_UPS if code in etat), None)
+    if mot:
+        stats.append(M("alim", None, mot))
+
+    sortie = _nombre(vars_, "ups.load")
+    if sortie is not None:
+        stats.append(M("charge_ups", sortie))
+
+    tension = _nombre(vars_, "input.voltage")
+    if tension is not None:
+        stats.append(M("tension", None, "%d V" % round(tension)))
+
+    # La puissance reelle quand l onduleur la donne ; sinon la charge appliquee
+    # a sa puissance nominale, ce que font les tableaux de bord de NUT.
+    watts = _nombre(vars_, "ups.realpower")
+    if watts is None:
+        nominal = _nombre(vars_, "ups.realpower.nominal")
+        if nominal is not None and sortie is not None:
+            watts = nominal * sortie / 100.0
+    if watts is not None:
+        stats.append(M("puissance", None, "%d W" % round(watts)))
+    return stats or None
+
+
 REGISTRE = {
+    "nut": w_nut,
     "plex": w_plex,
     "jellyfin": w_jellyfin,
     "tautulli": w_tautulli,
@@ -1302,6 +1396,7 @@ REGISTRE = {
 # l application, avant meme la premiere mesure : l utilisateur voit ce qu il
 # gagne a fournir une cle. Les libelles correspondent aux pastilles produites.
 CAPACITES = {
+    "nut": ["batterie", "autonomie", "alim", "charge_ups", "tension", "puissance"],
     "plex": ["lectures", "spectateurs", "transcodages", "debit", "bibliotheques"],
     "jellyfin": ["lectures"],
     "tautulli": ["lectures", "debit"],

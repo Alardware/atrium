@@ -15,6 +15,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import nut
+
 import reseau
 
 TIMEOUT = 4
@@ -769,6 +771,7 @@ PORTS = {
     3000: ("grafana", "gitea"), 19999: ("netdata",), 8384: ("syncthing",),
     3080: ("adguard",), 81: ("npm",), 8006: ("proxmox",), 5000: ("nextcloud",),
     9925: ("kapowarr",), 51413: ("transmission",),
+    3493: ("nut",),
 }
 
 
@@ -819,6 +822,8 @@ FORMATS = {
     "immich": "cle", "paperless": "cle", "nextcloud": "couple",
     "filebrowser": "couple", "frigate": "aucun",
     "kodi": "aucun", "navidrome": "couple", "audiobookshelf": "jeton",
+    # upsd n exige un compte que si son administrateur l a voulu.
+    "nut": "couple",
     "mylar": "cle", "kapowarr": "cle",
     "openhab": "aucun", "domoticz": "aucun", "iobroker": "aucun",
     "zigbee2mqtt": "aucun", "esphome": "aucun",
@@ -836,6 +841,13 @@ def identifier(url, cle="", nom=""):
     if not base.startswith(("http://", "https://")):
         base = "http://" + base
 
+    # NUT ne parle pas HTTP : aucune des signatures ci-dessous ne le
+    # trouverait, et la premiere requete finirait en « injoignable ». Le port
+    # le designe, on lui demande donc directement.
+    p = urllib.parse.urlparse(base)
+    if (p.port or 0) == nut.PORT:
+        return _identifier_nut(p.hostname or "", p.port, cle)
+
     global _delai
     _delai = DELAI_DETECTION
     depart = time.monotonic()
@@ -846,6 +858,24 @@ def identifier(url, cle="", nom=""):
         return _parcourir(base, cle, nom, code_racine, depart)
     finally:
         _delai = TIMEOUT
+
+
+def _identifier_nut(hote, port, cle):
+    """Un onduleur publie par NUT, ou l explication de son refus."""
+    try:
+        trouve = nut.identifier(hote, port, cle)
+    except nut.Refus as e:
+        # upsd a repondu : il est bien la, mais il veut un compte.
+        return {"trouve": False, "type": "nut", "joignable": True, "code": 0,
+                "indice": "nut_refus", "message": str(e),
+                "cle_libelle": "Utilisateur:mot de passe (si upsd en demande un)",
+                "cle_requise": True}
+    except OSError:
+        trouve = None
+    if not trouve:
+        return {"trouve": False, "type": "", "joignable": False, "code": 0}
+    return {"trouve": True, "type": "nut", "nom": trouve[0], "version": trouve[1],
+            "cle_libelle": "", "cle_requise": False, "joignable": True, "code": 200}
 
 
 def _parcourir(base, cle, nom, code_racine, depart):

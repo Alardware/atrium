@@ -146,6 +146,27 @@ endroit d'Atrium qui sort du réseau local, l'adresse est celle que vous avez
 donnée, les redirections sont refusées, et la réponse du destinataire ne
 remonte jamais au navigateur.
 
+### Onduleur
+
+Un onduleur branché sur la machine se lit **en direct**, sans intermédiaire :
+le démon NUT (`upsd`, port 3493) le publie sur le réseau local, et Atrium
+l'interroge. Unraid, Synology, TrueNAS et Proxmox l'installent tous ; il suffit
+de l'activer et d'autoriser l'écoute sur le réseau.
+
+Ajoutez alors une application dont l'adresse est `http://<machine>:3493` : la
+détection reconnaît l'onduleur, et donne son modèle plutôt que le nom du
+logiciel. Le champ de clé reste vide, sauf si `upsd.users` exige un compte —
+auquel cas on écrit `utilisateur:motdepasse`.
+
+Vous obtenez la charge de la batterie, l'autonomie restante, l'alimentation
+(secteur, batterie, batterie basse), la charge appliquée, la tension d'entrée et
+la puissance. La batterie a ses seuils : avertissement à 25 %, critique à 10 %.
+
+Les stations portables — EcoFlow, par exemple — n'ont pas d'interface locale :
+leurs mesures ne passent que par le service du constructeur. Pour celles-là, le
+chemin reste Home Assistant, qui fait cette sortie et dont Atrium lit les
+entités.
+
 ### Logos
 
 Chaque application porte le logo que le catalogue
@@ -280,7 +301,8 @@ configure sur la fiche de son application (mode création → ✎ → **Tester**
 | **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Jackett, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs en erreur, débit |
 | **Demandes** | Seerr *(et ses ancêtres Overseerr, Jellyseerr)* | Demandes en attente, approuvées, disponibles |
 | **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
-| **Onduleur** | *via Home Assistant* : EcoFlow, APC/NUT, Eaton… | Charge, autonomie, entrée, sortie, secteur ou batterie |
+| **Onduleur** | **NUT** *(en direct, port 3493)* : APC, Eaton, CyberPower, Ippon… | Charge, autonomie, alimentation, charge appliquée, tension, puissance |
+| **Onduleur** | *via Home Assistant* : EcoFlow et les appareils sans interface locale | Charge, autonomie, entrée, sortie, secteur ou batterie |
 | **Machines** | Unraid, Glances *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
 | **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
 | **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |

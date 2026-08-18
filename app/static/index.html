@@ -5037,7 +5037,39 @@ const nbE = (s) => { const v = parseFloat(s.state); return isNaN(v) ? null : v; 
    batterie s'y rattache. */
 const MOTS_ONDULEUR = /ups|onduleur|ecoflow|delta|river|eaton|apc|nut|powerwall|backup/i;
 
+/* Un onduleur branché sur le NAS et publié par NUT : le serveur l'a déjà lu,
+   ses mesures sont dans STATS comme celles de n'importe quelle intégration.
+   Rien à deviner ici — les identifiants sont ceux du registre. */
+function onduNatif() {
+  for (const a of apps) {
+    if (kindOfApp(a) !== 'nut') continue;
+    const mes = STATS[cleApp(a)] || [];
+    const par = {};
+    mes.forEach((m) => { par[m.id] = m; });
+    if (!par.batterie) continue;
+    const mot = (par.alim || {}).val || '';
+    return {
+      source: 'nut',
+      nom: a.nom,
+      pc: par.batterie.num,
+      autonomie: (par.autonomie || {}).val || '',
+      entree: (par.tension || {}).val || '',
+      sortie: (par.puissance || {}).val || '',
+      /* « sur secteur » ou non : c'est l'onduleur qui le dit, pas une
+         déduction sur des puissances. */
+      secteur: mot ? !/batterie|contournement|eteint/i.test(mot) : null,
+      mot: mot,
+    };
+  }
+  return null;
+}
+
+/* L'onduleur, d'où qu'il vienne. Le branchement direct prime : il donne l'état
+   sans interprétation. Home Assistant reste la porte d'entrée des appareils
+   qui n'ont pas d'interface locale — une station EcoFlow, par exemple. */
 function ondu() {
+  const natif = onduNatif();
+  if (natif) return natif;
   const tous = (CONN === 'ok' ? STATES : []);
   const sien = (s) => MOTS_ONDULEUR.test(s.entity_id) || MOTS_ONDULEUR.test(nomE(s));
   const parClasse = (classe, motif) => tous.find((s) => sien(s)
@@ -5060,7 +5092,18 @@ function ondu() {
   if (prise) secteur = prise.state === 'on';
   else if (entree && nbE(entree) > 0) secteur = true;
   else if (sortie && nbE(sortie) > 0 && entree && nbE(entree) === 0) secteur = false;
-  return { batterie, autonomie, entree, sortie, secteur };
+  if (!batterie) return { source: '', pc: null };
+  return {
+    source: 'ha',
+    pc: nbE(batterie),
+    autonomie: autonomie ? dureeCourte(autonomie) : '',
+    entree: entree ? Math.round(nbE(entree)) + ' '
+      + (attrE(entree).unit_of_measurement || 'W') : '',
+    sortie: sortie ? Math.round(nbE(sortie)) + ' '
+      + (attrE(sortie).unit_of_measurement || 'W') : '',
+    secteur: secteur,
+    mot: '',
+  };
 }
 
 /* « 92 min » plutôt que « 92.0 » : une autonomie se lit en durée. */
@@ -5200,24 +5243,18 @@ const REGISTRE_W = {
   },
   onduleur: {
     icone: '🔋', cle: 'w.onduleur',
-    dispo: () => !!ondu().batterie,
+    dispo: () => ondu().pc != null,
     rendre(carte) {
       const o = ondu();
-      if (!o.batterie) return false;
-      const pc = Math.round(nbE(o.batterie));
-      cGrand(carte, pc + ' %', t(o.secteur === false ? 'w.ondu.batt' : 'w.ondu.secteur'));
+      if (o.pc == null) return false;
+      const pc = Math.round(o.pc);
+      cGrand(carte, pc + ' %',
+             o.mot || t(o.secteur === false ? 'w.ondu.batt' : 'w.ondu.secteur'));
       const z = cListe(carte);
-      if (o.autonomie) {
-        cRow(z, t('w.ondu.reste'), dureeCourte(o.autonomie));
-      }
-      if (o.entree) {
-        cRow(z, t('w.ondu.in'), Math.round(nbE(o.entree)) + ' '
-             + (attrE(o.entree).unit_of_measurement || 'W'));
-      }
+      if (o.autonomie) cRow(z, t('w.ondu.reste'), o.autonomie);
+      if (o.entree) cRow(z, t('w.ondu.in'), o.entree);
       if (o.sortie) {
-        cRow(z, t('w.ondu.out'), Math.round(nbE(o.sortie)) + ' '
-             + (attrE(o.sortie).unit_of_measurement || 'W'),
-             { alerte: o.secteur === false });
+        cRow(z, t('w.ondu.out'), o.sortie, { alerte: o.secteur === false });
       }
       /* Une batterie qui descend sans secteur est la seule chose qui presse :
          on la teinte, le reste se lit calmement. */

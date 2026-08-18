@@ -224,6 +224,12 @@ jobs:
       - name: Lecteurs des intégrations branchées en dernier
         run: python outils/test_lecteurs_muets.py
 
+      # Un onduleur se lit en direct, par un protocole texte : le test monte un
+      # faux upsd et vérifie ce qu'Atrium en tire, jusqu'au refus d'une adresse
+      # publique.
+      - name: Onduleur (NUT)
+        run: python outils/test_nut.py
+
       # Prévenir sur bascule, et se taire le reste du temps.
       - name: Notifications
         run: python outils/test_notifications.py

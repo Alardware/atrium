@@ -193,7 +193,7 @@ def _evaluer_tuiles(tuiles, affichage=None):
         for m in mesures:
             ident, num = m.get("id"), m.get("num")
             grav = metriques.niveau(ident, num)
-            if grav is None and ident not in metriques.SEUILS:
+            if grav is None and not metriques.surveille(ident):
                 continue
             cle = "seuil:%s:%s" % (service, ident)
             vus.add(cle)
