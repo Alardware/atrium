@@ -82,7 +82,7 @@ Quatre familles d'étiquettes, selon ce que l'on veut suivre :
 | Étiquette | Ce qu'elle suit |
 |---|---|
 | `latest` | la dernière poussée sur `main` |
-| `1.1.0` | cette version exacte, figée |
+| `1.1.1` | cette version exacte, figée |
 | `1.1` | les correctifs de cette version mineure |
 | `sha-2476714` | un commit précis |
 
