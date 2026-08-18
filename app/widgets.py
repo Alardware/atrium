@@ -141,6 +141,28 @@ def w_seerr(base, cle):
     return stats or None
 
 
+def _jackett_torznab_liste(base, cle, diag):
+    """Les indexeurs listes par l adresse Torznab, que la cle ouvre toujours.
+
+    Meme protege par un mot de passe d administration, Jackett repond ici : ce
+    chemin s authentifie par la cle et non par le cookie de l interface.
+    """
+    code, corps, _ = _http(services._jackett_torznab(base, cle, "indexers"))
+    if code != 200 or b"<" not in corps:
+        return None
+    texte = corps.decode("utf-8", "replace")
+    if "Invalid API Key" in texte:
+        if diag is not None:
+            diag.setdefault("refus", []).append("cle API refusee par Jackett")
+        return None
+    # « <indexer id="…" configured="true"> » : on compte les balises plutot que
+    # d embarquer un analyseur XML pour trois attributs.
+    total = len(re.findall(r"<indexer\b", texte))
+    if not total:
+        return None
+    return [M("indexeurs", total)]
+
+
 def w_jackett(base, cle, diag=None):
     """Les indexeurs configures, et ceux qui ne repondent plus.
 
@@ -148,21 +170,18 @@ def w_jackett(base, cle, diag=None):
     et l on distingue ceux qu il declare en erreur — un indexeur casse fait
     echouer les recherches sans rien dire.
 
-    Sa cle voyage dans l adresse. Et si un mot de passe d administration est
-    pose, cette liste devient inaccessible : Jackett renvoie tout vers sa page
-    de connexion, cle ou pas. On le dit plutot que de laisser une tuile vide.
+    Sa cle voyage dans l adresse. Si un mot de passe d administration est pose,
+    cette liste passe derriere l ecran de connexion : on la redemande alors par
+    l adresse Torznab, qui s authentifie par la cle en toutes circonstances —
+    au prix du detail des erreurs, que celle-ci ne donne pas.
     """
-    code, corps, entetes = _http(services._jackett_url(
+    code, corps, _ = _http(services._jackett_url(
         base, "indexers?configured=true", cle))
     j = _json(corps)
     if code != 200 or not isinstance(j, list):
-        prot = _http(base + "/api/v2.0/indexers?configured=true", suivre=False)
-        if prot[0] in (301, 302, 303, 307, 308) and "/ui/login" in str(
-                prot[2].get("Location", "")).lower() and diag is not None:
-            diag.setdefault("refus", []).append(
-                "mot de passe d administration Jackett : la liste des "
-                "indexeurs n est pas lisible par la cle")
-        return None
+        # Liste refusee : c est le cas quand un mot de passe d administration
+        # protege l interface. L adresse Torznab, elle, ne demande que la cle.
+        return _jackett_torznab_liste(base, cle, diag)
     casses = sum(1 for i in j if isinstance(i, dict)
                  and (i.get("last_error") or "").strip())
     stats = [M("indexeurs", len(j))]

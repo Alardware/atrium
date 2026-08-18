@@ -171,18 +171,34 @@ def jackett_protege(chemin, entetes):
 
 print("5. Jackett protege par un mot de passe d administration")
 
+BONNE_CLE = "cle-jackett"
+XML_INDEXEURS = (b'<?xml version="1.0" encoding="UTF-8"?><indexers>'
+                 b'<indexer id="yggtorrent" configured="true"><title>YGG</title></indexer>'
+                 b'<indexer id="1337x" configured="true"><title>1337x</title></indexer>'
+                 b'<indexer id="torrent9" configured="true"><title>T9</title></indexer>'
+                 b'</indexers>')
+XML_REFUS = (b'<?xml version="1.0" encoding="UTF-8"?>'
+             b'<error code="100" description="Invalid API Key" />')
+
 
 class _Jackett(BaseHTTPRequestHandler):
+    """Jackett verrouille : tout part vers /UI/Login, sauf l adresse Torznab,
+    qui s authentifie par la cle — c est exactement ce qu on a mesure sur une
+    installation reelle."""
+
     protocol_version = "HTTP/1.1"
 
     def log_message(self, *a):
         pass
 
     def do_GET(self):
-        if self.path.startswith("/api/v2.0/indexers/all/results"):
-            self.send_response(401)
-            self.send_header("Content-Length", "0")
+        if "/results/torznab/api" in self.path:
+            corps = XML_INDEXEURS if ("apikey=" + BONNE_CLE) in self.path else XML_REFUS
+            self.send_response(200)
+            self.send_header("Content-Type", "application/xml")
+            self.send_header("Content-Length", str(len(corps)))
             self.end_headers()
+            self.wfile.write(corps)
             return
         self.send_response(302)
         self.send_header("Location", "/UI/Login?ReturnUrl=%2Fapi")
@@ -195,11 +211,14 @@ threading.Thread(target=_srv.serve_forever, daemon=True).start()
 _u = "http://127.0.0.1:%d" % _srv.server_address[1]
 try:
     verifier("reconnu malgre le mot de passe",
-             services.identifier(_u, "cle").get("type"), "jackett")
+             services.identifier(_u, "").get("type"), "jackett")
+    verifier("les indexeurs se lisent quand meme",
+             val(widgets.mesurer("jackett", _u, BONNE_CLE)).get("indexeurs"), "3")
     _diag = {}
-    verifier("aucune mesure inventee", widgets.mesurer("jackett", _u, "cle", _diag), None)
-    verifier("le motif est nomme",
-             bool([r for r in _diag.get("refus", []) if "mot de passe" in r]), True)
+    verifier("mauvaise cle : aucune mesure",
+             widgets.mesurer("jackett", _u, "faux", _diag), None)
+    verifier("mauvaise cle : le motif est nomme",
+             bool([r for r in _diag.get("refus", []) if "cle" in r.lower()]), True)
 finally:
     _srv.shutdown()
 

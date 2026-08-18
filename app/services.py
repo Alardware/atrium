@@ -522,27 +522,22 @@ def s_bazarr(base, cle):
 
 
 def s_jackett(base, cle):
-    """Jackett, dont la cle voyage dans l adresse et non dans un en-tete.
+    """Jackett, reconnu a la facon dont il refuse une cle.
 
-    Deux cas se presentent selon la configuration :
-
-    - sans mot de passe d administration, la liste des indexeurs repond ;
-    - avec, tout est renvoye vers « /UI/Login » — sauf l adresse de recherche,
-      qui refuse proprement en 401. Ce couple ne ressemble a rien d autre.
+    Son adresse Torznab repond en XML, et nomme son grief : « Invalid API
+    Key ». Un mot de passe d administration ne change rien a cette reponse,
+    la ou la liste des indexeurs, elle, se voit renvoyee vers l ecran de
+    connexion. C est donc elle qui sert de signature.
     """
+    code, corps, _ = _http(_jackett_torznab(base, cle, "indexers"))
+    if code == 200 and b"<" in corps:
+        bas = corps.lower()
+        if b"invalid api key" in bas or b"<indexer" in bas or b"<indexers" in bas:
+            return "Jackett", None
+    # Sans mot de passe d administration, la liste JSON repond aussi.
     code, corps, _ = _http(_jackett_url(base, "indexers?configured=true", cle))
     if code == 200 and isinstance(_json(corps), list):
         return "Jackett", None
-
-    code, _, entetes = _http(base + "/api/v2.0/indexers?configured=true", suivre=False)
-    if code in (301, 302, 303, 307, 308) and "/ui/login" in str(
-            entetes.get("Location", "")).lower():
-        # L adresse de recherche authentifie par la cle, pas par le cookie :
-        # sans cle valable elle refuse, ce qui suffit a reconnaitre Jackett
-        # sans declencher la moindre recherche.
-        code2, _, _ = _http(base + "/api/v2.0/indexers/all/results?apikey=&Query=")
-        if code2 in (400, 401, 403):
-            return "Jackett", None
     return None
 
 
@@ -551,6 +546,13 @@ def _jackett_url(base, chemin, cle):
     joint = "&" if "?" in chemin else "?"
     return "%s/api/v2.0/%s%sapikey=%s" % (base, chemin, joint,
                                           urllib.parse.quote(cle or ""))
+
+
+def _jackett_torznab(base, cle, demande):
+    """L adresse Torznab agregee, celle que la cle ouvre en toutes circonstances."""
+    return ("%s/api/v2.0/indexers/all/results/torznab/api"
+            "?apikey=%s&t=%s&configured=true"
+            % (base, urllib.parse.quote(cle or ""), demande))
 
 
 def s_seerr(base, cle):
