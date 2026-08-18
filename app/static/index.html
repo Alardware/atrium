@@ -6794,7 +6794,8 @@ function peindreFiche() {
       const r = await relayFetch('/api/detect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: u, cle: cleIn.value || app.token || app.apiKey || '' }),
+        body: JSON.stringify({ url: u, nom: app.nom || '',
+                               cle: cleIn.value || app.token || app.apiKey || '' }),
       });
       const d = await r.json();
       if (!r.ok) { dire('bad', d.error || ('HTTP ' + r.status)); return; }
@@ -7123,7 +7124,7 @@ async function detecterEtTester() {
     const r = await relayFetch('/api/detect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, cle: $('m-key').value }),
+      body: JSON.stringify({ url, nom: $('m-nom').value.trim(), cle: $('m-key').value }),
     });
     d = await r.json();
     if (!r.ok) { majTest('bad', d.error || ('HTTP ' + r.status)); return; }

@@ -230,6 +230,40 @@ def main():
     finally:
         srv.shutdown()
 
+    print("5. la detection va au but, et renonce quand l hote se tait")
+    import socket as _s
+    tarpit = _s.socket()
+    tarpit.bind(("127.0.0.1", 0))
+    tarpit.listen(50)
+    muet = "http://127.0.0.1:%d" % tarpit.getsockname()[1]
+    ouvertes = []
+
+    def _accepter():
+        """Accepte et ne repond rien : les connexions restent ouvertes.
+
+        Les garder en vie est le tout : une socket lachee est fermee par le
+        ramasse-miettes, et le client recoit une fin de flux immediate au lieu
+        d attendre — ce n est plus le cas qu on voulait mesurer.
+        """
+        while True:
+            try:
+                c, _ = tarpit.accept()
+                ouvertes.append(c)
+            except OSError:
+                return
+    threading.Thread(target=_accepter, daemon=True).start()
+    import time as _t
+    t0 = _t.perf_counter()
+    vu = services.identifier(muet, "", "Machin")
+    duree = _t.perf_counter() - t0
+    print("    %-38s %.1f s  -> %s" % ("hote qui accepte sans repondre", duree,
+                                       vu.get("type") or "(aucun)"))
+    if duree > services.BUDGET_DETECTION + 4:
+        ECHECS.append("detection trop longue sur un hote muet (%.0f s)" % duree)
+    if vu.get("type"):
+        ECHECS.append("hote muet reconnu comme un service")
+    tarpit.close()
+
     print()
     if ECHECS:
         print("RESUME : %d signature(s) trop indulgente(s)" % len(ECHECS))

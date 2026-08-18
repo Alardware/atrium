@@ -676,7 +676,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if not host_allowed(url if url.startswith(("http://", "https://")) else "http://" + url):
             self.reply(403, json.dumps({"error": "Adresse hors du réseau privé"}, ensure_ascii=False).encode())
             return
-        vu = services.identifier(url, cle)
+        # Le nom de la fiche oriente la recherche : « Seerr » sur le port 5055
+        # se reconnait au premier essai plutot qu au vingtieme.
+        vu = services.identifier(url, cle, str(d.get("nom", "")).strip())
         # ce que cette integration saura lire : l'interface l'annonce sur la
         # fiche, avant meme qu'une mesure ait abouti
         vu["donnees"] = widgets.capacites(vu.get("type") or "")

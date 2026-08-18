@@ -8,6 +8,7 @@ Ajouter un service = ajouter une entree dans CATALOGUE.
 """
 import base64
 import json
+import time
 import re
 import ssl
 import urllib.error
@@ -17,6 +18,14 @@ import urllib.request
 import reseau
 
 TIMEOUT = 4
+# Pendant une detection, on frappe a des dizaines de portes sur une machine du
+# reseau local : un service qui accepte la connexion sans repondre ne doit pas
+# couter quatre secondes a chaque essai.
+DELAI_DETECTION = 1.5
+# Au-dela, on renonce : mieux vaut une fiche sans integration tout de suite
+# qu une page qui tourne pendant une minute.
+BUDGET_DETECTION = 8
+_delai = TIMEOUT
 _CTX = ssl.create_default_context()
 _CTX.check_hostname = False
 _CTX.verify_mode = ssl.CERT_NONE     # equipements locaux : certificats auto-signes
@@ -46,7 +55,7 @@ def _http(url, entetes=None, methode="GET", corps=None):
             req.add_header(k, v)
     try:
         # Destination et schema deja valides ci-dessus par reseau.autorise.
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=_CTX) as r:  # nosec B310
+        with urllib.request.urlopen(req, timeout=_delai, context=_CTX) as r:  # nosec B310
             return r.status, r.read(200000), dict(r.headers)
     except urllib.error.HTTPError as e:
         try:
@@ -510,8 +519,16 @@ def s_jellyseerr(base, cle):
         return None
     code2, corps2, _ = _http(base + "/api/v1/settings/public", {"X-Api-Key": cle})
     txt = (corps2 or b"").decode("utf-8", "replace").lower()
-    nom = "Jellyseerr" if "jellyfin" in txt else "Overseerr"
-    return nom, j.get("version")
+    produit = "Jellyseerr" if "jellyfin" in txt else "Overseerr"
+    # Ces applications portent le nom que leur proprietaire leur a donne : si
+    # l instance s appelle « Seerr », c est « Seerr » qu il faut annoncer, pas
+    # le nom du logiciel dont elle est issue.
+    reglages = _json(corps2)
+    titre = (reglages or {}).get("applicationTitle") if isinstance(reglages, dict) else None
+    titre = (titre or "").strip()
+    if titre and titre.lower() not in (produit.lower(), "overseerr", "jellyseerr"):
+        return "%s (%s)" % (titre, produit), j.get("version")
+    return produit, j.get("version")
 
 
 def s_mylar(base, cle):
@@ -673,17 +690,72 @@ def deviner_type(nom):
     return ""
 
 
-def identifier(url, cle=""):
+# Le port dit souvent qui ecoute. Commencer par ce qu il designe evite les
+# vingt sondes qui, sinon, le precedent — c est la difference entre une
+# detection immediate et une detection qui se fait attendre.
+PORTS = {
+    32400: ("plex",), 8096: ("jellyfin",), 8920: ("jellyfin",), 8123: ("ha",),
+    61208: ("glances",), 5055: ("jellyseerr", "overseerr"), 5056: ("jellyseerr",),
+    8989: ("sonarr",), 7878: ("radarr",), 8686: ("lidarr",), 8787: ("readarr",),
+    9696: ("prowlarr",), 6767: ("bazarr",), 8181: ("tautulli",),
+    8080: ("sabnzbd", "qbittorrent"), 8081: ("qbittorrent",), 8112: ("deluge",),
+    9091: ("transmission",), 6789: ("nzbget",), 9000: ("portainer",),
+    3001: ("uptimekuma",), 2283: ("immich",), 8000: ("paperless",),
+    3000: ("grafana", "gitea"), 19999: ("netdata",), 8384: ("syncthing",),
+    3080: ("adguard",), 81: ("npm",), 8006: ("proxmox",), 5000: ("nextcloud",),
+    9925: ("kapowarr",), 51413: ("transmission",),
+}
+
+
+def _ordre(base, nom=""):
+    """Le catalogue, reordonne pour ce qu on s attend a trouver ici.
+
+    Le port d abord, le nom de la fiche ensuite : « Seerr » sur le port 5055
+    se reconnait au premier essai plutot qu au vingtieme. L ordre complet est
+    conserve derriere : rien n est ecarte, seulement retarde.
+    """
+    tete = []
+    try:
+        port = urllib.parse.urlparse(base).port
+    except ValueError:
+        port = None
+    devine = deviner_type(nom) if nom else ""
+    if devine:
+        tete.append(devine)
+    tete.extend(PORTS.get(port, ()))
+    if not tete:
+        return CATALOGUE
+    rang = {ident: i for i, ident in enumerate(tete)}
+    return sorted(CATALOGUE, key=lambda e: rang.get(e[0], len(tete)))
+
+
+def identifier(url, cle="", nom=""):
     """Sonde l URL et renvoie le service reconnu."""
     base = (url or "").strip().rstrip("/")
     if not base.startswith(("http://", "https://")):
         base = "http://" + base
 
-    code_racine = joignable(base)
-    if code_racine == 0:
-        return {"trouve": False, "type": "", "joignable": False, "code": 0}
+    global _delai
+    _delai = DELAI_DETECTION
+    depart = time.monotonic()
+    try:
+        code_racine = joignable(base)
+        if code_racine == 0:
+            return {"trouve": False, "type": "", "joignable": False, "code": 0}
+        return _parcourir(base, cle, nom, code_racine, depart)
+    finally:
+        _delai = TIMEOUT
 
-    for ident, sonde, libelle_cle in CATALOGUE:
+
+def _parcourir(base, cle, nom, code_racine, depart):
+    for ident, sonde, libelle_cle in _ordre(base, nom):
+        # Une machine qui accepte les connexions sans jamais repondre ferait
+        # durer la detection une minute et demie. Passe ce budget, on rend ce
+        # qu on sait : la fiche fonctionnera en raccourci, et l utilisateur
+        # peut toujours choisir l integration a la main.
+        if time.monotonic() - depart > BUDGET_DETECTION:
+            return {"trouve": False, "type": "", "joignable": True,
+                    "code": code_racine, "indice": "trop_lent"}
         try:
             res = sonde(base, cle or "")
         except Exception:
