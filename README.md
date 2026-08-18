@@ -192,6 +192,18 @@ résout le nom d'hôte, vérifie que **toutes** les adresses obtenues sont priv�
 puis se connecte à l'adresse validée — il refuse les redirections. Il ne peut pas
 servir de rebond vers Internet.
 
+### Logos
+
+Chaque application porte le logo que le catalogue [dashboard-icons](https://github.com/homarr-labs/dashboard-icons)
+lui connaît, deviné à partir de son nom. Quand le nom ne suffit pas — ou quand
+le dessin proposé ne convient pas — la fiche cherche dans la bibliothèque :
+tapez deux lettres, cliquez la vignette. Restent possibles une URL d'image et
+un fichier envoyé depuis l'appareil.
+
+C'est le serveur qui interroge le catalogue, jamais le navigateur : le relais
+ne sort pas du réseau local, et l'adresse consultée est écrite dans le code.
+L'index est gardé une journée en mémoire.
+
 ## Sécurité
 
 Les mots de passe sont dérivés avec PBKDF2-HMAC-SHA256 (600 000 itérations, sel

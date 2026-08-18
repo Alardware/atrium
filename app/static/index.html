@@ -758,6 +758,19 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .mblock-h .opt{font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--muted);margin-left:3px}
 .mblock-b{padding:14px;display:flex;flex-direction:column;gap:14px}
 .icon-row{display:flex;align-items:flex-start;gap:12px}
+/* La bibliothèque de logos : des vignettes qu'on parcourt du regard, pas une
+   liste de noms. Le fond neutre laisse lisibles les dessins clairs comme les
+   sombres, qui vivent tous les deux dans le catalogue. */
+.ico-res{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;max-height:188px;overflow-y:auto;
+         padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.ico-res[hidden]{display:none}
+.ico-res .vide{font:500 12px/1.5 'Plus Jakarta Sans',sans-serif;color:var(--muted-2);padding:2px 4px}
+.ico-choix{width:44px;height:44px;border-radius:9px;border:1px solid var(--border);
+           background:var(--subtle);display:grid;place-items:center;padding:6px;
+           transition:border-color .13s,transform .12s}
+.ico-choix img{max-width:100%;max-height:100%;object-fit:contain}
+.ico-choix:hover{border-color:var(--acc);transform:translateY(-1px)}
+.ico-choix.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
 .icon-actions{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .icon-actions input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface);color:var(--text);font:500 12px/1.3 'Plus Jakarta Sans',sans-serif;outline:none}
 .icon-actions input:focus{border-color:var(--accent)}
@@ -1915,9 +1928,12 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
                   <button class="btn-sm" id="m-ico-auto" type="button" data-i18n="f.icon.auto">Automatique</button>
                 </div>
                 <input id="m-logo" type="text" data-i18n-ph="f.icon.url" placeholder="ou coller une URL d'image" autocomplete="off">
+                <input id="m-ico-q" type="text" data-i18n-ph="f.icon.search"
+                       placeholder="chercher un logo dans la bibliothèque" autocomplete="off">
               </div>
               <input type="file" id="m-ico-file" accept="image/*" hidden>
             </div>
+            <div class="ico-res" id="m-ico-res" hidden></div>
           </div>
         </div>
       </div>
@@ -7207,6 +7223,89 @@ $('m-test').addEventListener('click', detecterEtTester);
 
 /* icône : fichier local, URL, ou déduite du nom */
 bindPwd('m-key', 'm-key-eye', 'm-key-x', 'm-key-x');
+/* Chercher un logo dans la bibliothèque plutôt que de deviner son adresse.
+
+   Le catalogue est interrogé par le serveur : le relais du navigateur ne sort
+   pas du réseau local, et c'est très bien ainsi. Les vignettes, elles, se
+   chargent depuis le CDN comme les logos des tuiles. */
+let ICO_T = null;
+let ICO_RIEN = '';
+
+async function chercherIcones() {
+  const q = $('m-ico-q').value.trim();
+  const zone = $('m-ico-res');
+  if (q.length < 2) { zone.hidden = true; zone.textContent = ''; return; }
+  /* Une recherche sans résultat ne se redemande pas à chaque lettre ajoutée :
+     « delugexyz » ne trouvera rien de plus que « delugex ». */
+  if (ICO_RIEN && q.toLowerCase().startsWith(ICO_RIEN)) return;
+  let d;
+  try {
+    const r = await relayFetch('/api/icones?q=' + encodeURIComponent(q));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch (e) {
+    zone.hidden = false;
+    zone.textContent = '';
+    const m = document.createElement('div');
+    m.className = 'vide';
+    m.textContent = t('f.icon.offline');
+    zone.appendChild(m);
+    return;
+  }
+  zone.hidden = false;
+  zone.textContent = '';
+  const liste = d.icones || [];
+  ICO_RIEN = liste.length ? '' : q.toLowerCase();
+  if (!liste.length) {
+    const m = document.createElement('div');
+    m.className = 'vide';
+    m.textContent = t('f.icon.none', { q });
+    zone.appendChild(m);
+    return;
+  }
+  liste.forEach((nom) => {
+    const url = d.base + nom + '.svg';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ico-choix';
+    b.title = nom;
+    b.classList.toggle('on', $('m-logo').value.trim() === url);
+    const img = new Image();
+    img.alt = '';
+    img.loading = 'lazy';
+    img.src = url;
+    /* Un dessin qui ne se charge pas — pas d'accès au CDN, fichier retiré du
+       catalogue — laisse la place à rien du tout : mieux vaut une vignette de
+       moins qu'un nom de fichier posé au milieu des logos. */
+    img.onerror = () => {
+      b.remove();
+      if (!zone.querySelector('.ico-choix')) {
+        const m = document.createElement('div');
+        m.className = 'vide';
+        m.textContent = t('f.icon.offline');
+        zone.appendChild(m);
+      }
+    };
+    b.appendChild(img);
+    b.addEventListener('click', () => {
+      $('m-logo').value = url;
+      syncChip();
+      zone.querySelectorAll('.ico-choix').forEach((x) => x.classList.remove('on'));
+      b.classList.add('on');
+    });
+    zone.appendChild(b);
+  });
+}
+
+$('m-ico-q').addEventListener('input', () => {
+  clearTimeout(ICO_T);
+  if ($('m-ico-q').value.trim().length < 2) ICO_RIEN = '';
+  ICO_T = setTimeout(chercherIcones, 220);
+});
+$('m-ico-q').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); clearTimeout(ICO_T); chercherIcones(); }
+});
+
 $('m-ico-up').addEventListener('click', () => $('m-ico-file').click());
 $('m-ico-file').addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0];
@@ -7318,6 +7417,10 @@ function openAppModal(index) {
   $('m-cat').value = app.cat;
   $('m-url').value = app.url;
   $('m-logo').value = app.logoUrl;
+  $('m-ico-q').value = '';
+  $('m-ico-res').hidden = true;
+  $('m-ico-res').textContent = '';
+  ICO_RIEN = '';
   $('m-type').value = kindOfApp(app);
   MASQUE = Array.isArray(app.masque) ? app.masque.slice() : [];
   DONNEES = [];

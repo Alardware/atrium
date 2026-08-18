@@ -218,6 +218,59 @@ def installer_admin_cache():
         print("Compte de secours : ecriture impossible (%s)" % e, flush=True)
 
 
+# ---------- catalogue de logos ----------
+# L index des dessins est publie par le depot « dashboard-icons ». Le navigateur
+# ne va pas le chercher lui-meme : le relais ne sort pas du reseau local, et
+# c est tres bien ainsi. Cette route-ci vise une adresse fixe, ecrite dans le
+# code — il n y a donc rien a detourner.
+ICONES_INDEX = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/tree.json"
+ICONES_CDN = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons"
+ICONES_DUREE = 24 * 3600
+_icones = {"a": 0, "noms": []}
+_verrou_icones = threading.Lock()
+
+
+def catalogue_icones():
+    """Les noms de dessins disponibles, rafraichis une fois par jour.
+
+    Une panne du depot ne doit pas faire disparaitre la recherche : on garde
+    la derniere liste connue, meme perimee.
+    """
+    with _verrou_icones:
+        frais = time.time() - _icones["a"] < ICONES_DUREE
+        if frais and _icones["noms"]:
+            return _icones["noms"]
+    try:
+        req = urllib.request.Request(ICONES_INDEX, headers={"User-Agent": "Atrium"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            arbre = json.loads(r.read(4 * 1024 * 1024).decode("utf-8"))
+    except (urllib.error.URLError, ValueError, OSError):
+        return _icones["noms"]
+    noms = sorted({n[:-4] for n in arbre.get("svg", []) if n.endswith(".svg")})
+    with _verrou_icones:
+        _icones["noms"] = noms
+        _icones["a"] = time.time()
+    return noms
+
+
+def chercher_icones(mot, combien=48):
+    """Les dessins dont le nom contient ce mot, les plus proches d abord."""
+    mot = "".join(c for c in (mot or "").lower() if c.isalnum())
+    noms = catalogue_icones()
+    if not mot:
+        return []
+    exacts, debuts, dedans = [], [], []
+    for n in noms:
+        court = n.replace("-", "")
+        if court == mot:
+            exacts.append(n)
+        elif court.startswith(mot):
+            debuts.append(n)
+        elif mot in court:
+            dedans.append(n)
+    return (exacts + debuts + dedans)[:combien]
+
+
 # ---------- collecte de fond ----------
 # Toutes les mesures sont prises par le serveur, a intervalle fixe. L'interface
 # ne fait que lire le dernier releve : elle ne declenche aucun appel vers les
@@ -601,6 +654,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif route == "/api/sauvegarde":
             if self.exiger_session():
                 self.sauvegarde_get()
+        elif route == "/api/icones":
+            if self.exiger_session():
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                mot = (q.get("q") or [""])[0][:40]
+                noms = chercher_icones(mot)
+                self.reply(200, json.dumps({
+                    "icones": noms,
+                    "base": ICONES_CDN + "/svg/",
+                    "catalogue": len(catalogue_icones()),
+                }, ensure_ascii=False).encode())
         elif route == "/api/capacites":
             # Ne change jamais en cours d'execution : l'interface la demande une
             # fois et s'en sert pour expliquer une tuile sans chiffre.
