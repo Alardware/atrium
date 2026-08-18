@@ -600,8 +600,24 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .bascule-stats[aria-checked="true"]{background:var(--acc-soft);border-color:var(--acc-line);
                                     color:var(--acc)}
 .bascule-stats .ic{font-size:12px;line-height:1}
-.apps-tally{margin-left:auto;font:500 11px/1 'IBM Plex Mono',monospace;color:var(--muted-2);white-space:nowrap}
-.apps-tally:empty{display:none}
+/* Compter, c'est bien ; pouvoir cliquer sur le compte, c'est mieux. Chaque
+   pastille dit combien, et ne garde qu'eux quand on la choisit. */
+.etat-filtres{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.apps-head{gap:12px}
+.etat-filtres[hidden]{display:none}
+.ef{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:9px;
+    border:1px solid var(--border);background:var(--surface);
+    font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-3);
+    transition:border-color .13s,color .13s,background .13s}
+.ef .n{font:600 12px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
+.ef .dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--ok)}
+.ef .dot.bad{background:var(--bad)}
+.ef .dot.warn{background:var(--warn)}
+.ef .dot.na{background:var(--muted-2)}
+.ef:hover{color:var(--text);border-color:var(--border-2)}
+.ef.on{border-color:var(--acc);color:var(--acc);background:var(--accent-soft)}
+.ef.on .n{color:var(--acc)}
+.ef.vide{opacity:.45}
 .app-foot{flex-wrap:wrap;row-gap:6px}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
@@ -1872,7 +1888,6 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <span class="n" id="apps-count"></span>
           </div>
           <button class="btn-sm" id="btn-ranger" type="button" hidden data-i18n="apps.tidy">Ranger par catégorie</button>
-          <span class="apps-tally" id="apps-tally"></span>
           <button class="bascule-stats" id="btn-stats" type="button" role="switch"
                   data-i18n-title="look.stats" title="Chiffres sur les tuiles">
             <span class="ic">▦</span><span data-i18n="apps.figures">Chiffres</span>
@@ -1882,6 +1897,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <button data-view="list" data-i18n="apps.list">Liste</button>
           </div>
         </div>
+        <div class="etat-filtres" id="etat-filtres" hidden></div>
         <div class="list-head" id="list-head" hidden>
           <span data-i18n="col.app">APPLICATION</span>
           <span class="c-met" data-i18n="col.metric">MESURES</span>
@@ -7252,6 +7268,66 @@ function sante(nom) {
     ? 'warn' : 'on';
 }
 
+/* L'état retenu par les compteurs. Il ne se garde pas d'une session à
+   l'autre : c'est un coup d'œil, pas un réglage. */
+let filtreEtat = '';
+
+/* Les quatre états, dans l'ordre où l'on veut les voir : ce qui va mal
+   d'abord, une fois le total passé. */
+const ETATS_FILTRE = [
+  ['', 'apps.f.all', ''],
+  ['off', 'app.offline', 'bad'],
+  ['warn', 'app.degraded', 'warn'],
+  ['on', 'app.online', 'ok'],
+  ['na', 'apps.f.na', 'na'],
+];
+
+function renderFiltresEtat(liste) {
+  const zone = $('etat-filtres');
+  /* Sous trois applications, ces pastilles pèsent plus qu'elles n'aident. */
+  if (liste.length < 3) {
+    zone.hidden = true;
+    zone.textContent = '';
+    filtreEtat = '';
+    return;
+  }
+  const comptes = { '': liste.length, on: 0, warn: 0, off: 0, na: 0 };
+  liste.forEach(([a]) => { comptes[sante(cleApp(a))] += 1; });
+  zone.hidden = false;
+  zone.textContent = '';
+  ETATS_FILTRE.forEach(([cle, libelle, teinte]) => {
+    /* Un état que personne n'occupe ne mérite pas sa pastille — sauf s'il est
+       celui qu'on a choisi, sans quoi le filtre disparaîtrait sous le doigt. */
+    if (!comptes[cle] && cle !== filtreEtat && cle !== '') return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ef' + (filtreEtat === cle ? ' on' : '') + (comptes[cle] ? '' : ' vide');
+    b.dataset.etat = cle;
+    if (teinte) {
+      const d = document.createElement('span');
+      d.className = 'dot ' + teinte;
+      b.appendChild(d);
+    }
+    const l = document.createElement('span');
+    l.textContent = t(libelle);
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = comptes[cle];
+    b.appendChild(l);
+    b.appendChild(n);
+    zone.appendChild(b);
+  });
+}
+
+$('etat-filtres').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-etat]');
+  if (!b) return;
+  /* Recliquer la pastille choisie revient à tout montrer : on ne s'enferme
+     pas dans un filtre qu'on ne saurait plus défaire. */
+  filtreEtat = (b.dataset.etat === filtreEtat) ? '' : b.dataset.etat;
+  renderApps();
+});
+
 function renderApps() {
   /* Les explications des tuiles muettes ont besoin de savoir ce que chaque
      intégration sait faire. Une demande, puis on redessine ; tant qu'elle n'a
@@ -7260,13 +7336,20 @@ function renderApps() {
     if (Date.now() - CAPA_A > 60000) chargerCapacites().then(renderApps);
   }
   const q = query.trim().toLowerCase();
-  const shown = [];
+  /* Deux temps : ce que la catégorie et la recherche laissent passer nourrit
+     les compteurs, et le filtre par état ne s'applique qu'ensuite — sans quoi
+     chaque pastille afficherait son propre chiffre après s'être appliquée. */
+  const retenues = [];
   apps.forEach((a, i) => {
     if ((!activeCat || a.cat === activeCat) &&
         (!q || a.nom.toLowerCase().includes(q) || a.role.toLowerCase().includes(q))) {
-      shown.push([a, i]);
+      retenues.push([a, i]);
     }
   });
+  renderFiltresEtat(retenues);
+  const shown = filtreEtat
+    ? retenues.filter(([a]) => sante(cleApp(a)) === filtreEtat)
+    : retenues;
 
   /* mes applications : les favoris, filtrés comme le reste */
   const favs = shown.filter(([a]) => a.fav);
@@ -7287,15 +7370,6 @@ function renderApps() {
   grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
-  /* Ce que l'on veut savoir d'un coup d'œil n'est pas combien d'applications
-     existent — le compteur à côté du titre le dit déjà — mais combien ne vont
-     pas bien. Les applications sans URL ne comptent ni d'un côté ni de
-     l'autre : elles ne sont pas surveillées. */
-  const jauges = shown.map(([a]) => sante(cleApp(a))).filter((x) => x !== 'na');
-  const ko = jauges.filter((x) => x !== 'on').length;
-  $('apps-tally').textContent = jauges.length
-    ? t(ko ? 'apps.tally' : 'apps.tally.ok', { on: jauges.length - ko, ko: ko })
-    : '';
   const bouge = aRanger();
   $('btn-ranger').hidden = !bouge.length;
   $('btn-ranger').title = bouge.map((a) => a.nom + ' → ' + CAT_PAR_TYPE[kindOfApp(a)]).join('\n');

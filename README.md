@@ -198,6 +198,13 @@ résout le nom d'hôte, vérifie que **toutes** les adresses obtenues sont priv�
 puis se connecte à l'adresse validée — il refuse les redirections. Il ne peut pas
 servir de rebond vers Internet.
 
+### Filtrer d'un clic
+
+Sous le titre, une rangée de compteurs : toutes, hors ligne, dégradées, en
+ligne, non surveillées. Chacun dit combien, et ne garde qu'eux quand on le
+clique — recliquer défait le filtre. En dessous de trois applications, la
+rangée ne s'affiche pas : elle pèserait plus qu'elle n'aiderait.
+
 ### Ranger les tuiles
 
 En mode création, une tuile se saisit et se dépose où on veut : l'ordre affiché
