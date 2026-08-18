@@ -174,6 +174,7 @@ fiche de son application (mode création → ✎ → **Tester**).
 | **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Jackett, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs et indexeurs en erreur, débit |
 | **Demandes** | Seerr *(et ses ancêtres Overseerr, Jellyseerr)* | Demandes en attente, approuvées, disponibles |
 | **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
+| **Onduleur** | *via Home Assistant* : EcoFlow, APC/NUT, Eaton… | Charge, autonomie, entrée, sortie, secteur ou batterie |
 | **Machines** | Unraid, Glances *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
 | **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
 | **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |
@@ -196,6 +197,13 @@ Les API de ces services n'autorisent pas les appels directs depuis un navigateur
 résout le nom d'hôte, vérifie que **toutes** les adresses obtenues sont privées,
 puis se connecte à l'adresse validée — il refuse les redirections. Il ne peut pas
 servir de rebond vers Internet.
+
+### Ranger les tuiles
+
+En mode création, une tuile se saisit et se dépose où on veut : l'ordre affiché
+est celui de la configuration, partagé avec les autres appareils. Le classement
+par catégorie et la recherche ne changent que la vue — la place retenue reste
+la vraie.
 
 ### Notifications
 

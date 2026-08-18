@@ -605,6 +605,11 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .app-foot{flex-wrap:wrap;row-gap:6px}
 .badge-alert{padding:4px 8px;border-radius:6px;background:var(--bad-soft);border:1px solid var(--bad);font:600 10.5px/1 'Plus Jakarta Sans',sans-serif;color:var(--bad-text)}
 .badge-alert[hidden]{display:none}
+/* Ranger : la tuile tirée s'efface, celle qu'on survole montre où elle ira. */
+.app-card.glisse{opacity:.4}
+.app-card.cible{outline:2px dashed var(--acc);outline-offset:3px}
+:root[data-creatif="1"] .app-card{cursor:grab}
+:root[data-creatif="1"] .app-card:active{cursor:grabbing}
 .add-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:148px;padding:16px;border-radius:14px;border:1px dashed var(--dash);background:var(--surface-2);color:var(--muted);transition:color .2s,border-color .2s;width:100%}
 .add-card:hover{border-color:var(--accent);color:var(--accent)}
 .add-ring{width:34px;height:34px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font:600 17px/1 'Plus Jakarta Sans',sans-serif}
@@ -4896,6 +4901,54 @@ function cGrand(carte, valeur, unite) {
 const attrE = (s) => s.attributes || {};
 const nomE = (s) => attrE(s).friendly_name || s.entity_id;
 const nbE = (s) => { const v = parseFloat(s.state); return isNaN(v) ? null : v; };
+/* Un onduleur, tel que Home Assistant le donne : EcoFlow, APC via NUT, Eaton…
+   Chacun nomme ses entités à sa façon, mais toutes portent les mêmes idées —
+   une charge, une autonomie, ce qui entre, ce qui sort, et le secteur.
+
+   On ne devine pas la marque : on cherche la famille de mots, sur l'identifiant
+   comme sur le nom affiché, et l'on ne montre la carte que si une charge de
+   batterie s'y rattache. */
+const MOTS_ONDULEUR = /ups|onduleur|ecoflow|delta|river|eaton|apc|nut|powerwall|backup/i;
+
+function ondu() {
+  const tous = (CONN === 'ok' ? STATES : []);
+  const sien = (s) => MOTS_ONDULEUR.test(s.entity_id) || MOTS_ONDULEUR.test(nomE(s));
+  const parClasse = (classe, motif) => tous.find((s) => sien(s)
+    && s.entity_id.startsWith('sensor.') && attrE(s).device_class === classe
+    && nbE(s) !== null && (!motif || motif.test(s.entity_id) || motif.test(nomE(s))));
+
+  const batterie = parClasse('battery');
+  const autonomie = tous.find((s) => sien(s) && s.entity_id.startsWith('sensor.')
+    && nbE(s) !== null
+    && (attrE(s).device_class === 'duration'
+        || /remain|autonom|backup|runtime|restant/i.test(s.entity_id + ' ' + nomE(s))));
+  const entree = parClasse('power', /in(put)?|charge|secteur|grid/i);
+  const sortie = parClasse('power', /out(put)?|discharge|load|sortie/i);
+
+  /* Sur secteur ou sur batterie : une prise, un état de charge, ou rien — dans
+     ce dernier cas on ne prétend pas savoir. */
+  const prise = tous.find((s) => sien(s) && s.entity_id.startsWith('binary_sensor.')
+    && ['plug', 'power', 'battery_charging'].includes(attrE(s).device_class));
+  let secteur = null;
+  if (prise) secteur = prise.state === 'on';
+  else if (entree && nbE(entree) > 0) secteur = true;
+  else if (sortie && nbE(sortie) > 0 && entree && nbE(entree) === 0) secteur = false;
+  return { batterie, autonomie, entree, sortie, secteur };
+}
+
+/* « 92 min » plutôt que « 92.0 » : une autonomie se lit en durée. */
+function dureeCourte(s) {
+  const n = nbE(s);
+  const u = (attrE(s).unit_of_measurement || 'min').toLowerCase();
+  const minutes = u.startsWith('h') ? n * 60 : u.startsWith('s') ? n / 60 : n;
+  if (minutes >= 90) {
+    const h = Math.floor(minutes / 60);
+    const r = Math.round(minutes % 60);
+    return h + ' h' + (r ? ' ' + r + ' min' : '');
+  }
+  return Math.round(minutes) + ' min';
+}
+
 const capteurs = (classe) => (CONN === 'ok' ? STATES : []).filter(
   (s) => s.entity_id.startsWith('sensor.') && attrE(s).device_class === classe && nbE(s) !== null);
 
@@ -5015,6 +5068,33 @@ const REGISTRE_W = {
       const z = cListe(carte);
       liste.slice(0, 6).forEach((s) => cRow(z, nomE(s),
         Math.round(nbE(s) * 10) / 10 + ' ' + (attrE(s).unit_of_measurement || '°')));
+      return true;
+    },
+  },
+  onduleur: {
+    icone: '🔋', cle: 'w.onduleur',
+    dispo: () => !!ondu().batterie,
+    rendre(carte) {
+      const o = ondu();
+      if (!o.batterie) return false;
+      const pc = Math.round(nbE(o.batterie));
+      cGrand(carte, pc + ' %', t(o.secteur === false ? 'w.ondu.batt' : 'w.ondu.secteur'));
+      const z = cListe(carte);
+      if (o.autonomie) {
+        cRow(z, t('w.ondu.reste'), dureeCourte(o.autonomie));
+      }
+      if (o.entree) {
+        cRow(z, t('w.ondu.in'), Math.round(nbE(o.entree)) + ' '
+             + (attrE(o.entree).unit_of_measurement || 'W'));
+      }
+      if (o.sortie) {
+        cRow(z, t('w.ondu.out'), Math.round(nbE(o.sortie)) + ' '
+             + (attrE(o.sortie).unit_of_measurement || 'W'),
+             { alerte: o.secteur === false });
+      }
+      /* Une batterie qui descend sans secteur est la seule chose qui presse :
+         on la teinte, le reste se lit calmement. */
+      if (o.secteur === false && pc <= 30) carte.classList.add('w-alerte');
       return true;
     },
   },
@@ -5364,6 +5444,52 @@ function ajouterWidget(id) {
   $('ov-widget').hidden = true;
   renderCockpit();
 }
+
+/* Ranger les tuiles à la main.
+
+   L'ordre affiché est celui du tableau : ranger, c'est déplacer une fiche dans
+   ce tableau. Le classement par catégorie et la recherche n'en changent que la
+   vue — la place retenue est la vraie, celle de la configuration, partagée
+   avec les autres appareils. */
+let RANGE = null;
+
+function brancherRangement(zone) {
+  zone.addEventListener('dragstart', (e) => {
+    const c = e.target.closest('.app-card');
+    if (!creatif || !c) { if (c) e.preventDefault(); return; }
+    RANGE = Number(c.dataset.rang);
+    c.classList.add('glisse');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', String(RANGE)); } catch (err) { /* Safari */ }
+  });
+  zone.addEventListener('dragend', () => {
+    RANGE = null;
+    document.querySelectorAll('.app-card.glisse, .app-card.cible')
+      .forEach((e) => e.classList.remove('glisse', 'cible'));
+  });
+  zone.addEventListener('dragover', (e) => {
+    if (!creatif || RANGE === null) return;
+    e.preventDefault();
+    const c = e.target.closest('.app-card');
+    document.querySelectorAll('.app-card.cible').forEach((x) => x.classList.remove('cible'));
+    if (c && Number(c.dataset.rang) !== RANGE) c.classList.add('cible');
+  });
+  zone.addEventListener('drop', (e) => {
+    if (!creatif || RANGE === null) return;
+    e.preventDefault();
+    const c = e.target.closest('.app-card');
+    if (!c) return;
+    const vers = Number(c.dataset.rang);
+    if (Number.isNaN(vers) || vers === RANGE) return;
+    apps.splice(vers, 0, apps.splice(RANGE, 1)[0]);
+    RANGE = null;
+    saveApps();
+    renderApps();
+    renderSidebar();
+  });
+}
+brancherRangement($('apps-grid'));
+brancherRangement($('fav-grid'));
 
 /* glisser-déposer : on insère la tuile tirée à la place de celle survolée */
 let GLISSE = null;
@@ -6141,6 +6267,11 @@ async function pollDirect() {
 /* ---------- grille d'apps ---------- */
 function appCard(app, index) {
   const a = clone('tpl-app-card');
+  /* Une tuile est un lien : le navigateur la laisse glisser par defaut, et
+     l on se retrouve a trainer une adresse. On ne l autorise qu en mode
+     creation, et c est alors pour ranger. */
+  a.draggable = !!creatif;
+  a.dataset.rang = String(index);
   i18n.appliquer(a);            // les gabarits clonés portent aussi des libellés
   a.querySelector('.cl').textContent = (app.nom || '?')[0].toUpperCase();
   a.querySelector('.app-name').textContent = app.nom;
