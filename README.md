@@ -201,9 +201,9 @@ L'image est publiée sur GitHub Container Registry pour `amd64`, `arm64` et
 | Étiquette | Ce qu'elle suit | Bouge ? |
 |---|---|---|
 | `latest` | la dernière poussée sur `main` | à chaque poussée |
-| `1.2.0` | cette version exacte | jamais |
-| `1.2` | les correctifs de cette version mineure | sans nouveauté |
-| `sha-350d2eb` | un commit précis | jamais |
+| `1.3.0` | cette version exacte | jamais |
+| `1.3` | les correctifs de cette version mineure | sans nouveauté |
+| `sha-4d546af` | un commit précis | jamais |
 
 Réglages → À propos affiche la version **et l'empreinte du commit** dont l'image
 est issue : de quoi savoir si le conteneur qui tourne est bien celui qu'on
