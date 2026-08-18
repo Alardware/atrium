@@ -301,6 +301,14 @@ def _rafraichir_conteneurs():
             _conteneurs["encours"] = False
 
 
+def avancement_conteneurs():
+    """Ou en est la mesure, pour la page qui patiente."""
+    etat = conteneurs.avancement()
+    with _verrou_conteneurs:
+        etat["encours"] = _conteneurs["encours"]
+    return etat
+
+
 def conteneurs_recents():
     """Dernier releve connu, rendu immediatement.
 
@@ -687,6 +695,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # fois et s'en sert pour expliquer une tuile sans chiffre.
             if self.exiger_session():
                 self.reply(200, json.dumps(widgets.profils(), ensure_ascii=False).encode())
+        elif route == "/api/conteneurs/avancement":
+            # Deux compteurs et un mot : assez leger pour etre demande tous les
+            # tiers de seconde pendant l attente, et sans toucher au demon.
+            if self.exiger_session():
+                self.reply(200, json.dumps(avancement_conteneurs(),
+                                           ensure_ascii=False).encode())
         elif route == "/api/conteneurs":
             if self.exiger_session():
                 self.reply(200, json.dumps({"docker": conteneurs.disponible(),
@@ -703,6 +717,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     # 0 tant qu'aucune mesure n'a abouti : l'interface le dit
                     # au lieu d'afficher un tableau vide qui semblerait faux
                     "conteneurs_a": mesure_a,
+                    # de quoi peindre la barre d'attente des la premiere reponse
+                    "progres": avancement_conteneurs(),
                     "releve": _releve["a"],
                 }, ensure_ascii=False).encode())
         else:

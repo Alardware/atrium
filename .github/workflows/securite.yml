@@ -186,3 +186,8 @@ jobs:
       # Prévenir sur bascule, et se taire le reste du temps.
       - name: Notifications
         run: python outils/test_notifications.py
+
+      # Une barre d'attente qui avance toute seule ment sur ce qu'elle mesure :
+      # le compteur ne doit décrire que du travail réellement fait.
+      - name: Attente du relevé Docker
+        run: python outils/test_avancement_docker.py

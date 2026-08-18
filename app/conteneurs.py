@@ -17,6 +17,8 @@ import http.client
 import json
 import os
 import socket
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 SOCKET = os.environ.get("ATRIUM_DOCKER_SOCKET", "/var/run/docker.sock")
@@ -99,6 +101,33 @@ def _memoire(s):
     return max(0, usage - (cache or 0)), m.get("limit") or None
 
 
+# Ou en est le releve en cours. Mesurer la consommation coute un appel au
+# demon par conteneur : c est ce compte, et lui seul, que l interface montre.
+# Rien n est estime ici, et surtout rien n est minute.
+_avancement = {"phase": "repos", "fait": 0, "total": 0, "a": 0.0}
+_verrou_avancement = threading.Lock()
+
+
+def avancement():
+    """Etat du releve en cours, tel qu il est reellement."""
+    with _verrou_avancement:
+        return dict(_avancement)
+
+
+def _poser(phase, fait, total):
+    with _verrou_avancement:
+        _avancement.update(phase=phase, fait=fait, total=total, a=time.time())
+
+
+def _un_compte(c):
+    """Une mesure, et le compteur qui avance avec elle."""
+    ligne = _un(c)
+    with _verrou_avancement:
+        _avancement["fait"] += 1
+        _avancement["a"] = time.time()
+    return ligne
+
+
 def _un(c):
     ident = c.get("Id", "")
     nom = (c.get("Names") or ["/?"])[0].lstrip("/")
@@ -173,13 +202,19 @@ def liste():
     """Conteneurs et leur consommation. Liste vide si la socket n est pas la."""
     if not disponible():
         return []
+    _poser("liste", 0, 0)
     brut = _get("/containers/json?all=1")
     if not isinstance(brut, list):
+        _poser("repos", 0, 0)
         return []
     brut = brut[:MAX_CONTENEURS]
+    # Le total n est connu qu ici : avant, l interface ne peut afficher aucun
+    # pourcentage, et ne fait pas semblant d en avoir un.
+    _poser("mesure", 0, len(brut))
     # Chaque mesure est un appel distinct : en serie, trente conteneurs
     # depasseraient le cycle de collecte.
     with ThreadPoolExecutor(max_workers=min(8, max(1, len(brut)))) as pool:
-        lignes = list(pool.map(_un, brut))
+        lignes = list(pool.map(_un_compte, brut))
     lignes.sort(key=lambda l: (l["etat"] != "running", l["nom"].lower()))
+    _poser("fini", len(brut), len(brut))
     return lignes

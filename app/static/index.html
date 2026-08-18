@@ -469,7 +469,9 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 
 /* ---- apps ---- */
 .apps-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px}
-.apps-title{display:flex;align-items:baseline;gap:9px}
+/* Le titre pousse tout le reste a droite : les commandes de la grille
+   forment un seul groupe, au lieu de se repartir l espace libre. */
+.apps-title{display:flex;align-items:baseline;gap:9px;margin-right:auto}
 .apps-title h2{margin:0;font:700 16px/1.2 'Plus Jakarta Sans',sans-serif}
 .apps-title .n{font:500 12px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
 #btn-ranger{margin-left:auto}
@@ -1090,7 +1092,13 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .dk-progress{height:2px;background:var(--track,var(--subtle));overflow:hidden}
 .dk-progress > i{display:block;height:100%;width:0;
   background:linear-gradient(90deg,var(--acc),var(--ok));
-  transition:width .5s cubic-bezier(.4,0,.2,1)}
+  transition:width .45s cubic-bezier(.4,0,.2,1)}
+/* Total inconnu : un balayage, qui ne prétend à aucune avance. */
+@keyframes dk-balaye{0%{background-position:-45% 0}100%{background-position:145% 0}}
+.dk-progress.indet > i{width:100%;transition:none;background-repeat:no-repeat;
+  background-size:38% 100%;
+  background-image:linear-gradient(90deg,transparent,var(--acc) 45%,var(--ok) 62%,transparent);
+  animation:dk-balaye 1.1s ease-in-out infinite}
 .dk-badge{display:inline-flex;align-items:center;gap:7px;padding:3px 9px 3px 8px;border-radius:7px;
   background:var(--accent-soft);color:var(--acc);
   font:600 10.5px/1.6 'IBM Plex Mono',monospace;white-space:nowrap}
@@ -4520,21 +4528,22 @@ function menuConteneur(bouton, c) {
 
 /* L'attente du relevé Docker.
 
-   Les étapes sont datées depuis l'instant où l'attente a commencé, pas
-   enchaînées par des minuteries : la page Serveurs se redessine toutes les
-   2,5 s tant que la mesure n'est pas là, et une chaîne de setTimeout serait
-   annulée à chaque fois — le squelette resterait figé au premier palier. */
-const DOCKER_ETAPES = [
-  [0, 6, 'dk.socket'], [260, 18, 'dk.liste'], [700, 44, 'dk.stats'],
-  [1240, 72, 'dk.stats'], [1800, 92, 'dk.mem'], [2200, 100, 'dk.fini'],
-];
-let DOCKER_DEBUT = 0;
+   Le serveur compte ce qu'il fait : il demande d'abord la liste des conteneurs
+   au démon, puis la consommation de chacun — un appel par conteneur, par
+   paquets de huit. La barre ne montre que ce compte.
 
-function etapeDocker() {
-  if (!DOCKER_DEBUT) DOCKER_DEBUT = Date.now();
-  const ecoule = Date.now() - DOCKER_DEBUT;
-  const e = DOCKER_ETAPES.filter((x) => ecoule >= x[0]).pop() || DOCKER_ETAPES[0];
-  return { pct: e[1], cle: e[2] };
+   Tant que le total est inconnu, elle balaie sans afficher de pourcentage :
+   une barre qui avance seule promet une durée que personne ne connaît. Dès que
+   le total l'est, elle avance de ce qui est mesuré, et de rien d'autre — par
+   paliers, puisque les mesures arrivent par paquets. */
+let DK_AV = { phase: '', fait: 0, total: 0, encours: false };
+
+async function lireAvancementDocker() {
+  try {
+    const r = await relayFetch('/api/conteneurs/avancement', { cache: 'no-store' });
+    if (r.ok) DK_AV = await r.json();
+  } catch (e) { /* le tour suivant réessaiera */ }
+  return DK_AV;
 }
 
 function squeletteDocker() {
@@ -4592,16 +4601,38 @@ function squeletteDocker() {
   }
 
   const peindre = () => {
-    const e = etapeDocker();
-    jus.style.width = e.pct + '%';
-    pas.textContent = t(e.cle, { n: (DOCKER.noms || []).length });
+    const total = Number(DK_AV.total) || 0;
+    const fait = Math.min(Number(DK_AV.fait) || 0, total || 0);
+    const fini = DK_AV.phase === 'fini';
+    /* Un pourcentage n'a de sens qu'une fois le total connu et une mesure
+       rendue. Avant, la barre balaie : elle dit « en cours », pas « à moitié »
+       — et une barre vide et fixe se lirait comme une panne. */
+    const chiffrable = fini || (total > 0 && fait > 0);
+    barre.classList.toggle('indet', !chiffrable);
+    jus.style.width = chiffrable
+      ? (fini ? 100 : Math.round((fait / total) * 100)) + '%' : '';
+    /* Le compte exact, lui, se dit dès que le total est connu : « 0 / 23 » est
+       une information, pas une attente muette. */
+    pas.textContent = fini ? t('dk.fini')
+      : (total > 0 ? t('dk.mesure', { f: fait, n: total }) : t('dk.liste'));
   };
   peindre();
-  /* Un seul intervalle, arrêté dès que le squelette quitte la page. */
-  const tic = setInterval(() => {
+  /* On demande au serveur où il en est, et l'on s'arrête dès que le squelette
+     quitte la page : c'est un compteur, pas une animation à entretenir. */
+  const tic = setInterval(async () => {
+    if (!document.body.contains(barre)) { clearInterval(tic); return; }
+    await lireAvancementDocker();
     if (!document.body.contains(barre)) { clearInterval(tic); return; }
     peindre();
-  }, 110);
+    /* Mesures terminées : la table est prête côté serveur. On va la chercher
+       tout de suite — sans quoi la barre resterait pleine jusqu'au prochain
+       tour, et redeviendrait décorative sur sa dernière seconde. */
+    if (DK_AV.phase === 'fini' && !DK_AV.encours) {
+      clearInterval(tic);
+      clearTimeout(SRV_RETOUR);
+      SRV_RETOUR = setTimeout(renderServeurs, 120);
+    }
+  }, 350);
   return tab;
 }
 
@@ -4645,8 +4676,6 @@ function tableauDocker(bloc, liste, actif, mesure) {
     ? HOTE.memoire.total_go * 1024 * 1024 * 1024 : null;
   const plusGros = Math.max(1, ...liste.map((c) => c.memoire || 0));
   const tbody = tab.querySelector('tbody');
-  /* Le relevé est arrivé : la prochaine attente repartira de zéro. */
-  DOCKER_DEBUT = 0;
   liste.forEach((c, rang) => {
     const tr = clone('tpl-srv-ligne');
     tr.classList.add('dk-arrivee');
@@ -4717,7 +4746,7 @@ async function renderServeurs() {
   let d = null;
   try {
     const r = await relayFetch('/api/serveur', { cache: 'no-store' });
-    if (r.ok) { d = await r.json(); SRV_DATA = d; }
+    if (r.ok) { d = await r.json(); SRV_DATA = d; if (d.progres) DK_AV = d.progres; }
   } catch (e) { /* affiché comme indisponible ci-dessous */ }
   peindreServeurs(d);
   /* La mesure des conteneurs coûte une seconde par paquet de huit : le serveur
