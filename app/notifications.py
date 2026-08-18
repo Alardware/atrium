@@ -32,6 +32,22 @@ FENETRE_CLIGNOTEMENT = 600
 BASCULES_AVANT_SOURDINE = 4
 DUREE_SOURDINE = 900
 
+class _SansSuite(urllib.request.HTTPRedirectHandler):
+    """Une notification ne suit pas les redirections.
+
+    C est la seule sortie deliberee d Atrium vers Internet. Si le receveur
+    repondait « 302 vers http://192.168.x.y/quelque-chose », la suivre ferait
+    de cette sortie une sonde du reseau local, declenchee depuis dehors —
+    exactement ce que le relais s interdit. Un renvoi est donc une erreur, et
+    l adresse donnee est la seule qui soit appelee.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_OUVREUR = urllib.request.build_opener(_SansSuite)
+
 _verrou = threading.Lock()
 _recent = {}          # service -> [instants de bascule]
 _sourdine = {}        # service -> instant de fin de sourdine
@@ -103,7 +119,7 @@ def envoyer(url, titre, texte, niveau="info"):
         # Schema deja valide ci-dessus : http ou https, rien d autre. C est la
         # seule sortie deliberee vers Internet, et sa reponse ne remonte pas au
         # navigateur — seulement le code HTTP, ici.
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # nosec B310
+        with _OUVREUR.open(req, timeout=TIMEOUT) as r:  # nosec B310
             code = r.status
             r.read(2000)
     except urllib.error.HTTPError as e:

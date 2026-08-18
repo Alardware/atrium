@@ -39,6 +39,17 @@ class Receveur(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        # Un receveur qui renvoie ailleurs : Atrium ne doit pas l y suivre.
+        if self.path.startswith("/renvoi"):
+            # Le corps se lit meme si l on n en fait rien : sans cela, la
+            # connexion est coupee au milieu de l envoi et le client verrait
+            # une panne reseau la ou il doit voir une redirection.
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            self.send_response(302)
+            self.send_header("Location", "http://127.0.0.1:9/interne")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         taille = int(self.headers.get("Content-Length") or 0)
         RECUS.append({"chemin": self.path,
                       "corps": self.rfile.read(taille).decode("utf-8", "replace"),
@@ -121,6 +132,12 @@ def main():
         verifier("fichier local refuse", (ok, motif), (False, "adresse invalide"))
         ok, _ = notifications.envoyer("http://127.0.0.1:1/rien", "T", "T")
         verifier("hote injoignable", ok, False)
+
+        print("6. un renvoi n est pas suivi")
+        remise_a_zero()
+        ok, motif = notifications.envoyer(url + "/renvoi", "T", "T")
+        verifier("redirection refusee", (ok, motif), (False, "HTTP 302"))
+        verifier("rien n a ete demande ailleurs", len(RECUS), 0)
     finally:
         srv.shutdown()
 
