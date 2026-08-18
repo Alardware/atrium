@@ -100,7 +100,10 @@ def envoyer(url, titre, texte, niveau="info"):
     for k, v in entetes.items():
         req.add_header(k, v)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        # Schema deja valide ci-dessus : http ou https, rien d autre. C est la
+        # seule sortie deliberee vers Internet, et sa reponse ne remonte pas au
+        # navigateur — seulement le code HTTP, ici.
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # nosec B310
             code = r.status
             r.read(2000)
     except urllib.error.HTTPError as e:

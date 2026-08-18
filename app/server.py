@@ -249,7 +249,9 @@ def catalogue_icones():
             return _icones["noms"]
     try:
         req = urllib.request.Request(ICONES_INDEX, headers={"User-Agent": "Atrium"})
-        with urllib.request.urlopen(req, timeout=15) as r:
+        # Adresse constante, en https, ecrite plus haut : ni l utilisateur ni
+        # une configuration ne la choisissent.
+        with urllib.request.urlopen(req, timeout=15) as r:  # nosec B310
             arbre = json.loads(r.read(4 * 1024 * 1024).decode("utf-8"))
     except (urllib.error.URLError, ValueError, OSError):
         return _icones["noms"]
@@ -439,10 +441,13 @@ def _noter_evenements(noms, etats_sondes, cfg=None, affichage=None):
     def prevenir(cle, code, param=None):
         try:
             notifications.sur_evenement(cfg, affichage.get(cle, cle), code, param)
-        except Exception:
+        except Exception as e:
             # Une notification qui echoue ne doit pas interrompre la collecte :
-            # le journal, lui, a deja son entree.
-            pass
+            # le journal, lui, a deja son entree. Mais se taire completement
+            # laisserait un envoi cassé invisible — on le dit sur la sortie du
+            # conteneur, la ou l on va voir quand quelque chose cloche.
+            print("Notification non envoyee (%s) : %s"
+                  % (type(e).__name__, str(e)[:120]), flush=True)
     graves = {}
     for a in supervision.alertes():
         if a.get("code") == "seuil" and a.get("service"):

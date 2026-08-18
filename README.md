@@ -77,6 +77,18 @@ profil sans mot de passe entre directement — c'est un choix, pas un oubli.
 
 L'image est publiée sur GitHub Container Registry pour `amd64`, `arm64` et `armv7`.
 
+Quatre familles d'étiquettes, selon ce que l'on veut suivre :
+
+| Étiquette | Ce qu'elle suit |
+|---|---|
+| `latest` | la dernière poussée sur `main` |
+| `1.1.0` | cette version exacte, figée |
+| `1.1` | les correctifs de cette version mineure |
+| `sha-2476714` | un commit précis |
+
+Réglages → À propos affiche la version **et l'empreinte du commit** dont l'image
+est issue : de quoi savoir si le conteneur qui tourne est bien celui qu'on croit.
+
 ### Docker Compose (recommandé)
 
 ```yaml
