@@ -1086,6 +1086,51 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* ---- attente du relevé Docker ----
    Le squelette reprend la grille de la vraie table : mêmes colonnes, mêmes
    hauteurs de ligne. Quand les mesures arrivent, rien ne saute. */
+/* ---- mouvements ----
+
+   Aucun de ces effets n'est decoratif : chacun signale un changement qu'on
+   aurait pu manquer. Une tuile qui apparait, un chiffre qui bouge, un service
+   qui bascule. Le reste de l'ecran reste immobile — c'est ce qui rend ces
+   trois-la lisibles.
+
+   Le reglage « Animations » d'Apparence et « mouvement reduit » du systeme les
+   eteignent tous les deux, sans rien avoir a prevoir ici. */
+
+/* La cascade ne se joue qu'a un vrai changement de contenu : filtre, recherche,
+   categorie, bascule de vue. Sur un simple rafraichissement, la grille est
+   redessinee a l'identique et ne bouge pas. */
+@keyframes t-arrivee{from{opacity:0;transform:translateY(9px) scale(.985)}
+                     to{opacity:1;transform:none}}
+.app-card.t-arrivee{animation:t-arrivee .34s cubic-bezier(.2,.7,.3,1) backwards;
+                    animation-delay:calc(var(--i) * 28ms)}
+
+/* Un chiffre qui vient de changer s'eclaire une seconde. C'est la seule facon
+   de voir bouger une mesure sans fixer la tuile. */
+@keyframes mes-maj{0%{color:var(--acc);transform:translateY(-2px)}
+                   60%{color:var(--acc)}
+                   100%{color:inherit;transform:none}}
+.mes-v.maj b,.mes-l span.maj{animation:mes-maj 1.1s ease-out both}
+
+/* Une bascule d'etat merite mieux qu'un changement de couleur silencieux : la
+   pastille se contracte puis se pose. Le mouvement porte sur la pastille
+   entiere, pas sur son point — celui-ci bat deja, et deux animations sur la
+   meme ombre s'annuleraient l'une l'autre. */
+@keyframes etat-bascule{0%{transform:scale(.9)}
+                        45%{transform:scale(1.07)}
+                        100%{transform:scale(1)}}
+.app-card .badge-on.bascule,.app-card .badge-warn.bascule,
+.app-card .badge-off.bascule,.app-card .badge-na.bascule{
+  animation:etat-bascule .5s cubic-bezier(.2,.7,.3,1) 1;transform-origin:left center}
+
+/* Le survol souleve la tuile de deux pixels : de quoi sentir qu'elle est
+   saisissable, pas de quoi faire bouger la grille. En liste, la rangee garde
+   son fond — une ligne qui se souleve casserait l'alignement du tableau. */
+.grid:not(.list) .app-card{transition:transform .16s ease,border-color .16s ease,
+                                      box-shadow .16s ease}
+.grid:not(.list) .app-card:hover{transform:translateY(-2px);
+  box-shadow:0 6px 18px -10px rgba(0,0,0,.55)}
+.grid:not(.list) .app-card.glisse{transform:none}
+
 @keyframes dk-luire{0%{background-position:180% 0}100%{background-position:-80% 0}}
 @keyframes dk-monte{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes dk-tourne{to{transform:rotate(360deg)}}
@@ -6310,6 +6355,20 @@ async function pollDirect() {
 }
 
 /* ---------- grille d'apps ---------- */
+/* Ce que la tuile affichait au tour precedent. Sans cette memoire, un chiffre
+   « qui change » serait indistinguable d'un chiffre redessine a l'identique :
+   la grille est reconstruite a chaque releve. */
+const MEM_VAL = new Map();
+const MEM_SANTE = new Map();
+
+/* Vrai une seule fois par valeur nouvelle : on note aussitot ce qu'on vient de
+   montrer, sinon le meme changement se rejouerait au releve suivant. */
+function aChange(memoire, cle, valeur) {
+  const avant = memoire.get(cle);
+  memoire.set(cle, valeur);
+  return avant !== undefined && avant !== valeur;
+}
+
 function appCard(app, index) {
   const a = clone('tpl-app-card');
   /* Une tuile est un lien : le navigateur la laisse glisser par defaut, et
@@ -6342,6 +6401,9 @@ function appCard(app, index) {
      absent, tout s'affiche — les configurations existantes ne changent pas. */
   const cache = (id) => (app.masque || []).includes(id);
   const sant = sante(cleApp(app));
+  /* Le service vient-il de basculer ? La question se pose avant d'afficher la
+     pastille, et une seule fois : la reponse est consommee ici. */
+  const bascule = aChange(MEM_SANTE, cleApp(app), sant);
   /* L'état est ce qu'on regarde en premier quand quelque chose cloche : il mène
      au détail de la supervision, là où se lisent la latence moyenne, la durée
      de l'état courant et les alertes en cours. */
@@ -6356,13 +6418,16 @@ function appCard(app, index) {
     const pastille = a.querySelector(sant === 'warn' ? '.badge-warn' : '.badge-on');
     pastille.hidden = false;
     if (sant === 'warn') pastille.title = souci.map(texteAlerte).join(' · ');
+    if (bascule) pastille.classList.add('bascule');
   } else if (sant === 'off') {
     const off = a.querySelector('.badge-off');
     off.hidden = false;
+    if (bascule) off.classList.add('bascule');
     if (etat) off.title = t('app.since', { q: age(etat.depuis) });
   } else {
     const na = a.querySelector('.badge-na');
     na.hidden = false;
+    if (bascule) na.classList.add('bascule');
     na.querySelector('.lbl').textContent = t(app.url ? 'app.checking' : 'app.nourl');
   }
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
@@ -6420,6 +6485,10 @@ function appCard(app, index) {
         v.dataset.mes = vedette.id;
         v.setAttribute('role', 'button');
         v.tabIndex = 0;
+        if (aChange(MEM_VAL, cleApp(app) + '|' + vedette.id + '|' + vedette.lab,
+                    vedette.val)) {
+          v.classList.add('maj');
+        }
         const gros = document.createElement('b');
         gros.textContent = vedette.val;
         const lab = document.createElement('i');
@@ -6459,6 +6528,9 @@ function appCard(app, index) {
             : legeres.includes(mm.id) ? 'm-warn' : '';
           u.dataset.act = 'mes';
           u.dataset.mes = mm.id;
+          if (aChange(MEM_VAL, cleApp(app) + '|' + mm.id + '|' + mm.lab, mm.val)) {
+            u.classList.add('maj');
+          }
           u.textContent = mm.val + ' ' + etiquette(mm).toLowerCase();
           l.appendChild(u);
         });
@@ -7301,6 +7373,11 @@ function sante(nom) {
    l'autre : c'est un coup d'œil, pas un réglage. */
 let filtreEtat = '';
 
+/* Ce que la grille montrait au tour precedent. La cascade ne se joue que si
+   cette signature change : sur un simple releve, les memes tuiles reviennent
+   dans le meme ordre, et rien ne doit bouger. */
+let DERNIERE_VUE = '';
+
 /* Les quatre états, dans l'ordre où l'on veut les voir : ce qui va mal
    d'abord, une fois le total passé. */
 const ETATS_FILTRE = [
@@ -7380,6 +7457,22 @@ function renderApps() {
     ? retenues.filter(([a]) => sante(cleApp(a)) === filtreEtat)
     : retenues;
 
+  /* Le contenu a-t-il vraiment change ? Une tuile ajoutee, un filtre, une
+     recherche, un service qui quitte la selection — oui. Un relevé de plus —
+     non. */
+  const signature = [view, activeCat, filtreEtat, q,
+                     shown.map(([a]) => cleApp(a)).join(',')].join('|');
+  const anime = signature !== DERNIERE_VUE;
+  DERNIERE_VUE = signature;
+  /* Au-dela d'une douzaine, le dernier arriverait une seconde apres le premier :
+     le retard se plafonne. */
+  const cascade = (carte, rang) => {
+    if (!anime) return carte;
+    carte.style.setProperty('--i', String(Math.min(rang, 11)));
+    carte.classList.add('t-arrivee');
+    return carte;
+  };
+
   /* mes applications : les favoris, filtrés comme le reste */
   const favs = shown.filter(([a]) => a.fav);
   const secFav = $('sec-fav');
@@ -7388,7 +7481,7 @@ function renderApps() {
   fgrid.className = 'grid' + (view === 'list' ? ' list' : '');
   fgrid.textContent = '';
   $('fav-count').textContent = favs.length;
-  favs.forEach(([app, i]) => fgrid.appendChild(appCard(app, i)));
+  favs.forEach(([app, i], rang) => fgrid.appendChild(cascade(appCard(app, i), rang)));
 
   const grid = $('apps-grid');
   grid.className = 'grid' + (view === 'list' ? ' list' : '')
@@ -7402,7 +7495,7 @@ function renderApps() {
   const bouge = aRanger();
   $('btn-ranger').hidden = !bouge.length;
   $('btn-ranger').title = bouge.map((a) => a.nom + ' → ' + CAT_PAR_TYPE[kindOfApp(a)]).join('\n');
-  shown.forEach(([app, i]) => grid.appendChild(appCard(app, i)));
+  shown.forEach(([app, i], rang) => grid.appendChild(cascade(appCard(app, i), rang)));
   if (!shown.length) {
     const d = clone('tpl-empty');
     d.textContent = q
