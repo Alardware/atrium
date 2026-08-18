@@ -25,9 +25,12 @@ RUN mkdir -p /config
 # qui tourne chez l utilisateur.
 RUN python -m pip uninstall -y pip setuptools 2>/dev/null || true;     rm -rf /usr/local/lib/python*/ensurepip /usr/local/bin/pip*
 
-# Le conteneur reste en root : les volumes des NAS (Unraid, Synology…) sont
-# montes avec des proprietaires varies (99:100, 1000:1000, root…) et un
-# utilisateur fixe rendrait /config non inscriptible selon l hote.
+# Le conteneur demarre en root, le temps de donner /config au compte demande
+# et de descendre : les volumes des NAS (Unraid, Synology…) sont montes avec des
+# proprietaires varies (99:100, 1000:1000, root…) et un utilisateur fixe grave
+# ici rendrait /config non inscriptible selon l hote. Poser PUID et PGID fait
+# tourner le serveur sous ce compte ; sans elles, rien ne change.
+ENV PUID=""     PGID=""
 
 VOLUME ["/config"]
 EXPOSE 8420
@@ -43,4 +46,4 @@ ENV ATRIUM_BUILD=$ATRIUM_BUILD \
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8420/api/health',timeout=3).status==200 else 1)"
 
-CMD ["python", "server.py"]
+CMD ["python", "entree.py"]

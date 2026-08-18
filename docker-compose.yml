@@ -16,6 +16,13 @@ services:
       # - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       TZ: Europe/Paris
+      # Compte sous lequel Atrium tourne. Posez-les et le serveur abandonne les
+      # droits de root après avoir donné /config à ce compte. Sur Unraid,
+      # 99:100 = nobody:users ; ailleurs, souvent 1000:1000. Sans ces deux
+      # variables, le conteneur garde les droits qu'il a — les installations
+      # existantes ne changent pas de comportement.
+      # PUID: "1000"
+      # PGID: "1000"
       # Réseaux que le relais a le droit de joindre (préfixes, séparés par des virgules).
       # Par défaut : RFC1918 + loopback. À élargir seulement si nécessaire.
       # ATRIUM_ALLOW_NET: "192.168.,10.,172.16."

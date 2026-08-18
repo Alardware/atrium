@@ -111,6 +111,28 @@ jobs:
           docker exec atrium-essai python -c "import sys; print('python de l image :', sys.version)"
           docker rm -f atrium-essai
 
+      # Abandonner les privilèges ne se vérifie pas en lisant le Dockerfile : on
+      # lance l'image avec PUID/PGID et l'on demande au processus qui il est.
+      - name: L'image descend sous le compte demandé
+        run: |
+          mkdir -p /tmp/atrium-nonroot
+          docker run -d --name atrium-descendu -e PUID=99 -e PGID=100             -p 8421:8420 -v /tmp/atrium-nonroot:/config atrium:analyse
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8421/api/health; then echo; break; fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8421/api/health > /dev/null
+          uid=$(docker exec atrium-descendu awk '/^Uid:/ {print $2}' /proc/1/status)
+          gid=$(docker exec atrium-descendu awk '/^Gid:/ {print $2}' /proc/1/status)
+          echo "le serveur tourne sous $uid:$gid"
+          test "$uid" = "99"
+          test "$gid" = "100"
+          # et il doit pouvoir écrire dans /config, sans quoi la descente
+          # l'aurait rendu inutilisable
+          docker exec atrium-descendu sh -c 'touch /config/.essai && rm /config/.essai'
+          docker logs atrium-descendu | head -5
+          docker rm -f atrium-descendu
+
       - name: Installer Trivy
         run: |
           version=0.74.0
@@ -205,6 +227,11 @@ jobs:
       # Prévenir sur bascule, et se taire le reste du temps.
       - name: Notifications
         run: python outils/test_notifications.py
+
+      # Abandonner les privilèges est irréversible : la décision se vérifie à
+      # part, avant d'être appliquée.
+      - name: Point d'entrée du conteneur
+        run: python outils/test_entree.py
 
       # Une barre d'attente qui avance toute seule ment sur ce qu'elle mesure :
       # le compteur ne doit décrire que du travail réellement fait.

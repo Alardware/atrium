@@ -28,6 +28,14 @@
           Description="Facultatif — affiche les conteneurs et leur consommation sur la page Serveurs. Atrium n'y fait que des lectures, mais monter cette socket donne accès au démon Docker, soit l'équivalent de root sur la machine. Renseignez /var/run/docker.sock seulement si vous voulez cette vue."
           Type="Path" Display="advanced" Required="false"></Config>
 
+  <Config Name="Identifiant utilisateur (PUID)" Target="PUID" Default="99"
+          Description="Compte sous lequel Atrium tourne. 99 = nobody sur Unraid. Vide : le serveur garde les droits de root."
+          Type="Variable" Display="advanced" Required="false">99</Config>
+
+  <Config Name="Identifiant groupe (PGID)" Target="PGID" Default="100"
+          Description="Groupe sous lequel Atrium tourne. 100 = users sur Unraid."
+          Type="Variable" Display="advanced" Required="false">100</Config>
+
   <Config Name="Fuseau horaire" Target="TZ" Default="Europe/Paris"
           Description="Fuseau horaire du conteneur" Type="Variable" Display="advanced" Required="false">Europe/Paris</Config>
 

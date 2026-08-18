@@ -59,22 +59,34 @@ Ce qui l'encadre :
 - écrire cette adresse demande une session — et qui la détient dispose déjà
   des adresses et des clés de tous les services enregistrés.
 
-### Le conteneur tourne en `root`
+### Le conteneur démarre en `root`, puis descend
 
-Atrium écrit dans `/config`, un volume monté depuis l'hôte. Sur les NAS, ce
-dossier appartient à des comptes qui changent d'une machine à l'autre :
-`99:100` sur Unraid, `1000:1000` ailleurs, `root` parfois. Un utilisateur fixe
-dans l'image rendrait `/config` non inscriptible selon l'hôte, et
-l'application ne pourrait plus rien enregistrer.
+Le serveur n'a besoin d'aucun privilège : il écoute sur 8420 et lit son dossier
+de configuration. Mais ce dossier est un volume monté depuis l'hôte, et son
+propriétaire change d'une machine à l'autre : `99:100` sur Unraid,
+`1000:1000` ailleurs, `root` parfois. Un utilisateur fixe gravé dans l'image
+rendrait `/config` non inscriptible sur la moitié des machines.
 
-En contrepartie, le conteneur ne demande aucune capacité supplémentaire,
-n'installe rien, et `/var/run/docker.sock` reste un montage **facultatif** —
-son absence n'enlève que le tableau des conteneurs et le redémarrage à la
-demande. Ce montage donne l'équivalent du compte root de la machine : c'est le
-montage qui accorde ce pouvoir, pas l'usage qu'Atrium en fait.
+**Posez `PUID` et `PGID`** : le point d'entrée donne alors `/config` à ce
+compte, abandonne les groupes secondaires, prend le groupe puis le compte
+demandés, et remplace le processus par le serveur. Ce qui tourne ensuite ne
+peut plus rien reprendre. Sur Unraid, `PUID=99` et `PGID=100` correspondent à
+`nobody:users` — le modèle par défaut du template fourni.
 
-La correction propre serait un point d'entrée abaissant les privilèges vers un
-`PUID`/`PGID` fourni. Ce n'est pas un oubli, c'est un travail à faire.
+Sans ces deux variables, rien ne change : une installation existante ne se
+retrouve pas, du jour au lendemain, incapable de relire ses propres fichiers.
+C'est un choix de compatibilité, pas une préférence.
+
+Trivy continue de signaler l'image (`DS-0002`) parce que le Dockerfile ne
+contient pas d'instruction `USER` — il ne peut pas en contenir : il faut être
+`root` pour donner `/config` au compte demandé, puis descendre. La chaîne
+d'intégration lance donc l'image avec `PUID=99` et demande au processus sous
+quel compte il tourne.
+
+Enfin, `/var/run/docker.sock` reste un montage **facultatif** — son absence
+n'enlève que le tableau des conteneurs et le redémarrage à la demande. Ce
+montage donne l'équivalent du compte root de la machine : c'est le montage qui
+accorde ce pouvoir, pas l'usage qu'Atrium en fait.
 
 ## Ce que la chaîne d'intégration vérifie, à chaque poussée
 
@@ -86,6 +98,8 @@ La correction propre serait un point d'entrée abaissant les privilèges vers un
 | Trivy | l'image construite et les fichiers d'infrastructure |
 | Matrice des routes | chaque route appelée sans session, puis avec |
 | Démarrage de l'image | le conteneur est lancé et doit répondre |
+| Descente de privilèges | l'image est lancée avec `PUID`/`PGID`, et le processus doit tourner sous ce compte |
+| Point d'entrée | les décisions d'abandon de privilèges, situation par situation |
 
 Les routes ne sont pas recopiées dans le test : elles sont relues dans le
 source du serveur. Une route ajoutée sans garde apparaît donc le jour même.

@@ -109,6 +109,22 @@ services:
 docker compose up -d
 ```
 
+### Sortir de `root` (recommandé)
+
+Le serveur n'a besoin d'aucun privilège. Posez `PUID` et `PGID` : le conteneur
+donne `/config` à ce compte, abandonne les droits de `root`, puis démarre le
+serveur sous cette identité.
+
+```yaml
+    environment:
+      PUID: "1000"      # 99 sur Unraid (nobody)
+      PGID: "1000"      # 100 sur Unraid (users)
+```
+
+Sans ces deux variables, rien ne change : une installation existante continue
+comme avant, sans risquer de ne plus pouvoir relire ses propres fichiers. Le
+template Unraid fourni les propose déjà en 99/100.
+
 Puis ouvrez `http://<ip-du-serveur>:8420`.
 
 ### Docker (ligne de commande)
