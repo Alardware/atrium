@@ -68,8 +68,11 @@ setTimeout(async () => {
   glisser(cartes[0], cartes[2]);
   await attends(150);
   console.log('    après : ' + noms().join(' · '));
-  inj('window.__o = apps.map((a) => a.nom).join(" · ");');
-  console.log('    dans la configuration : ' + w.__o);
+  /* L'ordre appartient au profil : la liste des services de la maison, elle,
+     ne bouge pas. */
+  inj('window.__o = maVue().ordre.join(" · "); window.__m = apps.map((a) => a.nom).join(" · ");');
+  console.log('    ordre du profil       : ' + w.__o);
+  console.log('    services de la maison : ' + w.__m);
   console.log('    poussé au serveur : '
     + (ENVOIS.some((e) => e.includes('/cfg')) ? 'oui' : '!!! non'));
 
@@ -86,8 +89,8 @@ setTimeout(async () => {
   cartes = [...w.document.querySelectorAll('#apps-grid .app-card')];
   glisser(cartes[1], cartes[0]);
   await attends(150);
-  inj('window.__o = apps.map((a) => a.nom).join(" · ");');
-  console.log('    configuration : ' + w.__o);
+  inj('window.__o = maVue().ordre.join(" · ");');
+  console.log('    ordre du profil : ' + w.__o);
 
   console.log('\nerreurs page :', ERREURS.length ? ERREURS : 'aucune');
   process.exit(0);

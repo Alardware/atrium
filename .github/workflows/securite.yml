@@ -251,6 +251,11 @@ jobs:
       - name: Applications homonymes
         run: python outils/test_homonymes.py
 
+      # Les services sont ceux de la maison ; la composition du tableau
+      # appartient à chaque profil, et une session n'écrit que la sienne.
+      - name: Vues par profil
+        run: python outils/test_vues.py
+
       # Une signature qui se contente d'une réponse quelconque fait passer un
       # service pour un autre, et réclame la clé d'une API inexistante.
       - name: "Détection : aucune signature complaisante"

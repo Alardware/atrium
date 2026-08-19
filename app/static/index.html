@@ -824,6 +824,20 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 .spage .scard-body > .field,
 .spage .scard-body > .field .pwd-wrap{max-width:380px}
 .spage .u-addrow{max-width:520px}
+/* Le choix de départ d'un profil : une ligne sous le champ du nom, pas une
+   fenêtre de plus. */
+/* La liste des services que la maison connaît et que ce profil n'affiche pas. */
+.maison-liste{display:flex;flex-direction:column;gap:2px;max-height:min(48vh,360px);
+              overflow-y:auto;margin:14px 0 4px}
+.maison-liste label{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;
+                    cursor:pointer;font:500 13px/1.3 'Plus Jakarta Sans',sans-serif}
+.maison-liste label:hover{background:var(--subtle)}
+.maison-liste .r{color:var(--muted-2);font-size:11.5px}
+.maison-vide{padding:16px;text-align:center;color:var(--muted-2);
+             font:500 12px/1.4 'Plus Jakarta Sans',sans-serif}
+.u-depart{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
+.u-depart .lab{font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:var(--t3)}
+.u-depart .hint{flex-basis:100%;margin:0;font-size:11.5px;color:var(--muted-2)}
 .lang-list{max-width:640px}
 .pwd-wrap{position:relative;flex:1;min-width:0;display:flex}
 .pwd-wrap input{flex:1;min-width:0;padding-right:38px !important}
@@ -1940,6 +1954,7 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <h2 data-i18n="apps.all">Toutes les applications</h2>
             <span class="n" id="apps-count"></span>
           </div>
+          <button class="btn-sm" id="btn-maison" type="button" hidden></button>
           <button class="btn-sm" id="btn-ranger" type="button" hidden data-i18n="apps.tidy">Ranger par catégorie</button>
           <button class="bascule-stats" id="btn-stats" type="button" role="switch"
                   data-i18n-title="look.stats" title="Chiffres sur les tuiles">
@@ -2074,6 +2089,19 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
     <div class="modal-foot">
       <button class="btn-ghost" id="d-cancel" data-i18n="btn.cancel">Annuler</button>
       <button class="btn-danger" id="d-confirm" data-i18n="btn.delete">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- services déclarés par la maison, absents de ce tableau -->
+<div class="overlay" id="ov-maison" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 data-i18n="maison.title">Services de la maison</h3>
+    <div class="modal-sub" data-i18n="maison.sub">Déjà configurés par un autre profil. Les ajouter ne les configure pas une seconde fois : c'est la même adresse, la même clé, la même sonde.</div>
+    <div class="maison-liste" id="maison-liste"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" id="maison-cancel" data-i18n="btn.close">Fermer</button>
+      <button class="btn-primary" id="maison-ok" data-i18n="maison.add">Ajouter à mon tableau</button>
     </div>
   </div>
 </div>
@@ -2273,6 +2301,14 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
             <div class="u-addrow">
               <input id="spu-new" type="text" data-i18n-ph="users.new.ph" placeholder="Nom du nouvel utilisateur" autocomplete="off">
               <button class="btn-ghost" id="spu-add" type="button" data-i18n="users.add">Ajouter</button>
+            </div>
+            <div class="u-depart">
+              <span class="lab" data-i18n="users.start">Son tableau de bord</span>
+              <div class="seg" id="spu-depart">
+                <button data-depart="copie" class="on" data-i18n="users.start.copy">Reprend le tableau actuel</button>
+                <button data-depart="vide" data-i18n="users.start.empty">Part de zéro</button>
+              </div>
+              <span class="hint" data-i18n="users.start.d">Les services de la maison restent communs : ce choix ne concerne que ce qui apparaît sur son écran.</span>
             </div>
           </div>
         </div>
@@ -4328,7 +4364,7 @@ async function ouvrirQMenu(bouton, index) {
   }
 
   qsep(menu);
-  qitem(menu, '☆', t(app.fav ? 'fav.remove' : 'fav.add'), () => basculerFavori(index));
+  qitem(menu, '☆', t(estFavori(app) ? 'fav.remove' : 'fav.add'), () => basculerFavori(index));
   /* Modifier et Supprimer figurent ici aussi : sur un écran tactile, le crayon
      et la croix ne se révèlent jamais, faute de survol. Le mode création les
      gouverne des deux côtés. */
@@ -5648,9 +5684,19 @@ function brancherRangement(zone) {
     if (!c) return;
     const vers = Number(c.dataset.rang);
     if (Number.isNaN(vers) || vers === RANGE) return;
-    apps.splice(vers, 0, apps.splice(RANGE, 1)[0]);
+    /* Ranger, c'est composer son propre tableau : l'ordre part dans la vue du
+       profil, et la liste des services de la maison ne bouge pas. */
+    const v = maVue();
+    const ordre = apps.map(cleApp).sort((x, y) => {
+      const i = (v.ordre || []).indexOf(x), j = (v.ordre || []).indexOf(y);
+      return (i < 0 ? 1e9 : i) - (j < 0 ? 1e9 : j);
+    }).filter((cle) => !v.montre || v.montre.includes(cle));
+    const pris = ordre.splice(RANGE, 1)[0];
+    if (pris === undefined) { RANGE = null; return; }
+    ordre.splice(vers, 0, pris);
+    v.ordre = ordre;
     RANGE = null;
-    saveApps();
+    sauverVue();
     renderApps();
     renderSidebar();
   });
@@ -6169,7 +6215,94 @@ const normApp = (a) => ({
   fav: !!a.fav,            // épinglée dans « Mes applications »
   masque: Array.isArray(a.masque) ? a.masque : [],   // informations décochées
 });
-const normUser = (u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '' });
+const normUser = (u) => ({ nom: String(u.nom), pwd: u.pwd || '', photo: u.photo || '',
+                          vue: (u.vue && typeof u.vue === 'object') ? u.vue : null });
+
+/* La maison déclare ses services une fois : une adresse, une clé, une sonde.
+   Ce qui appartient à chacun, c'est la composition — quelles applications
+   apparaissent, dans quel ordre, lesquelles sont en favori, quelles mesures on
+   veut voir sur leurs tuiles.
+
+   « montre » vaut null quand le profil suit la maison : tout ce qui est
+   déclaré apparaît, y compris ce qui sera ajouté demain. Une liste veut dire
+   « ceux-là et rien d'autre » — c'est ce que reçoit un profil qui part de
+   zéro. */
+function vueNeuve(tout) {
+  return tout
+    ? { montre: null, ordre: apps.map(cleApp), favoris: [], masques: {}, widgets: null }
+    : { montre: [], ordre: [], favoris: [], masques: {}, widgets: null };
+}
+
+/* Faute de profil identifié — première installation, relais absent — la vue
+   reste en mémoire : le tableau fonctionne, il ne se souvient simplement de
+   rien d'autre que de la maison. */
+let VUE_ORPHELINE = null;
+
+function maVue() {
+  const u = USERS.find((x) => x.nom === (SESSION_USER || ACTIVE));
+  if (u) {
+    if (!u.vue || typeof u.vue !== 'object') u.vue = vueNeuve(true);
+    return u.vue;
+  }
+  if (!VUE_ORPHELINE) VUE_ORPHELINE = vueNeuve(true);
+  return VUE_ORPHELINE;
+}
+
+/* Ce que la maison déclare et que ce profil ne montre pas. */
+function servicesAbsents() {
+  const v = maVue();
+  if (!v.montre) return [];
+  return apps.filter((a) => !v.montre.includes(cleApp(a)));
+}
+
+function majBoutonMaison() {
+  const b = $('btn-maison');
+  if (!b) return;
+  const absents = servicesAbsents();
+  b.hidden = !absents.length;
+  b.textContent = t(absents.length > 1 ? 'maison.n' : 'maison.un', { n: absents.length });
+}
+
+function ouvrirMaison() {
+  const zone = $('maison-liste');
+  zone.textContent = '';
+  const absents = servicesAbsents();
+  if (!absents.length) {
+    const v = document.createElement('div');
+    v.className = 'maison-vide';
+    v.textContent = t('maison.rien');
+    zone.appendChild(v);
+  }
+  absents.forEach((a) => {
+    const l = document.createElement('label');
+    const c = document.createElement('input');
+    c.type = 'checkbox';
+    c.checked = true;
+    c.value = cleApp(a);
+    const n = document.createElement('span');
+    n.textContent = a.nom;
+    const r = document.createElement('span');
+    r.className = 'r';
+    r.textContent = a.role || a.cat || '';
+    l.appendChild(c);
+    l.appendChild(n);
+    l.appendChild(r);
+    zone.appendChild(l);
+  });
+  $('ov-maison').hidden = false;
+}
+
+function sauverVue() {
+  saveUsersLocal();
+  pushCfg();
+}
+
+const vueMontre = (a) => {
+  const v = maVue();
+  return !v.montre || v.montre.includes(cleApp(a));
+};
+const estFavori = (a) => maVue().favoris.includes(cleApp(a));
+const masqueDe = (cle) => (maVue().masques || {})[cle] || [];
 
 async function pullCfg() {
   let j = null;
@@ -6461,7 +6594,7 @@ function appCard(app, index) {
 
   /* Mettre en favori vit dans le menu ⋮, avec les autres commandes : une
      étoile posée sur la tuile se lisait comme une décoration. */
-  if (app.fav) a.classList.add('fav');
+  if (estFavori(app)) a.classList.add('fav');
 
   /* « hors ligne » est déjà dit par le bas de la tuile : le bandeau d'alerte
      ne sert qu'à signaler ce que l'on ne verrait pas autrement. */
@@ -6476,7 +6609,8 @@ function appCard(app, index) {
   const st = statusByName[cleApp(app)];
   /* « masque » liste ce que l'utilisateur a décoché sur cette fiche ; vide ou
      absent, tout s'affiche — les configurations existantes ne changent pas. */
-  const cache = (id) => (app.masque || []).includes(id);
+  const masque = masqueDe(cleApp(app));
+  const cache = (id) => masque.includes(id);
   const sant = sante(cleApp(app));
   /* Le service vient-il de basculer ? La question se pose avant d'afficher la
      pastille, et une seule fois : la reponse est consommee ici. */
@@ -6703,15 +6837,18 @@ function appCard(app, index) {
   return a;
 }
 
-/* Le favori est une propriété de l'application, comme sa catégorie : il suit
-   la configuration partagée, donc tous les appareils voient la même sélection. */
+/* Le favori appartient au profil, pas à l'application : deux personnes n'ont
+   pas les mêmes tuiles en tête de tableau. */
 function basculerFavori(index) {
   const a = apps[index];
   if (!a) return;
-  a.fav = !a.fav;
-  saveApps();
+  const v = maVue();
+  const cle = cleApp(a);
+  const i = v.favoris.indexOf(cle);
+  if (i >= 0) v.favoris.splice(i, 1); else v.favoris.push(cle);
+  sauverVue();
   renderApps();
-  toast(t(a.fav ? 'fav.added' : 'fav.removed', { nom: a.nom }));
+  toast(t(i < 0 ? 'fav.added' : 'fav.removed', { nom: a.nom }));
 }
 
 /* Applications qu'Atrium sait ranger ailleurs que là où elles sont. Le
@@ -7522,13 +7659,23 @@ function renderApps() {
   /* Deux temps : ce que la catégorie et la recherche laissent passer nourrit
      les compteurs, et le filtre par état ne s'applique qu'ensuite — sans quoi
      chaque pastille afficherait son propre chiffre après s'être appliquée. */
+  /* L'ordre est celui du profil ; l'indice, lui, reste celui de la liste des
+     services — c'est par lui qu'on ouvre une fiche ou qu'on la modifie. */
+  const v = maVue();
+  const rang = (cle) => {
+    const k = (v.ordre || []).indexOf(cle);
+    return k < 0 ? 1e9 : k;          // une application jamais rangée passe en fin
+  };
   const retenues = [];
-  apps.forEach((a, i) => {
-    if ((!activeCat || a.cat === activeCat) &&
-        (!q || a.nom.toLowerCase().includes(q) || a.role.toLowerCase().includes(q))) {
-      retenues.push([a, i]);
-    }
-  });
+  apps.map((a, i) => [a, i])
+    .filter(([a]) => vueMontre(a))
+    .sort((x, y) => rang(cleApp(x[0])) - rang(cleApp(y[0])))
+    .forEach(([a, i]) => {
+      if ((!activeCat || a.cat === activeCat) &&
+          (!q || a.nom.toLowerCase().includes(q) || a.role.toLowerCase().includes(q))) {
+        retenues.push([a, i]);
+      }
+    });
   renderFiltresEtat(retenues);
   const shown = filtreEtat
     ? retenues.filter(([a]) => sante(cleApp(a)) === filtreEtat)
@@ -7551,7 +7698,7 @@ function renderApps() {
   };
 
   /* mes applications : les favoris, filtrés comme le reste */
-  const favs = shown.filter(([a]) => a.fav);
+  const favs = shown.filter(([a]) => estFavori(a));
   const secFav = $('sec-fav');
   const fgrid = $('fav-grid');
   secFav.hidden = !favs.length;
@@ -7569,6 +7716,7 @@ function renderApps() {
   grid.textContent = '';
   $('apps-count').textContent = shown.length === apps.length
     ? apps.length : shown.length + ' / ' + apps.length;
+  majBoutonMaison();
   const bouge = aRanger();
   $('btn-ranger').hidden = !bouge.length;
   $('btn-ranger').title = bouge.map((a) => a.nom + ' → ' + CAT_PAR_TYPE[kindOfApp(a)]).join('\n');
@@ -7914,7 +8062,7 @@ function openAppModal(index) {
   $('m-ico-res').textContent = '';
   ICO_RIEN = '';
   $('m-type').value = kindOfApp(app);
-  MASQUE = Array.isArray(app.masque) ? app.masque.slice() : [];
+  MASQUE = masqueDe(cleApp(app)).slice();
   DONNEES = [];
   peindreDonnees();
   renderInfos(app);
@@ -7958,7 +8106,9 @@ $('m-save').addEventListener('click', () => {
     apiKey: prev.apiKey || '',
     tempEntity: prev.tempEntity || '',
     fav: !!prev.fav,
-    masque: MASQUE.slice(),
+    /* Conservé pour les sauvegardes d'avant les vues : ce qui commande
+       l'affichage, désormais, est le masque du profil. */
+    masque: Array.isArray(prev.masque) ? prev.masque : [],
   };
   /* kindOfApp et non app.type : une fiche ancienne, sans type enregistré,
      perdrait sa clé à l'enregistrement. */
@@ -7976,7 +8126,18 @@ $('m-save').addEventListener('click', () => {
   }
   if (editIndex === null) apps.push(app);
   else apps[editIndex] = app;
+  /* Les mesures qu'on vient de décocher ne valent que pour soi. Et une fiche
+     créée entre dans sa propre vue : la maison la déclare, le profil qui l'a
+     ajoutée la voit tout de suite. */
+  const v = maVue();
+  const cle = cleApp(app);
+  v.masques = v.masques || {};
+  if (MASQUE.length) v.masques[cle] = MASQUE.slice();
+  else delete v.masques[cle];
+  if (!(v.ordre || []).includes(cle)) (v.ordre = v.ordre || []).push(cle);
+  if (v.montre && !v.montre.includes(cle)) v.montre.push(cle);
   saveApps();
+  sauverVue();
   closeAppModal();
   refresh();
   pollSupervision();
@@ -7984,6 +8145,21 @@ $('m-save').addEventListener('click', () => {
   pollDirect();
 });
 $('side-add').addEventListener('click', () => openAppModal(null));
+$('btn-maison').addEventListener('click', ouvrirMaison);
+$('maison-cancel').addEventListener('click', () => { $('ov-maison').hidden = true; });
+$('maison-ok').addEventListener('click', () => {
+  const v = maVue();
+  const choisis = [...$('maison-liste').querySelectorAll('input:checked')].map((c) => c.value);
+  if (choisis.length && v.montre) {
+    v.montre = v.montre.concat(choisis);
+    v.ordre = (v.ordre || []).concat(choisis.filter((c) => !(v.ordre || []).includes(c)));
+    sauverVue();
+    renderApps();
+    renderSidebar();
+    toast(t(choisis.length > 1 ? 'maison.ajoutes' : 'maison.ajoute', { n: choisis.length }));
+  }
+  $('ov-maison').hidden = true;
+});
 
 /* ---------- modale suppression ---------- */
 function openDelModal(index) {
@@ -9631,10 +9807,32 @@ function renderUsersPage() {
   }
   fillFiche();
 }
+/* Un tableau repris ou un tableau vierge : le choix se fait ici, une fois. */
+let DEPART_VUE = 'copie';
+$('spu-depart').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-depart]');
+  if (!b) return;
+  DEPART_VUE = b.dataset.depart;
+  $('spu-depart').querySelectorAll('button')
+    .forEach((x) => x.classList.toggle('on', x === b));
+});
+
 $('spu-add').addEventListener('click', () => {
   const nom = $('spu-new').value.trim();
   if (!nom || USERS.some((u) => u.nom.toLowerCase() === nom.toLowerCase())) return;
-  USERS.push({ nom, pwd: '', photo: '' });
+  /* « Reprend le tableau actuel » copie la vue de celui qui crée le profil —
+     pas une liste figée : ce qu'il voit, l'autre le verra. « Part de zéro »
+     donne un écran vide, que l'on garnit en choisissant parmi les services de
+     la maison. */
+  const modele = maVue();
+  const vue = DEPART_VUE === 'vide' ? vueNeuve(false) : {
+    montre: modele.montre ? modele.montre.slice() : null,
+    ordre: (modele.ordre || []).slice(),
+    favoris: (modele.favoris || []).slice(),
+    masques: JSON.parse(JSON.stringify(modele.masques || {})),
+    widgets: modele.widgets ? modele.widgets.slice() : null,
+  };
+  USERS.push({ nom, pwd: '', photo: '', vue });
   if (!ACTIVE) { ACTIVE = nom; store.set('activeUser', nom); }
   $('spu-new').value = '';
   SEL_USER = USERS.length - 1;

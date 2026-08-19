@@ -104,6 +104,42 @@ def charger_config():
         return {}
 
 
+def vue_neuve(apps=None, widgets=None, tout=True):
+    """La vue d un profil : ce qu il montre, dans quel ordre, et ses favoris.
+
+    « montre » a None veut dire « tout ce que la maison a declare » ; une liste
+    veut dire « ceux-la, et rien d autre ». C est la difference entre un profil
+    qui reprend le tableau existant et un profil qui part de zero.
+    """
+    apps = apps or []
+    cles = [a.get("id") or a.get("nom") for a in apps]
+    return {
+        "montre": None if tout else [],
+        "ordre": list(cles) if tout else [],
+        "favoris": [a.get("id") or a.get("nom") for a in apps if a.get("fav")] if tout else [],
+        "masques": {(a.get("id") or a.get("nom")): list(a.get("masque") or [])
+                    for a in apps if a.get("masque")} if tout else {},
+        "widgets": list(widgets) if (tout and widgets) else None,
+    }
+
+
+def assurer_vues(cfg):
+    """Donne sa vue a chaque profil qui n en a pas.
+
+    Les installations d avant la personnalisation par profil rangeaient les
+    favoris, l ordre et les mesures masquees sur les fiches elles-memes,
+    c est-a-dire pour tout le monde a la fois. On les recopie telles quelles
+    dans chaque profil : personne ne doit voir son tableau changer le jour de
+    la mise a jour. Ce qui suit ne s applique donc qu une seule fois.
+    """
+    change = False
+    for u in (cfg.get("users") or []):
+        if not isinstance(u.get("vue"), dict):
+            u["vue"] = vue_neuve(cfg.get("apps"), cfg.get("widgets"))
+            change = True
+    return change
+
+
 def assurer_ids(cfg):
     """Donne un identifiant a chaque application qui n en a pas.
 
@@ -340,7 +376,9 @@ def _collecter():
     cfg = charger_config()
     # Les fiches d avant les identifiants en recoivent un ici, une fois pour
     # toutes : la premiere de chaque nom garde le sien, et son historique avec.
-    if assurer_ids(cfg):
+    # La migration des vues suit celle des identifiants : un profil sans vue en
+    # recoit une, copiee de ce qui etait global.
+    if assurer_ids(cfg) | assurer_vues(cfg):
         try:
             _ecrire_config_fond(cfg)
         except OSError:
@@ -1415,6 +1453,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         de son empreinte. Les envoyer permettrait a n'importe quelle session
         d'emporter celle des autres comptes et de l'attaquer hors ligne."""
         cfg = charger_config()
+        # Un profil qui vient d etre cree n a pas encore vu passer le cycle de
+        # collecte : sa vue est calculee ici, sinon le navigateur recevrait un
+        # profil sans tableau et en fabriquerait un de son cote.
+        assurer_vues(cfg)
         for u in (cfg.get("users") or []):
             u["pwd"] = "1" if u.get("pwd") else ""
         # Le compte de secours est retire de la liste envoyee : il ne doit
@@ -1461,6 +1503,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Les empreintes de mots de passe restent l'affaire du serveur : le
         # navigateur ne peut ni les lire ni les remplacer via cette route.
         anciens = {u.get("nom"): u.get("pwd", "") for u in users_actuels}
+        vues_actuelles = {u.get("nom"): u.get("vue") for u in users_actuels
+                          if isinstance(u.get("vue"), dict)}
         noms_caches = {u.get("nom") for u in caches}
         propres = []
         for u in (recu.get("users") or []):
@@ -1470,10 +1514,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if u.get("nom") in noms_caches:
                 continue
             u["pwd"] = anciens.get(u.get("nom"), "")
+            # La vue est personnelle : une session ne compose que son propre
+            # tableau. Celle des autres est remise telle qu elle etait, meme si
+            # le navigateur en renvoie une copie modifiee.
+            if u.get("nom") != courant and u.get("nom") in vues_actuelles:
+                # Un profil deja connu garde la vue qu il s est composee : une
+                # autre session ne recompose pas son tableau, meme en renvoyant
+                # une configuration entiere qui pretend le contraire. Un profil
+                # qui vient d etre cree, lui, arrive avec la sienne — reprise du
+                # tableau existant ou page blanche, c est le choix fait a la
+                # creation.
+                u["vue"] = vues_actuelles[u.get("nom")]
             propres.append(u)
         recu["users"] = propres + caches
 
         assurer_ids(recu)
+        assurer_vues(recu)
         # Ce que le navigateur ne connait pas, il ne doit pas l effacer : les
         # reglages de notification vivent dans le meme fichier.
         for garde in ("notif",):

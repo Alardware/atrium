@@ -124,12 +124,26 @@ ligne, non surveillées. Chacun dit combien, et ne garde qu'eux quand on le
 clique — recliquer défait le filtre. En dessous de trois applications, la
 rangée ne s'affiche pas : elle pèserait plus qu'elle n'aiderait.
 
+### Un tableau par profil, des services communs
+
+Les services sont déclarés une fois pour la maison : une adresse, une clé, une
+sonde. Personne ne configure Plex deux fois, et Atrium ne l'interroge pas deux
+fois non plus.
+
+Ce qui appartient à chaque profil, c'est la **composition** : quelles
+applications apparaissent, dans quel ordre, lesquelles sont en favori, et
+quelles mesures on veut voir sur leurs tuiles. À la création d'un profil, deux
+départs possibles — reprendre le tableau existant, ou partir d'un écran vide
+que l'on garnit en piochant dans les services de la maison.
+
+Un profil ne peut composer que son propre tableau : le serveur remet en place
+la vue des autres, même si le navigateur en renvoie une version modifiée.
+
 ### Ranger les tuiles
 
-En mode création, une tuile se saisit et se dépose où on veut : l'ordre affiché
-est celui de la configuration, partagé avec les autres appareils. Le classement
-par catégorie et la recherche ne changent que la vue — la place retenue reste
-la vraie.
+En mode création, une tuile se saisit et se dépose où on veut. L'ordre est
+celui de votre profil, partagé entre vos appareils ; le classement par
+catégorie et la recherche ne changent que l'affichage.
 
 ### Notifications
 
