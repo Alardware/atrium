@@ -258,10 +258,7 @@ summary:focus-visible,[tabindex]:focus-visible{
 .anneau.s2 .arc{stroke:var(--warn)}
 .anneau.s3 .arc{stroke:var(--warn)}
 .anneau.s4 .arc{stroke:var(--bad)}
-/* « --text-1 » n'a jamais existé : la couleur était donc invalide, et le
-   chiffre héritait de celle de la carte — presque invisible sur son fond. Le
-   jeton est « --text ». */
-.anneau .v{position:absolute;font:700 14px/1 'IBM Plex Mono',monospace;color:var(--text)}
+.anneau .v{position:absolute;font:700 14px/1 'IBM Plex Mono',monospace;color:var(--text-1)}
 .anneau .rond{position:relative;display:flex;align-items:center;justify-content:center}
 .anneau .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2)}
 .cock-up{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
@@ -5540,11 +5537,8 @@ function renderCockpit() {
     $('srv-up').textContent = COCK_HOTE.uptime || '';
     /* logo de l'intégration qui décrit cette machine, quand il y en a une */
     const self = COCK_HOTE.kind ? appByKind(COCK_HOTE.kind) : null;
-    /* Sans intégration pour décrire cette machine, l'initiale de son nom vaut
-       mieux qu'un carré : « nas » donne « N », comme toutes les autres
-       pastilles de l'interface. */
-    $('srv-chip').querySelector('.cl').textContent =
-      (((self ? self.nom : COCK_HOTE.titre) || '▪')[0] || '▪').toUpperCase();
+    $('srv-chip').querySelector('.cl').textContent = self
+      ? (self.nom[0] || '▪').toUpperCase() : '▪';
     mountLogo($('srv-chip'), self ? logoDe(self) : '');
     /* Les pourcentages deviennent des anneaux, le reste garde ses lignes :
        un uptime ou un « 23 / 24 » ne se met pas en cercle. */

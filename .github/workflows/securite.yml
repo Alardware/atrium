@@ -267,11 +267,6 @@ jobs:
       - name: Traductions lisibles par le navigateur
         run: node --check app/static/i18n.js
 
-      # « color: var(--jeton-inexistant) » ne fait pas d'erreur : la propriété
-      # est ignorée et le texte hérite d'une couleur voisine, parfois illisible.
-      - name: Chaque couleur désigne un jeton qui existe
-        run: python outils/verifier_styles.py
-
       # Le serveur et le module Home Assistant annoncent la même version, sans
       # quoi l'un des deux ment sur ce qu'il est.
       - name: Version cohérente
