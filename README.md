@@ -444,6 +444,7 @@ python outils/test_lecteurs.py                          # les intégrations, fac
 python outils/test_notifications.py                     # prévenir sur bascule, et se taire le reste du temps
 python outils/test_entree.py                            # l'abandon des privilèges, décision par décision
 python outils/test_nut.py                               # un onduleur lu par NUT, face à un faux upsd
+python outils/verifier_styles.py                        # aucune couleur ne désigne un jeton inexistant
 ```
 
 L'interface a les siennes, qui montent la vraie page dans un DOM et regardent

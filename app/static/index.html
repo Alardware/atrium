@@ -258,7 +258,10 @@ summary:focus-visible,[tabindex]:focus-visible{
 .anneau.s2 .arc{stroke:var(--warn)}
 .anneau.s3 .arc{stroke:var(--warn)}
 .anneau.s4 .arc{stroke:var(--bad)}
-.anneau .v{position:absolute;font:700 14px/1 'IBM Plex Mono',monospace;color:var(--text-1)}
+/* « --text-1 » n'a jamais existé : la couleur était donc invalide, et le
+   chiffre héritait de celle de la carte — presque invisible sur son fond. Le
+   jeton est « --text ». */
+.anneau .v{position:absolute;font:700 14px/1 'IBM Plex Mono',monospace;color:var(--text)}
 .anneau .rond{position:relative;display:flex;align-items:center;justify-content:center}
 .anneau .l{font:600 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.07em;color:var(--muted-2)}
 .cock-up{margin-left:auto;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted-2)}
