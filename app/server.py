@@ -569,6 +569,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
         self.send_header("Referrer-Policy", "same-origin")
+        # Un tableau de bord n'a rien a faire de la camera ni du micro :
+        # le refuser ici retire l'autorisation a tout ce que la page
+        # charge, y compris a un script qui serait parvenu a s'y glisser.
+        self.send_header("Permissions-Policy",
+                         "camera=(), microphone=(), geolocation=(), "
+                         "payment=(), usb=(), serial=(), hid=()")
         # L'interface ne doit jamais rester en cache : sinon une mise a jour du
         # conteneur laisse tourner l'ancien code dans le navigateur.
         page = (self.path.split("?")[0].rstrip("/") in ("", "/index.html")
@@ -579,8 +585,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # du reseau en direct. Le reste ferme le chargement de code externe.
             # Les deux origines de Google Fonts sont nommees explicitement :
             # l'interface y charge sa typographie. Tout le reste est ferme.
+            # Le script de la page porte un nonce tire au sort a chaque
+            # envoi : « unsafe-inline » disparait, et un <script> qu'une
+            # faille aurait glisse dans le DOM ne s'executerait pas,
+            # faute de connaitre ce nonce. Il ne sert qu'une fois.
+            nonce = getattr(self, "_nonce", None)
+            self._nonce = None
             self.send_header("Content-Security-Policy",
-                             "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                             "default-src 'self'; script-src 'self'%s; "
+                             % (" 'nonce-%s'" % nonce if nonce else "") +
                              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                              "font-src 'self' https://fonts.gstatic.com; "
                              "img-src 'self' data: http: https:; connect-src *; "
@@ -687,6 +700,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return False
 
     # ---------- routage ----------
+    def servir_page(self):
+        """Sert l'interface, son script marque d'un nonce tire au sort.
+
+        La page n'a qu'un seul bloc de script inline et aucun attribut
+        « onclick » : lui donner un nonce suffit a fermer « unsafe-inline »
+        dans la CSP, sans rien changer a son fonctionnement.
+        """
+        try:
+            with open(os.path.join(STATIC, "index.html"), "rb") as f:
+                page = f.read()
+        except OSError:
+            self.send_error(404)
+            return
+        self._nonce = secrets.token_urlsafe(16)
+        page = page.replace(b"<script>",
+                            b'<script nonce="' + self._nonce.encode("ascii") + b'">', 1)
+        self.reply(200, page, "text/html; charset=utf-8")
+
     def do_GET(self):
         route = self.path.split("?")[0]
         if self.path.startswith("/px?"):
@@ -770,6 +801,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     "progres": avancement_conteneurs(),
                     "releve": _releve["a"],
                 }, ensure_ascii=False).encode())
+        elif route.rstrip("/") in ("", "/index.html"):
+            self.servir_page()
         else:
             super().do_GET()
 
@@ -1539,7 +1572,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.ecrire_config(recu)
             self.reply(200, b'{"ok":true}')
         except OSError as e:
-            self.reply(500, json.dumps({"error": str(e)}).encode())
+            # Le detail (chemin, droits, place restante) reste dans le
+            # journal du serveur : le navigateur n'a pas a le connaitre.
+            print("ecriture de la configuration impossible : %s: %s"
+                  % (type(e).__name__, e), flush=True)
+            self.reply(500, json.dumps(
+                {"error": "Enregistrement impossible. Voir le journal du serveur."},
+                ensure_ascii=False).encode())
 
     # ---------- relais vers les API des services ----------
     def proxy(self):

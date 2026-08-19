@@ -12,7 +12,7 @@
    fonctionner.
 
    Usage :
-       npm install --no-save jsdom
+       npm install --no-save jsdom axe-core
        node outils/front/lancer.js [nom-de-suite]
 */
 const { spawnSync } = require('child_process');

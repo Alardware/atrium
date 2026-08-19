@@ -89,6 +89,16 @@ def appel(methode, chemin, corps, cookie=None):
         return 0, str(e).encode()
 
 
+def page():
+    """L interface, avec ses en-tetes : ce que le navigateur recoit vraiment."""
+    r = urllib.request.Request(BASE + "/", method="GET")
+    try:
+        with urllib.request.urlopen(r, timeout=20) as rep:
+            return dict(rep.headers), rep.read(2000000)
+    except Exception as e:                                 # noqa: BLE001
+        return {}, str(e).encode()
+
+
 def session():
     """Un profil et son cookie. Le premier appel installe Atrium si besoin."""
     etat = json.loads(appel("GET", "/api/session", None)[1] or b"{}")
@@ -151,6 +161,43 @@ def main():
         print("%-30s -> %-4s %s" % (nom, code, "ok" if ok else "!!! ATTENDU %s" % (attendus,)))
         if not ok:
             souci.append("%s : %s" % (nom, code))
+
+    print()
+    print("--- ce que le navigateur recoit ---")
+    # Le script de la page est autorise par un nonce tire au sort a chaque
+    # envoi. Si « unsafe-inline » revenait dans script-src, n importe quel
+    # script glisse dans le DOM redeviendrait executable : ce controle est la
+    # pour que ce retour en arriere ne passe pas inapercu.
+    ent, corps = page()
+    csp = ent.get("Content-Security-Policy", "")
+    script_src = ""
+    for morceau in csp.split(";"):
+        if morceau.strip().startswith("script-src"):
+            script_src = morceau.strip()
+    nonce = re.search(r"'nonce-([A-Za-z0-9_+/=-]+)'", script_src)
+    ent2, _ = page()
+    nonce2 = re.search(r"'nonce-([A-Za-z0-9_+/=-]+)'",
+                       ent2.get("Content-Security-Policy", ""))
+    controles_en_tete = [
+        ("script-src sans unsafe-inline", "'unsafe-inline'" not in script_src, script_src),
+        ("script-src porte un nonce", bool(nonce), script_src),
+        ("la page porte le meme nonce",
+         bool(nonce) and ('<script nonce="%s">' % nonce.group(1)).encode() in corps,
+         "nonce=%s" % (nonce.group(1) if nonce else "-")),
+        ("le nonce change a chaque envoi",
+         bool(nonce and nonce2 and nonce.group(1) != nonce2.group(1)),
+         "%s / %s" % (nonce.group(1)[:8] if nonce else "-",
+                      nonce2.group(1)[:8] if nonce2 else "-")),
+        ("frame-ancestors ferme", "frame-ancestors" in csp, ""),
+        ("Permissions-Policy pose", bool(ent.get("Permissions-Policy")), ""),
+        ("nosniff", ent.get("X-Content-Type-Options") == "nosniff", ""),
+        ("Referrer-Policy", bool(ent.get("Referrer-Policy")), ""),
+        ("page hors cache", "no-store" in (ent.get("Cache-Control") or ""), ""),
+    ]
+    for nom, ok, detail in controles_en_tete:
+        print("%-32s %s %s" % (nom, "ok" if ok else "!!! MANQUE", detail[:70]))
+        if not ok:
+            souci.append(nom)
 
     print()
     print("--- ce que les reponses laissent voir ---")

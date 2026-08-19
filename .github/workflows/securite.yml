@@ -199,13 +199,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      # jsdom ne sert qu'à ces suites : il n'entre ni dans l'image, ni dans ce
-      # que l'utilisateur installe. « --no-save » le dit.
-      - name: Installer jsdom
-        run: npm install --no-save jsdom@29
+      # jsdom et axe-core ne servent qu'à ces suites : ils n'entrent ni dans
+      # l'image, ni dans ce que l'utilisateur installe. « --no-save » le dit.
+      - name: Installer jsdom et axe-core
+        run: npm install --no-save jsdom@29 axe-core@4
       # La page est montée telle quelle, nourrie de données, et l'on regarde ce
       # qu'elle en fait : filtres, rangement des tuiles, barre d'attente Docker,
-      # carte onduleur, logos, sélection de texte, fenêtres.
+      # carte onduleur, logos, sélection de texte, fenêtres — et ce qu'elle
+      # donne à lire à qui ne la voit pas (WCAG 2.2 AA, axe-core).
       - name: Suites d'interface
         run: node outils/front/lancer.js
 
