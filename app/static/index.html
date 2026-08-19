@@ -1727,6 +1727,94 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
    Certains utilisateurs souffrent de vertiges avec les animations. Le réglage
    d'Apparence reste utile pour les autres, mais il ne peut pas passer outre
    cette demande-là. */
+/* ---- Six mouvements -------------------------------------------------------
+
+   Tous natifs : ni bibliothèque, ni WebGL. La règle de sécurité du contenu
+   interdit désormais tout script externe, et une tablette murale ne doit pas
+   faire tourner un shader la nuit.
+
+   Rien à câbler pour les couper : « data-anim=0 » (Réglages → Apparence)
+   neutralise déjà toute animation de la page, et le réglage système
+   « animations réduites » aussi. Ces six-là en héritent.
+
+   Aucun n'est décoratif : chacun répond à une question qu'on se posait en
+   regardant l'écran.                                                      */
+
+
+/* 1 — Un chiffre qui change se compte, il ne saute pas.
+       Le calcul vit dans anims.js. Ici, on réserve seulement la place : des
+       chiffres de largeurs inégales feraient tressauter la ligne pendant le
+       décompte, et le mouvement se lirait comme un défaut. */
+.mes-v b,.anneau .v,.cock-v{font-variant-numeric:tabular-nums}
+
+
+/* 2 — Un service tombé respire, et sa bordure tourne.
+       Une pastille rouge ne se voit pas de l'autre bout de la pièce. Une
+       tuile qui souffle, si. Deux secondes et demie par cycle : de quoi
+       signaler sans harceler, et le tour de bordure est plus lent encore
+       pour que les deux ne battent pas ensemble. */
+@property --tour{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes souffle{0%,100%{box-shadow:0 0 0 0 var(--bad-soft)}
+                   55%{box-shadow:0 0 0 7px transparent}}
+@keyframes tour{to{--tour:360deg}}
+.app-card.panne{position:relative;animation:souffle 2.6s ease-in-out infinite}
+/* Une bordure en dégradé conique, découpée au masque pour n'en garder que le
+   liseré : un rectangle plein, masqué par lui-même moins son intérieur. */
+.app-card.panne::before{content:'';position:absolute;inset:-1px;border-radius:inherit;
+  padding:1px;pointer-events:none;z-index:1;
+  background:conic-gradient(from var(--tour),transparent 0deg,
+                            var(--bad) 34deg,transparent 88deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask-composite:exclude;
+  animation:tour 3.4s linear infinite}
+
+
+/* 3 — Un anneau et une courbe se tracent au lieu d'apparaître tracés.
+       Une jauge posée d'un coup ne dit pas d'où elle vient ; la même,
+       dessinée en une seconde, montre le chemin parcouru et se lit sans
+       chercher le chiffre. Le tracé n'a lieu qu'à l'ouverture du panneau,
+       jamais à chaque relevé — sans quoi il deviendrait du bruit. */
+.anneau .arc.trace{transition:stroke-dashoffset 1.15s cubic-bezier(.22,1,.36,1)}
+.crb polyline.trace{transition:stroke-dashoffset 1.35s cubic-bezier(.22,1,.36,1)}
+
+
+/* 4 — Ce qu'on presse s'enfonce.
+       Au doigt, rien ne survole : sans retour, on ne sait pas si la tuile a
+       reçu le contact, et on tape deux fois. Le rebond est court et sec, à
+       peine plus d'un tiers de seconde. */
+@keyframes ressort{0%{transform:scale(.965)}
+                   55%{transform:scale(1.014)}
+                   100%{transform:scale(1)}}
+.grid:not(.list) .app-card:active{transform:translateY(-2px) scale(.975)}
+.grid.list .app-card:active{transform:scale(.99)}
+.app-card.presse,.btn.presse,.act-btn.presse{animation:ressort .34s cubic-bezier(.2,.8,.3,1)}
+
+
+/* 5 — Sous l'en-tête, le contenu se dissout au lieu d'être coupé.
+       L'en-tête est collant : au défilement, les tuiles passaient dessous et
+       s'arrêtaient net sur son trait. Une bande de flou dégressive, haute de
+       vingt-deux pixels, rend au regard ce que la coupure est déjà pour la
+       page — une transition, pas une frontière. */
+.topbar::after{content:'';position:absolute;left:0;right:0;top:100%;height:22px;
+  pointer-events:none;backdrop-filter:blur(7px);
+  -webkit-mask-image:linear-gradient(#000 0%,transparent 100%);
+  mask-image:linear-gradient(#000 0%,transparent 100%)}
+
+
+/* 6 — L'écran de connexion respire.
+       La trame était fixe : l'écran paraissait prêt, mais figé. Elle dérive
+       d'une case toutes les trente-huit secondes — assez lent pour qu'on ne
+       la surprenne jamais en mouvement, assez pour que l'écran ait l'air
+       vivant. Le halo derrière la boîte enfle du même souffle.
+       Ce mouvement-là ne coûte rien : il s'arrête dès qu'on est connecté,
+       puisque l'écran disparaît. */
+@keyframes derive{to{background-position:64px 64px,64px 64px}}
+@keyframes halo{0%,100%{opacity:.42}50%{opacity:.62}}
+.lock::before{animation:derive 38s linear infinite}
+.lock-box{animation:halo 7s ease-in-out infinite}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     animation-duration:.001s !important;animation-iteration-count:1 !important;
@@ -5564,6 +5652,9 @@ function renderCockpit() {
     anneaux.textContent = '';
     COCK_HOTE.rows.filter((r) => r.v != null).slice(0, 3)
       .forEach((r) => anneaux.appendChild(anneau(r.label, r.v, r.detail)));
+    /* Au premier affichage seulement. A chaque releve, ce serait du bruit :
+       les jauges bougent deja d elles-memes. */
+    if (!ANNEAUX_TRACES) { ANNEAUX_TRACES = true; tracerAnneaux(anneaux); }
     const zone = $('srv-rows');
     zone.textContent = '';
     COCK_HOTE.rows.filter((r) => r.v == null).forEach((r) => {
@@ -6649,6 +6740,190 @@ async function pollDirect() {
 /* Ce que la tuile affichait au tour precedent. Sans cette memoire, un chiffre
    « qui change » serait indistinguable d'un chiffre redessine a l'identique :
    la grille est reconstruite a chaque releve. */
+/* ---- Ce que le CSS ne sait pas faire seul ---------------------------------
+
+   Trois mouvements demandent de connaître une valeur : compter d'un nombre
+   vers un autre, et mesurer la longueur d'un tracé pour le dérouler. Le reste
+   des six est en CSS pur.
+
+   Aucun n'ajoute de minuterie permanente : tout part d'un évènement — une
+   mesure qui change, un panneau qui s'ouvre, un doigt qui se pose — et
+   s'arrête de lui-même.                                                   */
+
+
+/* Le même interrupteur que le reste de la page. Sans lui, le décompte
+   continuerait de tourner alors qu'on a demandé le calme. */
+function mouvementsCoupes() {
+  return !animations
+    || document.documentElement.getAttribute('data-anim') === '0'
+    || (window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+
+/* --- 1. Un chiffre qui se compte ------------------------------------------
+
+   Une mesure garde sa forme : « 46 % », « 4.2 Mo/s », « 24 318 ». On ne
+   compte donc pas la chaîne, on compte le nombre qu'elle contient et on
+   réécrit la chaîne autour à chaque image — l'unité, l'espace des milliers et
+   la virgule restent ceux que le serveur a envoyés.                        */
+
+/* Un separateur de milliers ne compte que s'il est suivi de trois chiffres.
+   Sans cette precision, « 68 % » verrait son espace avale et reviendrait
+   « 68% ». Trois formes circulent : l'espace ordinaire, l'insecable, et
+   l'insecable etroite — celle que « toLocaleString » pose en francais. */
+const SEPARATEUR = /[\u0020\u00a0\u202f]/;
+const NOMBRE = /-?\d+(?:[\u0020\u00a0\u202f]\d{3})*(?:[.,]\d+)?/;
+
+function versNombre(texte) {
+  const m = String(texte).match(NOMBRE);
+  if (!m) return null;
+  const sep = (m[0].match(SEPARATEUR) || [''])[0];
+  const nu = sep ? m[0].split(sep).join('') : m[0];
+  return {
+    val: parseFloat(nu.replace(',', '.')),
+    avant: texte.slice(0, m.index),
+    apres: texte.slice(m.index + m[0].length),
+    /* Le nombre de decimales de la valeur d'arrivee fait loi : compter
+       « 4.2 » en entiers donnerait 0, 1, 2, 3, 4 — un mensonge. */
+    dec: (nu.split(/[.,]/)[1] || '').length,
+    /* On repose le separateur qu'on a trouve, pas celui qu'on prefere. */
+    sep: sep,
+    virgule: nu.indexOf(',') >= 0,
+  };
+}
+
+function ecrire(f, v) {
+  let s = v.toFixed(f.dec);
+  if (f.virgule) s = s.replace('.', ',');
+  if (f.sep) {
+    const p = s.split(f.virgule ? ',' : '.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, f.sep);
+    s = p.join(f.virgule ? ',' : '.');
+  }
+  return f.avant + s + f.apres;
+}
+
+/* Trois cent cinquante millisecondes ne suffisent pas à lire un chiffre qui
+   bouge, et une seconde le fait attendre. Six cent cinquante, en sortie
+   douce : le regard attrape la fin du décompte. */
+function compter(el, depuis, vers, ms) {
+  const a = versNombre(depuis), b = versNombre(vers);
+  if (!a || !b || a.val === b.val || mouvementsCoupes()) { el.textContent = vers; return; }
+  const duree = ms || 650;
+  const debut = performance.now();
+  /* Une mesure peut changer pendant le décompte : le jeton fait abandonner le
+     compte précédent au lieu de laisser deux boucles se disputer le nœud. */
+  const jeton = (el.__compte = (el.__compte || 0) + 1);
+  (function image(t) {
+    if (el.__compte !== jeton) return;
+    const p = Math.min(1, (t - debut) / duree);
+    const doux = 1 - Math.pow(1 - p, 3);
+    el.textContent = ecrire(b, a.val + (b.val - a.val) * doux);
+    if (p < 1) requestAnimationFrame(image);
+    else el.textContent = vers;
+  })(debut);
+}
+
+/* Posé à la place d'une écriture directe : « poserMesure(b, '46 %') » compte
+   si le nœud portait déjà un nombre, et écrit sèchement sinon. */
+function poserMesure(el, texte) {
+  const ancien = el.textContent;
+  if (ancien && ancien !== texte) compter(el, ancien, texte);
+  else el.textContent = texte;
+}
+
+
+/* --- 2. Un tracé qui se déroule -------------------------------------------
+
+   Le principe tient en deux lignes : on donne au trait des tirets aussi longs
+   que lui, puis on ramène le décalage à zéro. Le navigateur fait le reste.
+   Il faut donc sa longueur — d'où le passage par le DOM, que le CSS ne peut
+   pas faire.                                                              */
+
+function derouler(noeud, ms) {
+  if (!noeud || mouvementsCoupes()) return;
+  let L;
+  try { L = noeud.getTotalLength(); } catch (e) { return; }   // pas encore mesurable
+  if (!L) return;
+  const duree = ms || 1350;
+  noeud.style.transition = 'none';
+  noeud.style.strokeDasharray = L;
+  noeud.style.strokeDashoffset = L;
+  /* Deux images d'attente : une seule suffit sur un poste, pas sur une
+     tablette qui vient de peindre le panneau. */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    noeud.style.transition = 'stroke-dashoffset ' + (duree / 1000)
+                           + 's cubic-bezier(.22,1,.36,1)';
+    noeud.style.strokeDashoffset = '0';
+    /* On rend ensuite le trait à son état nu : un tiret résiduel se verrait
+       au redimensionnement, quand la longueur change sous nos pieds. */
+    setTimeout(() => {
+      noeud.style.transition = '';
+      noeud.style.strokeDasharray = '';
+      noeud.style.strokeDashoffset = '';
+    }, duree + 60);
+  }));
+}
+
+/* Les anneaux, eux, portent déjà leur valeur en décalage de tirets : on les
+   remet à vide, et la transition du CSS les remplit. */
+function tracerAnneaux(zone) {
+  if (!zone || mouvementsCoupes()) return;
+  [].forEach.call(zone.querySelectorAll('.anneau .arc'), (arc) => {
+    const vise = arc.style.strokeDashoffset || arc.getAttribute('stroke-dashoffset');
+    const tour = arc.style.strokeDasharray || arc.getAttribute('stroke-dasharray');
+    if (!tour) return;
+    arc.classList.remove('trace');
+    arc.style.strokeDashoffset = tour;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      arc.classList.add('trace');
+      arc.style.strokeDashoffset = vise;
+    }));
+  });
+}
+
+function tracerCourbes(zone) {
+  if (!zone) return;
+  [].forEach.call(zone.querySelectorAll('.crb polyline'), (p) => derouler(p));
+}
+
+
+/* --- 3. Ce qu'on presse s'enfonce -----------------------------------------
+
+   Un seul écouteur pour toute la page : le retour tactile n'a pas à être
+   recâblé à chaque rendu de la grille.                                    */
+
+function ecouterPressions() {
+  document.addEventListener('pointerdown', (e) => {
+    if (mouvementsCoupes()) return;
+    const cible = e.target.closest && e.target.closest('.app-card,.btn,.act-btn');
+    if (!cible) return;
+    cible.classList.remove('presse');
+    void cible.offsetWidth;              // redémarre l'animation
+    cible.classList.add('presse');
+    setTimeout(() => cible.classList.remove('presse'), 360);
+  }, { passive: true });
+}
+
+
+/* --- 4. La tuile qui souffle ----------------------------------------------
+
+   Rien à animer en JavaScript : poser la classe suffit, le CSS s'occupe du
+   reste. La fonction n'existe que pour dire où la décision se prend — un
+   service hors ligne, et lui seul. Un service dégradé garde sa pastille
+   orange : deux tuiles qui respirent, et plus aucune n'attire l'œil.      */
+
+function marquerPanne(carte, etat) {
+  carte.classList.toggle('panne', etat === 'off');
+}
+
+/* Le retour tactile est delegue : une seule pose, pour toute la page. */
+ecouterPressions();
+
+/* Les jauges ne se dessinent qu au premier affichage. */
+let ANNEAUX_TRACES = false;
+
 const MEM_VAL = new Map();
 const MEM_SANTE = new Map();
 
@@ -6722,6 +6997,9 @@ function appCard(app, index) {
     if (bascule) na.classList.add('bascule');
     na.querySelector('.lbl').textContent = t(app.url ? 'app.checking' : 'app.nourl');
   }
+  /* Hors ligne, et lui seul : si le degrade respirait aussi, plus rien
+     n attirerait l oeil. */
+  marquerPanne(a, sant);
   mountLogo(a.querySelector('.logo-chip'), logoDe(app));
 
   /* Les mesures tiennent sur une ligne plutôt que dans des boîtes.
@@ -6777,12 +7055,19 @@ function appCard(app, index) {
         v.dataset.mes = vedette.id;
         v.setAttribute('role', 'button');
         v.tabIndex = 0;
-        if (aChange(MEM_VAL, cleApp(app) + '|' + vedette.id + '|' + vedette.lab,
-                    vedette.val)) {
-          v.classList.add('maj');
-        }
+        /* La tuile est reconstruite a chaque rendu : l ancienne valeur ne vit
+           plus dans le DOM, elle vit dans MEM_VAL. On l y reprend pour que le
+           chiffre parte d ou il etait, au lieu de surgir a sa place neuve. */
+        const cleV = cleApp(app) + '|' + vedette.id + '|' + vedette.lab;
+        const avant = MEM_VAL.get(cleV);
         const gros = document.createElement('b');
-        gros.textContent = vedette.val;
+        if (aChange(MEM_VAL, cleV, vedette.val)) {
+          v.classList.add('maj');
+          gros.textContent = avant;
+          compter(gros, avant, vedette.val);
+        } else {
+          gros.textContent = vedette.val;
+        }
         const lab = document.createElement('i');
         lab.textContent = etiquette(vedette).toLowerCase();
         v.appendChild(gros);
@@ -8433,6 +8718,9 @@ function spNav(p) {
   $('spage-content-top') && $('spage-content-top').scrollTo(0, 0);
   document.querySelector('.spage-content').scrollTop = 0;
   majPastillesReglages();
+  /* La liste se peint juste apres : on laisse une image passer avant de
+     mesurer les traces. */
+  if (p === 'conn') setTimeout(() => tracerCourbes($('sp-conn')), 60);
   if (p === 'journal') {
     renderJournal();
   }
