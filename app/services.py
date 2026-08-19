@@ -360,10 +360,27 @@ def s_syncthing(base, cle):
 
 
 def s_npm(base, cle):
+    """Nginx Proxy Manager, reconnu a la forme de sa reponse.
+
+    Les versions 2.x ne portent plus leur nom : « /api/ » rend un objet de
+    trois champs — un etat, un drapeau d installation, une version en trois
+    nombres. Chercher « Nginx Proxy Manager » dans le corps ne trouvait donc
+    plus rien, et le service restait non reconnu malgre une API en parfait
+    etat de marche.
+
+    La forme suffit a l identifier, et reste exigeante : un service qui repond
+    seulement « OK » n en fait pas partie.
+    """
     code, corps, _ = _http(base + "/api/")
     j = _json(corps)
-    if code == 200 and isinstance(j, dict) and "Nginx Proxy Manager" in json.dumps(j):
+    if code != 200 or not isinstance(j, dict):
+        return None
+    if "Nginx Proxy Manager" in json.dumps(j):
         return "Nginx Proxy Manager", None
+    v = j.get("version")
+    if (j.get("status") == "OK" and "setup" in j and isinstance(v, dict)
+            and all(k in v for k in ("major", "minor", "revision"))):
+        return "Nginx Proxy Manager", "%s.%s.%s" % (v["major"], v["minor"], v["revision"])
     return None
 
 
@@ -693,7 +710,10 @@ CATALOGUE = [
     ("unifi", s_unifi, "Clé API UniFi"),
     ("adguard", s_adguard, ""),
     ("pihole", s_pihole, "Mot de passe / jeton"),
-    ("npm", s_npm, ""),
+    # Le libelle vide laissait croire qu il n y avait rien a saisir, alors que
+    # le lecteur reclame un compte : l API de NPM ne delivre un jeton que
+    # contre les identifiants de l administrateur.
+    ("npm", s_npm, "Courriel:mot de passe du compte"),
     ("wgeasy", s_wgeasy, ""),
     # fichiers
     ("nextcloud", s_nextcloud, ""),

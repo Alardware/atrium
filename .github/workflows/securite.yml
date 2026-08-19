@@ -291,6 +291,11 @@ jobs:
       - name: Onduleur (NUT)
         run: python outils/test_nut.py
 
+      # Un proxy qui ne dit plus son nom : la signature doit le reconnaître à la
+      # forme de sa réponse, sans devenir complaisante pour autant.
+      - name: Nginx Proxy Manager
+        run: python outils/test_npm.py
+
       # Trois téléchargeurs avec leurs travers — cookie de session, jeton rendu
       # par un 409, JSON-RPC en Basic — plus les versions d'API des suites *arr
       # et les sondes thermiques d'une puce Super I/O.
