@@ -6,6 +6,12 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# Une publication ne s'annule pas en cours de route : deux poussées
+# rapprochées se suivent au lieu de se marcher dessus.
+concurrency:
+  group: publication-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -13,6 +19,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Trois architectures compilées par émulation : large, mais borné.
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write

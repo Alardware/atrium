@@ -100,6 +100,7 @@ accorde ce pouvoir, pas l'usage qu'Atrium en fait.
 | Démarrage de l'image | le conteneur est lancé et doit répondre |
 | Descente de privilèges | l'image est lancée avec `PUID`/`PGID`, et le processus doit tourner sous ce compte |
 | Point d'entrée | les décisions d'abandon de privilèges, situation par situation |
+| Interface | onze suites qui montent la vraie page dans un DOM et vérifient ce qu'elle affiche |
 
 Les routes ne sont pas recopiées dans le test : elles sont relues dans le
 source du serveur. Une route ajoutée sans garde apparaît donc le jour même.

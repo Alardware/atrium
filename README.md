@@ -427,6 +427,16 @@ python outils/test_imposteurs.py                        # aucune signature ne se
 python outils/test_lecteurs.py                          # les intégrations, face à des API qui imitent les vraies
 python outils/test_notifications.py                     # prévenir sur bascule, et se taire le reste du temps
 python outils/test_entree.py                            # l'abandon des privilèges, décision par décision
+python outils/test_nut.py                               # un onduleur lu par NUT, face à un faux upsd
+```
+
+L'interface a les siennes, qui montent la vraie page dans un DOM et regardent
+ce qu'elle fait de données injectées — filtres, rangement des tuiles, barre
+d'attente Docker, carte onduleur, logos, sélection de texte :
+
+```bash
+npm install --no-save jsdom
+node outils/front/lancer.js
 ```
 
 `audit_securite.py` ne recopie pas la liste des routes : il la relit dans le
@@ -436,6 +446,9 @@ jour même, et non le jour où quelqu'un pense à l'inscrire dans un test.
 [La chaîne d'analyse](.github/workflows/securite.yml) rejoue tout cela à chaque
 poussée, plus CodeQL, Bandit, gitleaks et Trivy, et lance l'image construite
 pour vérifier qu'elle démarre et descend bien sous le compte demandé.
+
+`jsdom` n'est utilisé que par ces suites : il n'entre pas dans l'image, et
+n'est pas une dépendance d'Atrium — l'application n'en a toujours aucune.
 
 ## Licence
 

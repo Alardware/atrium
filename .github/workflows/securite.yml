@@ -17,15 +17,28 @@ on:
     - cron: "17 4 * * 1"
   workflow_dispatch:
 
+# Deux poussées rapprochées lançaient deux chaînes complètes, dont la première
+# n'intéressait plus personne. Sur une demande de fusion, la précédente est donc
+# annulée. Sur « main », jamais : chaque commit garde son verdict, et c'est ce
+# verdict qui autorise à poser un tag dessus.
+concurrency:
+  group: analyse-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Le minimum au niveau de la chaîne ; chaque travail élargit s'il doit déposer
+# ses résultats dans l'onglet Security.
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   # ---- SAST : le code lui-même ---------------------------------------------
   codeql:
     name: SAST — CodeQL (${{ matrix.langue }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +56,10 @@ jobs:
   bandit:
     name: SAST — Bandit (Python)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v7
@@ -62,6 +79,10 @@ jobs:
   secrets:
     name: Détection de secrets
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,6 +109,10 @@ jobs:
   image:
     name: Image et infrastructure — Trivy
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -162,10 +187,37 @@ jobs:
           sarif_file: trivy-config.sarif
           category: trivy-config
 
+  # ---- l'interface, dans un vrai DOM ---------------------------------------
+  front:
+    name: Interface (jsdom)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # jsdom ne sert qu'à ces suites : il n'entre ni dans l'image, ni dans ce
+      # que l'utilisateur installe. « --no-save » le dit.
+      - name: Installer jsdom
+        run: npm install --no-save jsdom@29
+      # La page est montée telle quelle, nourrie de données, et l'on regarde ce
+      # qu'elle en fait : filtres, rangement des tuiles, barre d'attente Docker,
+      # carte onduleur, logos, sélection de texte, fenêtres.
+      - name: Suites d'interface
+        run: node outils/front/lancer.js
+
   # ---- DAST : l'application en marche --------------------------------------
   matrice:
     name: DAST — matrice des routes
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Ce travail ne dépose rien dans l'onglet Security : il n'a donc pas besoin
+    # d'y écrire.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v7
@@ -175,11 +227,15 @@ jobs:
       - name: Démarrer Atrium
         run: |
           mkdir -p /tmp/atrium
-          ATRIUM_PORT=8420 ATRIUM_CONFIG_DIR=/tmp/atrium python app/server.py &
+          ATRIUM_PORT=8420 ATRIUM_CONFIG_DIR=/tmp/atrium python app/server.py             > /tmp/atrium/serveur.log 2>&1 &
           for i in $(seq 30); do
             curl -sf http://127.0.0.1:8420/api/health && break
             sleep 1
           done
+          # Sans ce contrôle, un serveur mort-né se voyait deux étapes plus loin,
+          # sous le nom d'un test qui n'y était pour rien.
+          curl -sf http://127.0.0.1:8420/api/health > /dev/null || {
+            echo "le serveur n'a pas démarré :"; cat /tmp/atrium/serveur.log; exit 1; }
 
       # Chaque route du serveur est appelée sans session puis avec : seules les
       # routes publiques doivent répondre aux inconnus. La liste est relue dans
