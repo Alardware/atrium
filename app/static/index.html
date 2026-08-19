@@ -7457,8 +7457,15 @@ function peindreFiche() {
       const d = await r.json();
       if (!r.ok) { dire('bad', d.error || ('HTTP ' + r.status)); return; }
       if (!d.trouve) {
+        /* « Aucune réponse » laisse chercher au mauvais endroit : un hôte sans
+           route, un port fermé et un nom introuvable ne se corrigent pas de la
+           même façon. Le serveur dit lequel des trois. */
+        const pourquoi = d.motif ? t('f.test.' + d.motif) : '';
         dire(d.joignable ? '' : 'bad',
-             !d.joignable ? t('f.test.unreachable')
+             !d.joignable
+               ? (pourquoi && pourquoi !== 'f.test.' + d.motif
+                  ? t('f.test.unreachable') + ' — ' + pourquoi
+                  : t('f.test.unreachable'))
                : d.indice === 'ha_frontend' ? t('f.test.hafront') : t('f.test.unknown'));
         return;
       }

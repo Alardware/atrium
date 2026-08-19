@@ -125,6 +125,16 @@ def main():
     finally:
         srv.shutdown()
 
+    print(chr(10) + "== une adresse qui ne repond pas dit pourquoi ==")
+    import socket as _s
+    libre = _s.socket(); libre.bind(("127.0.0.1", 0)); port = libre.getsockname()[1]; libre.close()
+    verifier("port sans service", services.identifier("http://127.0.0.1:%d" % port).get("motif")
+             in ("refus", "delai"), True)
+    verifier("nom introuvable",
+             services.identifier("http://nexistepas.invalid:8080").get("motif"), "dns")
+    verifier("adresse publique refusee par le relais",
+             services.identifier("http://8.8.8.8:80").get("motif"), "prive")
+
     print()
     if ECHECS:
         print("RESUME : %d point(s) a corriger" % len(ECHECS))

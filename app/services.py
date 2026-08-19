@@ -7,7 +7,10 @@ verifiee dans la foulee.
 Ajouter un service = ajouter une entree dans CATALOGUE.
 """
 import base64
+import errno
 import json
+import socket
+import threading
 import time
 import re
 import ssl
@@ -49,12 +52,51 @@ _OUVREUR_DIRECT = urllib.request.build_opener(
     _SansSuite, urllib.request.HTTPSHandler(context=_CTX))
 
 
+# Le dernier echec reseau, par fil d execution : la collecte sonde plusieurs
+# services a la fois, et le motif de l un ne doit pas etre pris pour celui d un
+# autre.
+_dernier = threading.local()
+
+
+def _motif(e):
+    """Le code court qui dit ce qui a echoue, ou rien si l on ne sait pas."""
+    if isinstance(e, socket.timeout) or isinstance(e, TimeoutError):
+        return "delai"
+    if isinstance(e, socket.gaierror):
+        return "dns"
+    if isinstance(e, ssl.SSLError) or "certificate" in str(e).lower():
+        return "certificat"
+    err = getattr(e, "reason", e)
+    numero = getattr(err, "errno", None)
+    if numero == errno.EHOSTUNREACH or numero == errno.ENETUNREACH:
+        return "sans_route"
+    if numero == errno.ECONNREFUSED:
+        return "refus"
+    if numero == errno.ETIMEDOUT or isinstance(err, (socket.timeout, TimeoutError)):
+        return "delai"
+    if isinstance(err, socket.gaierror):
+        return "dns"
+    return ""
+
+
+def motif_dernier():
+    """Ce qui a fait echouer le dernier appel de ce fil, puis on l oublie."""
+    m = getattr(_dernier, "motif", "")
+    _dernier.motif = ""
+    return m
+
+
 def _http(url, entetes=None, methode="GET", corps=None, suivre=True):
     # Les appelants verifient deja la destination ; on la reverifie ici parce
     # que ce lecteur sert a toutes les integrations et qu un appel ajoute plus
     # tard oublierait la garde. urlopen accepte « file:// » et « ftp:// » : une
     # URL de service mal formee lirait un fichier du conteneur.
     if not reseau.autorise(url):
+        # Deux refus differents : un nom qui ne se resout pas, et une adresse
+        # qui se resout hors du reseau prive. Le second n est pas une panne,
+        # c est la regle du relais.
+        hote = urllib.parse.urlparse(url).hostname or ""
+        _dernier.motif = "dns" if hote and not reseau.resoudre(hote) else "prive"
         return 0, b"", {}
     # On se connecte a l adresse deja validee, pas au nom : entre la
     # verification et la connexion, une reponse DNS ne peut plus designer une
@@ -84,7 +126,11 @@ def _http(url, entetes=None, methode="GET", corps=None, suivre=True):
         except Exception:
             corps_err = b""
         return e.code, corps_err, dict(e.headers or {})
-    except Exception:
+    except Exception as e:                       # reseau, DNS, delai, certificat
+        # Le systeme sait pourquoi il a echoue ; l interface, elle, ne disait
+        # que « aucune reponse ». Un hote sans route et un port ferme ne se
+        # corrigent pourtant pas de la meme facon.
+        _dernier.motif = _motif(e)
         return 0, b"", {}
 
 
@@ -874,7 +920,11 @@ def identifier(url, cle="", nom=""):
     try:
         code_racine = joignable(base)
         if code_racine == 0:
-            return {"trouve": False, "type": "", "joignable": False, "code": 0}
+            # Pourquoi ca ne repond pas : sans route, port ferme, delai, nom
+            # introuvable. L interface le dit au lieu d un « aucune reponse »
+            # qui laisse chercher au mauvais endroit.
+            return {"trouve": False, "type": "", "joignable": False, "code": 0,
+                    "motif": motif_dernier()}
         return _parcourir(base, cle, nom, code_racine, depart)
     finally:
         _delai = TIMEOUT
