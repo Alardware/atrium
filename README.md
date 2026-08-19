@@ -108,6 +108,14 @@ Quand une mesure n'est pas lisible, la carte disparaît au lieu d'afficher zéro
 
 ![La page Serveurs](docs/serveurs.png)
 
+### Deux façons de la lire
+
+La grille montre les chiffres ; la liste met les mêmes services en colonnes,
+avec leurs mesures sur une ligne. Le choix se fait en haut à droite et suit le
+profil.
+
+![La vue Liste](docs/liste.png)
+
 ### Les connexions
 
 Une source est « branchée » quand elle a effectivement livré des mesures —
