@@ -417,6 +417,11 @@ a.card:hover{box-shadow:var(--sh-hover);border-color:var(--accent-border);transf
 /* L'affiche suit la hauteur de la carte au lieu de garder une taille fixe : dans une rangée dont un voisin est haut, un timbre-poste de 96 px flottait au-dessus de deux cents pixels de vide. Le rapport 2/3 donne la largeur ; le plancher garde une affiche lisible quand la rangée est courte. */
 .poster{position:relative;align-self:stretch;width:auto;height:auto;aspect-ratio:2/3;min-height:142px;max-width:168px;flex:none;border-radius:9px;background:linear-gradient(160deg,var(--ph-1),var(--ph-2));display:grid;place-items:center;font:500 10.5px/1 'IBM Plex Mono',monospace;color:var(--muted);overflow:hidden}
 .poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* Un logo n'est pas une affiche : il se pose au centre, à sa taille, sans être
+   étiré sur toute la hauteur du cadre. */
+.poster.marque img{inset:50% auto auto 50%;translate:-50% -50%;width:52%;height:auto;
+                   object-fit:contain;opacity:.92}
+.poster.marque #np-poster-lab{display:none}
 .np-body{display:flex;flex-direction:column;flex:1;min-width:0}
 .chip-row{display:flex;align-items:center;gap:8px}
 .logo-chip{position:relative;flex:none;overflow:hidden;border-radius:7px;background:var(--subtle);border:1px solid var(--border);display:grid;place-items:center;font:700 11px/1 'Plus Jakarta Sans',sans-serif;color:var(--text-2)}
@@ -3987,12 +3992,25 @@ function renderLive() {
     live.querySelector('.lbl').textContent = t(MEDIA.etat === 'playing' ? 'now.playing' : 'now.paused');
     $('np-title').textContent = MEDIA.titre;
     $('np-sub').textContent = MEDIA.ligne2.join(' · ');
-    if (MEDIA.poster) {
+    /* Beaucoup de sources ne publient aucune image : une chaîne de télévision,
+       une vidéo YouTube lue sur un téléviseur, une radio. Home Assistant ne
+       donne alors pas d'« entity_picture », et le cadre restait vide avec le
+       mot « affiche » — on dirait une image qui n'a pas chargé.
+
+       À défaut d'affiche, le logo de ce qui joue : il dit au moins d'où vient
+       la lecture, et se voit de loin. */
+    const marque = matched ? logoDe(matched) : iconeSource(MEDIA.appLabel);
+    const poster = $('np-poster');
+    poster.classList.toggle('marque', !MEDIA.poster && !!marque);
+    if (MEDIA.poster || marque) {
       const img = new Image();
       img.alt = '';
-      img.onerror = () => img.remove();
-      img.src = MEDIA.poster;
-      $('np-poster').appendChild(img);
+      img.onerror = () => {
+        img.remove();
+        poster.classList.remove('marque');
+      };
+      img.src = MEDIA.poster || marque;
+      poster.appendChild(img);
     }
     if (MEDIA.dur) { $('np-foot').hidden = false; tickProgress(); }
     $('np-open').textContent = matched ? t('now.open', { nom: matched.nom }) : '';
