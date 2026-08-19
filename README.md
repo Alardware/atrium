@@ -298,7 +298,8 @@ configure sur la fiche de son application (mode création → ✎ → **Tester**
 | Domaine | Services | Ce qu'Atrium en tire |
 |---|---|---|
 | **Média** | Plex, Jellyfin, Tautulli | Lectures, spectateurs, transcodages, débit, bibliothèques |
-| **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Jackett, Bazarr, SABnzbd, qBittorrent | Épisodes manquants, files d'attente, indexeurs en erreur, débit |
+| **Téléchargement** | Sonarr, Radarr, Lidarr, Readarr, Whisparr, Prowlarr, Jackett, Bazarr | Épisodes manquants, files d'attente, indexeurs en erreur |
+| **Clients de téléchargement** | qBittorrent, Deluge, Transmission, SABnzbd, NZBGet | Torrents actifs, file d'attente, réception, envoi |
 | **Demandes** | Seerr *(et ses ancêtres Overseerr, Jellyseerr)* | Demandes en attente, approuvées, disponibles |
 | **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
 | **Onduleur** | **NUT** *(en direct, port 3493)* : APC, Eaton, CyberPower, Ippon… | Charge, autonomie, alimentation, charge appliquée, tension, puissance |

@@ -17,7 +17,13 @@ import urllib.parse
 import nut
 import services
 from metriques import M, libelle
-from services import _chemin, _http, _json
+from services import _chemin, _http, _json, basic
+
+# Au-dela, ce n est plus une temperature : un processeur se protege vers 100
+# degres, un disque bien avant. Ce qui depasse vient d une entree non branchee.
+PLAFOND_SONDE = 100
+# Les sondes qui parlent de la machine, par ordre d evidence.
+_SONDE_UTILE = re.compile(r"package|tdie|tctl|composite|cpu|core|k10temp|die", re.I)
 
 _PASSERELLE = re.compile(r"udm|uxg|ucg|usg|gateway|dream", re.I)
 _BORNE = re.compile(r"\buap|u6|u7|nanohd|flexhd|lite\b|lr\b|ac-?pro|ac-?lite", re.I)
@@ -106,11 +112,18 @@ def _arr_compte(base, cle, chemin):
     return None
 
 
-def _w_arr(nom_collection, ident):
+def _w_arr(nom_collection, ident, api="v3"):
+    """La meme API pour toute la suite — sauf que non.
+
+    Sonarr et Radarr en sont a « v3 », Lidarr et Readarr en sont restes a
+    « v1 ». Ecrire « v3 » partout revenait a ne jamais lire ces deux-la : le
+    serveur repondait 404, le lecteur rendait None, et la tuile disait
+    « metriques indisponibles » sans que rien n indique la cause.
+    """
     def widget(base, cle):
-        total = _arr_compte(base, cle, "/api/v3/%s" % nom_collection)
-        manquants = _arr_compte(base, cle, "/api/v3/wanted/missing?pageSize=1")
-        file = _arr_compte(base, cle, "/api/v3/queue?pageSize=1")
+        total = _arr_compte(base, cle, "/api/%s/%s" % (api, nom_collection))
+        manquants = _arr_compte(base, cle, "/api/%s/wanted/missing?pageSize=1" % api)
+        file = _arr_compte(base, cle, "/api/%s/queue?pageSize=1" % api)
         stats = []
         if manquants is not None:
             stats.append(M("manque", manquants))
@@ -817,6 +830,117 @@ def w_qbittorrent(base, cle):
     ]
 
 
+def _biscuit(entetes):
+    """Le cookie de session rendu par un service, pret a etre renvoye."""
+    brut = (entetes or {}).get("Set-Cookie") or (entetes or {}).get("set-cookie") or ""
+    return brut.split(";")[0].strip() if "=" in brut else ""
+
+
+def w_deluge(base, cle, diag=None):
+    """Deluge, par l API de sa WebUI.
+
+    Deux appels : on s identifie — la WebUI a son propre mot de passe, distinct
+    de celui du demon — puis « web.update_ui » rend d un coup les compteurs par
+    etat et les debits.
+    """
+    mdp = (cle or "").strip()
+    code, j, ent = _poster(base + "/json",
+                           {"method": "auth.login", "params": [mdp], "id": 1})
+    if code != 200 or not isinstance(j, dict):
+        return None
+    if not j.get("result"):
+        if diag is not None:
+            diag.setdefault("refus", []).append(
+                "mot de passe de la WebUI refuse" if mdp
+                else "mot de passe de la WebUI requis")
+        return None
+    entetes = {"Cookie": _biscuit(ent)} if _biscuit(ent) else None
+    code, j, _ = _poster(base + "/json",
+                         {"method": "web.update_ui", "params": [[], {}], "id": 2},
+                         entetes)
+    res = (j or {}).get("result") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(res, dict):
+        return None
+    if res.get("connected") is False:
+        # La WebUI tourne, mais elle n est reliee a aucun demon : elle n a rien
+        # a dire, et le dire vaut mieux qu une tuile vide.
+        if diag is not None:
+            diag.setdefault("refus", []).append("WebUI non reliee au demon")
+        return None
+    etats = dict((n, c) for n, c in (res.get("filters") or {}).get("state") or []
+                 if isinstance(n, str))
+    stats_deluge = res.get("stats") or {}
+    stats = []
+    if "Downloading" in etats:
+        stats.append(M("actifs", etats["Downloading"]))
+    if "All" in etats:
+        stats.append(M("file", etats["All"]))
+    for ident, champ in (("reception", "download_rate"), ("envoi", "upload_rate")):
+        v = stats_deluge.get(champ)
+        if v is not None:
+            stats.append(M(ident, v))
+    return stats or None
+
+
+def w_transmission(base, cle, diag=None):
+    """Transmission, par son RPC — jeton de session compris.
+
+    Le premier appel se fait toujours refuser par un 409 qui porte le jeton a
+    utiliser : c est le protocole, pas une panne.
+    """
+    utilisateur, motdepasse = _couple(cle)
+    entetes = dict(basic(motdepasse, utilisateur or "transmission")) if cle else {}
+    corps = {"method": "session-stats"}
+    code, j, ent = _poster(base + "/transmission/rpc", corps, entetes)
+    if code == 409:
+        jeton = (ent or {}).get("X-Transmission-Session-Id")             or (ent or {}).get("x-transmission-session-id")
+        if not jeton:
+            return None
+        entetes["X-Transmission-Session-Id"] = jeton
+        code, j, _ = _poster(base + "/transmission/rpc", corps, entetes)
+    if code == 401:
+        if diag is not None:
+            diag.setdefault("refus", []).append("identifiants refuses")
+        return None
+    args = (j or {}).get("arguments") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(args, dict):
+        return None
+    stats = []
+    for ident, champ in (("actifs", "activeTorrentCount"), ("file", "torrentCount"),
+                         ("reception", "downloadSpeed"), ("envoi", "uploadSpeed")):
+        v = args.get(champ)
+        if v is not None:
+            stats.append(M(ident, v))
+    return stats or None
+
+
+def w_nzbget(base, cle, diag=None):
+    """NZBGet : ce qui descend, et ce qui attend dans la file."""
+    utilisateur, motdepasse = _couple(cle)
+    entetes = dict(basic(motdepasse, utilisateur or "nzbget")) if cle else {}
+    code, j, _ = _poster(base + "/jsonrpc",
+                         {"method": "status", "params": [], "id": 1}, entetes)
+    if code == 401:
+        if diag is not None:
+            diag.setdefault("refus", []).append("identifiants refuses")
+        return None
+    res = (j or {}).get("result") if isinstance(j, dict) else None
+    if code != 200 or not isinstance(res, dict):
+        return None
+    stats = []
+    if res.get("DownloadRate") is not None:
+        stats.append(M("reception", res["DownloadRate"]))
+    code, j, _ = _poster(base + "/jsonrpc",
+                         {"method": "listgroups", "params": [0], "id": 2}, entetes)
+    file = (j or {}).get("result") if isinstance(j, dict) else None
+    if isinstance(file, list):
+        stats.append(M("file", len(file)))
+        actifs = sum(1 for g in file
+                     if isinstance(g, dict) and g.get("ActiveDownloads"))
+        stats.append(M("actifs", actifs))
+    return stats or None
+
+
 # --- reseau ------------------------------------------------------------------
 
 def w_adguard(base, cle):
@@ -1209,10 +1333,18 @@ def w_glances(base, mot_de_passe=""):
             v = float(d.get("value"))
         except (TypeError, ValueError):
             continue
-        if 0 < v < 120:
-            degres.append(v)
+        # Les entrees non connectees des puces Super I/O (AUXTIN, SYSTIN) rendent
+        # 110 a 130 degres en permanence. Prendre le maximum en faisait la
+        # temperature de la machine, et une alerte critique qui ne retombait
+        # jamais. Au-dela de la centaine, une carte a coupe depuis longtemps :
+        # ce n est pas une mesure, c est une broche en l air.
+        if 0 < v < PLAFOND_SONDE:
+            degres.append((etiquette, v))
     if degres:
-        stats.append(M("temp", max(degres)))
+        # Ce qu on cherche, c est la temperature du processeur ou du disque —
+        # pas celle du point le plus chaud d une liste ou tout se melange.
+        connues = [v for lab, v in degres if _SONDE_UTILE.search(lab)]
+        stats.append(M("temp", max(connues) if connues else max(v for _, v in degres)))
 
     marche = lire("uptime")
     if isinstance(marche, dict):
@@ -1344,13 +1476,16 @@ REGISTRE = {
     "tautulli": w_tautulli,
     "sonarr": _w_arr("series", "series"),
     "radarr": _w_arr("movie", "films"),
-    "lidarr": _w_arr("artist", "artistes"),
-    "readarr": _w_arr("author", "auteurs"),
+    "lidarr": _w_arr("artist", "artistes", "v1"),
+    "readarr": _w_arr("author", "auteurs", "v1"),
     "whisparr": _w_arr("movie", "films"),
     "prowlarr": w_prowlarr,
     "bazarr": w_bazarr,
     "sabnzbd": w_sabnzbd,
     "qbittorrent": w_qbittorrent,
+    "deluge": w_deluge,
+    "transmission": w_transmission,
+    "nzbget": w_nzbget,
     "adguard": w_adguard,
     "pihole": w_pihole,
     "portainer": w_portainer,
@@ -1409,6 +1544,9 @@ CAPACITES = {
     "bazarr": ["films", "episodes"],
     "sabnzbd": ["debit_o", "file"],
     "qbittorrent": ["reception", "envoi"],
+    "deluge": ["actifs", "file", "reception", "envoi"],
+    "transmission": ["actifs", "file", "reception", "envoi"],
+    "nzbget": ["reception", "file", "actifs"],
     "adguard": ["requetes", "bloquees"],
     "pihole": ["requetes", "bloquees"],
     "portainer": ["actifs", "arretes"],

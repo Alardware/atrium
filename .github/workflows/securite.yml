@@ -286,6 +286,12 @@ jobs:
       - name: Onduleur (NUT)
         run: python outils/test_nut.py
 
+      # Trois téléchargeurs avec leurs travers — cookie de session, jeton rendu
+      # par un 409, JSON-RPC en Basic — plus les versions d'API des suites *arr
+      # et les sondes thermiques d'une puce Super I/O.
+      - name: Téléchargeurs, suites *arr et sondes
+        run: python outils/test_telechargeurs.py
+
       # Prévenir sur bascule, et se taire le reste du temps.
       - name: Notifications
         run: python outils/test_notifications.py
