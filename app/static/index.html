@@ -5074,7 +5074,7 @@ const nbE = (s) => { const v = parseFloat(s.state); return isNaN(v) ? null : v; 
    On ne devine pas la marque : on cherche la famille de mots, sur l'identifiant
    comme sur le nom affiché, et l'on ne montre la carte que si une charge de
    batterie s'y rattache. */
-const MOTS_ONDULEUR = /ups|onduleur|ecoflow|delta|river|eaton|apc|nut|powerwall|backup/i;
+const MOTS_ONDULEUR = /ups|onduleur|ecoflow|delta|river|glacier|wave|powerstream|eaton|apc|nut|powerwall|backup/i;
 
 /* Un onduleur branché sur le NAS et publié par NUT : le serveur l'a déjà lu,
    ses mesures sont dans STATS comme celles de n'importe quelle intégration.
@@ -5163,6 +5163,68 @@ const capteurs = (classe) => (CONN === 'ok' ? STATES : []).filter(
 
 /* Chaque widget dit s'il a de quoi s'afficher : « dispo » décide de sa présence
    dans le choix, « rendre » remplit la tuile et renvoie faux s'il n'a rien. */
+/* Un panneau solaire n'est pas un onduleur : il ne garde rien, il produit.
+   Les deux se ressemblent pourtant assez pour qu'on les confonde — un
+   micro-onduleur de balcon publie des watts, des volts et des ampères comme
+   une station portable, sans jamais publier de charge de batterie.
+
+   On cherche donc ce qui produit : des puissances dont le nom parle de
+   panneaux, en écartant les tensions et les courants qui les accompagnent. */
+const MOTS_SOLAIRE = /solar|solaire|pv[\d_]|photovolt|panneau/i;
+const MOTS_INJECTION = /inverter|onduleur|inject|inject|grid|output|sortie/i;
+const MOTS_ACCESSOIRE = /potential|voltage|current|tension|temp|status|relay/i;
+
+function sol() {
+  const tous = (CONN === 'ok' ? STATES : []);
+  const est = (s, motif) => motif.test(s.entity_id) || motif.test(nomE(s));
+  const puissances = tous.filter((s) => s.entity_id.startsWith('sensor.')
+    && attrE(s).device_class === 'power' && nbE(s) !== null);
+  const panneaux = puissances.filter((s) => est(s, MOTS_SOLAIRE)
+    && !est(s, MOTS_ACCESSOIRE));
+  const injection = puissances.find((s) => est(s, MOTS_INJECTION)
+    && !est(s, MOTS_SOLAIRE) && !est(s, MOTS_ACCESSOIRE));
+  /* « Aujourd'hui » n'existe que si le service le compte lui-même : on
+     n'additionne pas des relevés pour fabriquer un total qu'on n'a pas. */
+  const jour = tous.filter((s) => s.entity_id.startsWith('sensor.')
+    && attrE(s).device_class === 'energy' && nbE(s) !== null
+    && est(s, MOTS_SOLAIRE) && /today|jour|daily|quotidien/i.test(s.entity_id + ' ' + nomE(s)));
+  return { panneaux, injection, jour };
+}
+
+/* 1450 Wh -> « 1.45 kWh » ; 5 Wh reste « 5 Wh ». */
+function energieCourte(wh) {
+  return wh >= 1000 ? (Math.round(wh / 10) / 100) + ' kWh' : Math.round(wh) + ' Wh';
+}
+
+const REGISTRE_SOLAIRE = {
+    icone: '🔆', cle: 'w.solaire',
+    dispo: () => sol().panneaux.length > 0,
+    rendre(carte) {
+      const o = sol();
+      if (!o.panneaux.length) return false;
+      const total = o.panneaux.reduce((n, s) => n + nbE(s), 0);
+      cGrand(carte, Math.round(total) + ' W', t('w.sol.now'));
+      const z = cListe(carte);
+      /* Un panneau par ligne tant qu'il y en a peu : au-delà, le détail
+         encombre plus qu'il n'informe. */
+      if (o.panneaux.length <= 4) {
+        o.panneaux.forEach((s, i) => cRow(z, t('w.sol.panneau', { n: i + 1 }),
+                                          Math.round(nbE(s)) + ' W'));
+      }
+      if (o.injection) {
+        cRow(z, t('w.sol.injecte'), Math.round(nbE(o.injection)) + ' W');
+      }
+      if (o.jour.length) {
+        const wh = o.jour.reduce((n, s) => {
+          const u = (attrE(s).unit_of_measurement || 'Wh').toLowerCase();
+          return n + nbE(s) * (u.startsWith('k') ? 1000 : 1);
+        }, 0);
+        cRow(z, t('w.sol.jour'), energieCourte(wh));
+      }
+      return true;
+    },
+};
+
 const REGISTRE_W = {
   media: { icone: '🎵', cle: 'w.media', fixe: 'np-card', dispo: () => true },
   maison: { icone: '🏠', cle: 'w.maison', fixe: 'haw-card', dispo: () => CONN === 'ok' },
@@ -5280,6 +5342,7 @@ const REGISTRE_W = {
       return true;
     },
   },
+  solaire: REGISTRE_SOLAIRE,
   onduleur: {
     icone: '🔋', cle: 'w.onduleur',
     dispo: () => ondu().pc != null,
@@ -5474,8 +5537,11 @@ function renderCockpit() {
     $('srv-up').textContent = COCK_HOTE.uptime || '';
     /* logo de l'intégration qui décrit cette machine, quand il y en a une */
     const self = COCK_HOTE.kind ? appByKind(COCK_HOTE.kind) : null;
-    $('srv-chip').querySelector('.cl').textContent = self
-      ? (self.nom[0] || '▪').toUpperCase() : '▪';
+    /* Sans intégration pour décrire cette machine, l'initiale de son nom vaut
+       mieux qu'un carré : « nas » donne « N », comme toutes les autres
+       pastilles de l'interface. */
+    $('srv-chip').querySelector('.cl').textContent =
+      (((self ? self.nom : COCK_HOTE.titre) || '▪')[0] || '▪').toUpperCase();
     mountLogo($('srv-chip'), self ? logoDe(self) : '');
     /* Les pourcentages deviennent des anneaux, le reste garde ses lignes :
        un uptime ou un « 23 / 24 » ne se met pas en cercle. */

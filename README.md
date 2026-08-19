@@ -318,6 +318,7 @@ configure sur la fiche de son application (mode création → ✎ → **Tester**
 | **Maison** | Home Assistant | Lumières, ouvertures, présences, automatisations, mises à jour |
 | **Onduleur** | **NUT** *(en direct, port 3493)* : APC, Eaton, CyberPower, Ippon… | Charge, autonomie, alimentation, charge appliquée, tension, puissance |
 | **Onduleur** | *via Home Assistant* : EcoFlow et les appareils sans interface locale | Charge, autonomie, entrée, sortie, secteur ou batterie |
+| **Solaire** | *via Home Assistant* : micro-onduleurs de balcon, PowerStream, onduleurs photovoltaïques | Production instantanée, détail par panneau, injection, total du jour |
 | **Machines** | Unraid, Glances *(serveur distant)* | CPU, mémoire, grappe, température, uptime, conteneurs |
 | **Réseau** | UniFi, AdGuard Home, Pi-hole | Clients, équipements, bornes, requêtes DNS, blocages |
 | **Fichiers** | Immich, Paperless, Nextcloud | Photos, vidéos, documents, utilisateurs |
