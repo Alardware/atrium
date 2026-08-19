@@ -2779,7 +2779,10 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
           <input id="lock-nom" type="text" autocomplete="username" spellcheck="false">
         </div>
         <label class="lock-lab" id="lock-lab" for="lock-input" data-i18n="login.pwd">Mot de passe</label>
-        <input id="lock-input" type="password" autocomplete="current-password">
+        <span class="pwd-wrap">
+          <input id="lock-input" type="password" autocomplete="current-password">
+          <button class="pwd-eye" id="lock-eye" type="button" data-i18n-title="ti.showpwd" title="Afficher">👁</button>
+        </span>
         <label class="lock-remember"><input id="lock-remember" type="checkbox"><span data-i18n="login.remember">Rester connecté sur cet appareil</span></label>
         <button class="lock-btn" id="lock-go" data-i18n="login.go">Se connecter</button>
       </div>
@@ -9170,12 +9173,18 @@ function renderConnPanel() {
    arrivé, et l'en-tête annonçait « Guillaume » à un compte caché. Tant qu'une
    session serveur est ouverte, c'est elle qui nomme. */
 const userActif = () => {
-  const connu = USERS.find((x) => x.nom === ACTIVE);
-  if (connu) return connu;
+  /* Tant qu'une session est ouverte, c'est elle qui nomme — sans exception.
+     « ACTIVE » n'est qu'un souvenir local : il disait autrefois qui l'interface
+     devait afficher, et rien n'empêchait qu'il désigne quelqu'un d'autre que la
+     personne réellement connectée. L'en-tête annonçait alors un profil, le
+     serveur en servait un second, et la page de profil proposait de changer le
+     mot de passe d'un troisième. */
   if (SESSION_USER) {
-    return { nom: SESSION_USER, pwd: '1', photo: 'av:admin', horsListe: true };
+    return USERS.find((x) => x.nom === SESSION_USER)
+      || { nom: SESSION_USER, pwd: '1', photo: 'av:admin', horsListe: true };
   }
-  return USERS[0] || null;
+  const connu = USERS.find((x) => x.nom === ACTIVE);
+  return connu || USERS[0] || null;
 };
 function renderAvatar() {
   const av = $('avatar');
@@ -9335,6 +9344,16 @@ function renderUsers() {
   if (!$('spage').hidden && !$('sp-users').hidden) renderUsersPage();
 }
 const syncProfilPwd = bindPwd('p-pwd', 'p-pwd-eye', 'p-meter', 'p-meter-lab');
+
+/* L'écran de connexion a le même œil que les autres champs de mot de passe :
+   on doit pouvoir relire ce qu'on tape quand la connexion est refusée. */
+$('lock-eye').addEventListener('click', () => {
+  const inp = $('lock-input');
+  const cache = inp.type === 'password';
+  inp.type = cache ? 'text' : 'password';
+  $('lock-eye').textContent = cache ? '🙈' : '👁';
+  inp.focus();
+});
 
 /* ---------- page « Mon profil » ---------- */
 function renderPrefs() {
@@ -9642,13 +9661,19 @@ $('spu-pwd-go').addEventListener('click', () => {
   spNav('profil');
   $('p-pwd').focus();
 });
-$('spu-activate').addEventListener('click', () => {
+/* Changer de compte, c'est se connecter — pas changer d'étiquette.
+
+   Ce bouton se contentait d'écrire le nom choisi dans une variable locale :
+   l'en-tête affichait le nouveau profil, mais la session restait celle de la
+   personne d'avant. On demandait donc le mot de passe de l'un pour se
+   retrouver sous le nom de l'autre. Il ferme maintenant la session en cours et
+   ouvre l'écran de connexion sur le profil demandé. */
+$('spu-activate').addEventListener('click', async () => {
   const u = USERS[SEL_USER];
   if (!u) return;
-  ACTIVE = u.nom;
-  store.set('activeUser', ACTIVE);
-  renderUsersPage();
-  renderAvatar();
+  PROFIL_VISE = u.nom;
+  closeSettings();
+  await verrouiller();
 });
 $('spu-del').addEventListener('click', () => {
   const u = USERS[SEL_USER];
@@ -9671,6 +9696,7 @@ let ACCES = null;        // provenance de la connexion, vue par le serveur
 let PENDING_USER = -1;
 let SESSION_USER = null;
 let AUTRE_PROFIL = false;   // connexion par nom tapé, hors de la liste
+let PROFIL_VISE = '';       // profil demandé depuis les réglages, à préselectionner
 
 function lockErr(msg) {
   const e = $('lock-err');
@@ -9700,6 +9726,9 @@ function renderLockUi() {
     acces.hidden = true;
   }
   const liste = PROFILS.length ? PROFILS : USERS.map((u) => ({ nom: u.nom, photo: u.photo, protege: !!u.pwd }));
+  /* Quand on vient de demander un changement de compte, l'écran s'ouvre sur ce
+     profil-là plutôt que sur une liste où il faut le retrouver. */
+  const vise = PROFIL_VISE; PROFIL_VISE = '';
   /* La saisie libre n'a de sens que s'il existe déjà des profils : à
      l'installation, le formulaire est déjà là. */
   $('lock-autre').hidden = !liste.length;
@@ -9735,6 +9764,13 @@ function renderLockUi() {
       });
       p.addEventListener('click', () => {
         PENDING_USER = i;
+        /* Choisir un visage annule la saisie libre : sans cela, le formulaire
+           gardait son champ « nom du profil » et redemandait ce qu'on venait
+           justement de désigner du doigt. */
+        AUTRE_PROFIL = false;
+        $('lock-nom-bloc').hidden = true;
+        profs.querySelectorAll('.lock-p').forEach((x) => x.classList.remove('vise'));
+        p.classList.add('vise');
         if (!u.protege) { seConnecter(u.nom, ''); return; }
         $('lock-form').hidden = false;
         $('lock-input').value = '';
@@ -9742,6 +9778,7 @@ function renderLockUi() {
         $('lock-input').focus();
       });
       profs.appendChild(p);
+      if (vise && u.nom === vise) setTimeout(() => p.click(), 0);
     });
   } else {
     $('lock-form').hidden = false;
@@ -9811,8 +9848,15 @@ function tryUnlock() {
     return;
   }
   const liste = PROFILS.length ? PROFILS : USERS;
-  const u = PENDING_USER >= 0 ? liste[PENDING_USER] : liste[0];
-  if (!u) return;
+  /* Sans profil désigné, on ne se rabat sur le premier de la liste que s'il est
+     seul : ailleurs, ce raccourci connectait quelqu'un d'autre que celui dont
+     on venait de taper le mot de passe. */
+  const u = PENDING_USER >= 0 ? liste[PENDING_USER]
+    : (liste.length === 1 ? liste[0] : null);
+  if (!u) {
+    lockErr(t('login.choose'));
+    return;
+  }
   seConnecter(u.nom, $('lock-input').value);
 }
 /* Se connecter à un profil qui n'est pas dans la liste : un compte de secours
