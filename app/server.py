@@ -43,7 +43,7 @@ import supervision
 import systeme
 import widgets
 
-VERSION = "1.6.4"
+VERSION = "1.7.0"
 
 # Empreinte de la construction, posee par la chaine qui publie l image : le
 # commit exact et le jour. Vides quand Atrium tourne depuis les sources — on ne
