@@ -1807,13 +1807,18 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
        La trame était fixe : l'écran paraissait prêt, mais figé. Elle dérive
        d'une case toutes les trente-huit secondes — assez lent pour qu'on ne
        la surprenne jamais en mouvement, assez pour que l'écran ait l'air
-       vivant. Le halo derrière la boîte enfle du même souffle.
-       Ce mouvement-là ne coûte rien : il s'arrête dès qu'on est connecté,
-       puisque l'écran disparaît. */
+       vivant. Ce mouvement-là ne coûte rien : il s'arrête dès qu'on est
+       connecté, puisque l'écran disparaît.
+
+       La trame, et elle seule. Une première version faisait aussi « respirer »
+       un halo — mais la règle portait sur « .lock-box », qui n'est pas le halo :
+       c'est la carte de connexion. Elle a passé une version entière à osciller
+       entre 42 % et 62 % d'opacité, ce qui donnait un écran délavé, et cette
+       règle écrasait au passage son animation d'arrivée. Le halo est déjà dans
+       le fond de « .lock » ; l'y animer demanderait un calque à part, et
+       l'écran n'en a pas besoin. */
 @keyframes derive{to{background-position:64px 64px,64px 64px}}
-@keyframes halo{0%,100%{opacity:.42}50%{opacity:.62}}
 .lock::before{animation:derive 38s linear infinite}
-.lock-box{animation:halo 7s ease-in-out infinite}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
