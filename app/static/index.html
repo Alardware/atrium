@@ -1820,6 +1820,13 @@ code{font:500 11px/1 'IBM Plex Mono',monospace;background:var(--subtle);padding:
 @keyframes derive{to{background-position:64px 64px,64px 64px}}
 .lock::before{animation:derive 38s linear infinite}
 
+/* Le puits de lumiere occupe le fond de l ecran verrouille ; la trame passe
+   par-dessus, et la pile — cadre, adresse, mention — tout en haut. Sans ces
+   trois plans, le canevas opaque masquerait le cadre. */
+.lock .puits{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+.lock::before{z-index:1}
+.lock-pile{position:relative;z-index:2}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     animation-duration:.001s !important;animation-iteration-count:1 !important;
@@ -6745,6 +6752,329 @@ async function pollDirect() {
 /* Ce que la tuile affichait au tour precedent. Sans cette memoire, un chiffre
    « qui change » serait indistinguable d'un chiffre redessine a l'identique :
    la grille est reconstruite a chaque releve. */
+/* ---- Le puits de lumière de l'écran de connexion --------------------------
+
+   Un atrium, au sens propre : une source au-dessus du cadre, des rais qui
+   descendent à travers une verrière, une flaque au sol, des poussières qui ne
+   se voient que dans la lumière, et des filaments qui montent.
+
+   Le shader vient du lot de maquettes et n'est pas réécrit : c'est lui, le
+   dessin. Ce qui est refait ici, c'est l'hôte — le lot le monte sur three.js
+   chargé depuis un CDN, ce que la règle de sécurité du contenu d'Atrium
+   refuse, et ce dont il n'a pas besoin : un plan plein écran et un shader,
+   cela tient en quatre-vingts lignes de WebGL brut, sans une dépendance.
+
+   Il ne tourne que sur l'écran de connexion, et s'arrête dès qu'on le quitte.
+   Faute de WebGL, ou si les animations sont coupées, il ne démarre pas : le
+   fond reste celui d'avant, la page ne perd rien.                          */
+
+const PUITS_ETATS = {
+  /* Les six états du lot, dont deux servent.
+
+     L'écran de connexion vient AVANT l'authentification : y peindre l'état
+     réel de la maison dirait à quiconque atteint la page qu'un service est
+     tombé. « busy », « load » et « incident » demanderaient en plus de publier
+     des mesures ou la supervision sans session — ils sont donc écartés, et
+     « maintenance » n'a de toute façon aucune source dans Atrium.
+
+     « offline » est le seul qui ne fuite rien : celui qui le voit sait déjà
+     qu'Atrium ne répond pas, sa propre page vient de cesser de répondre. Et
+     c'est le seul qui vaille : d'un bout de la pièce, la lumière décroche et
+     l'on sait que le serveur est tombé, sans rien toucher.
+
+     Les quatre autres restent déclarés — ils ne coûtent rien et documentent le
+     dessin, prêts pour un écran verrouillé APRÈS session, où la supervision
+     serait légitimement lisible. */
+  nominal:     { activity: 0.30, load: 0.14, alert: 0, maint: 0, offline: 0 },
+  busy:        { activity: 0.85, load: 0.34, alert: 0, maint: 0, offline: 0 },
+  load:        { activity: 0.70, load: 0.88, alert: 0, maint: 0, offline: 0 },
+  incident:    { activity: 0.45, load: 0.75, alert: 1, maint: 0, offline: 0 },
+  maintenance: { activity: 0.20, load: 0.20, alert: 0, maint: 1, offline: 0 },
+  offline:     { activity: 0.05, load: 0.05, alert: 0, maint: 0, offline: 1 },
+};
+
+/* Le sommet ne fait rien d'autre que couvrir l'écran : les coordonnées se
+   déduisent de la position, sans attribut supplémentaire. */
+const PUITS_VERT = 'attribute vec2 aPos;varying vec2 vUv;'
+  + 'void main(){vUv=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}';
+
+/* Repris tel quel du lot de maquettes. Chaque nombre y a été mesuré ; le
+   réécrire, c'est en perdre le rendu. */
+const PUITS_FRAG = `
+precision highp float;
+varying vec2 vUv;
+uniform vec2  uRes;
+uniform float uTime;
+uniform float uActivity;
+uniform float uLoad;
+uniform float uAlert;
+uniform float uMaint;
+uniform float uOffline;
+uniform float uGlow;
+uniform float uSrcX;
+
+float hash21(vec2 p){
+  vec2 q = fract(p * vec2(443.8975, 441.4232));
+  q += dot(q, q + 19.19);
+  return fract((q.x + q.y) * q.x);
+}
+float vnoise(vec2 p){
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f*f*(3.0-2.0*f);
+  return mix(mix(hash21(i), hash21(i+vec2(1,0)), u.x),
+             mix(hash21(i+vec2(0,1)), hash21(i+vec2(1,1)), u.x), u.y);
+}
+float fbm(vec2 p){
+  float a = 0.5, s = 0.0;
+  for (int i = 0; i < 4; i++){ s += a*vnoise(p); p = p*2.05 + 9.1; a *= 0.5; }
+  return s;
+}
+
+void main(){
+  float aspect = uRes.x / max(uRes.y, 1.0);
+  vec2 uv = vUv;
+  vec2 p = vec2((uv.x - 0.5) * aspect, uv.y);
+  float t = uTime;
+
+  vec2 src = vec2(uSrcX * aspect, 1.42);
+  vec2 d = p - src;
+  float dist = length(d);
+  float ang = atan(d.x, -d.y);
+
+  vec3 calm  = vec3(0.52, 0.78, 1.00);
+  vec3 hot   = vec3(1.00, 0.68, 0.28);
+  vec3 bad   = vec3(1.00, 0.26, 0.24);
+  vec3 maint = vec3(1.00, 0.80, 0.30);
+  vec3 tint = mix(calm, hot, smoothstep(0.25, 1.0, uLoad));
+  tint = mix(tint, maint, uMaint * 0.85);
+  tint = mix(tint, bad, uAlert * 0.9);
+  tint = mix(tint, vec3(0.38, 0.42, 0.50), uOffline * 0.9);
+
+  float rate = 0.42 + uLoad * 1.5 + uAlert * 2.2;
+  float breath = 0.86 + 0.14 * sin(t * rate);
+  float strobe = 1.0 + uAlert * 0.35 * pow(0.5 + 0.5 * sin(t * 7.0), 6.0);
+  float dropout = 1.0 - uOffline * 0.55 * step(0.72, fbm(vec2(t * 3.1, 0.0)));
+
+  vec3 col = vec3(0.010, 0.014, 0.026);
+
+  float mullion = 0.42 + 0.58 * pow(abs(sin(ang * 13.0 + 0.4)), 6.0);
+  float grain = fbm(vec2(ang * 5.5 + t * 0.035, dist * 1.6 - t * 0.22));
+  float shaft = pow(clamp(grain * 1.25, 0.0, 1.0), 1.9) * mullion;
+  shaft *= exp(-dist * 0.78) * smoothstep(1.55, 0.35, dist);
+  float beam = shaft * (0.34 + 0.85 * uLoad) * breath * strobe * dropout;
+  col += tint * beam * 0.85;
+
+  col += tint * exp(-dist * 3.4) * (0.30 + 0.5 * uLoad) * breath * dropout;
+
+  float floorGlow = exp(-uv.y * 7.0);
+  float pool = exp(-pow((p.x - src.x) / (0.55 + 0.5 * uLoad), 2.0)) * floorGlow;
+  col += tint * pool * 0.32 * breath * dropout;
+  float gy = uv.y * 26.0;
+  float lines = exp(-fract(gy * gy * 0.02) * 26.0) * step(uv.y, 0.30);
+  float cols = pow(abs(sin((p.x - src.x) / max(uv.y, 0.03) * 2.2)), 40.0) * step(uv.y, 0.30);
+  col += tint * (lines * 0.05 + cols * 0.05) * floorGlow * 3.0;
+
+  float mote = 0.0;
+  for (int L = 0; L < 3; L++) {
+    float fl = float(L);
+    float scale = 15.0 + fl * 13.0;
+    float speed = 0.020 + fl * 0.018;
+    vec2 g = vec2(p.x, uv.y) * scale;
+    vec2 id = floor(g);
+    float h = hash21(id + fl * 7.3);
+    if (h > 0.10 + 0.42 * uActivity) continue;
+    float h2 = hash21(id + fl * 3.1 + 4.4);
+    vec2 c = vec2(
+      0.5 + 0.34 * sin(t * (0.25 + h2 * 0.5) + h * 40.0),
+      fract(0.5 + t * speed * (0.6 + h2) + h * 13.0));
+    float r = length((fract(g) - c) / vec2(1.0, 1.0));
+    mote += smoothstep(0.11 + 0.06 * h2, 0.0, r) * (0.45 + 0.9 * h2) * (0.6 + 0.4 * fl);
+  }
+  col += tint * mote * (0.10 + 0.55 * shaft + 0.10 * uActivity) * (0.5 + 0.9 * uActivity) * dropout;
+
+  {
+    float x = p.x * 2.4;
+    float ci = floor(x);
+    float h = hash21(vec2(ci, 11.0));
+    if (h < 0.15 + 0.55 * uActivity) {
+      float h2 = hash21(vec2(ci, 27.0));
+      float sp = 0.28 + 0.55 * h2 + uLoad * 0.5;
+      float ph = fract(t * sp * 0.5 + h * 9.0);
+      float dx = abs(fract(x) - 0.5 - 0.32 * (h2 - 0.5));
+      float body = smoothstep(0.045, 0.0, dx);
+      float head = exp(-pow((uv.y - ph) / 0.055, 2.0));
+      float trail = exp(-max(ph - uv.y, 0.0) * 9.0) * step(uv.y, ph);
+      col += tint * body * (head * 0.85 + trail * 0.22) * (0.35 + 0.8 * uActivity) * dropout;
+    }
+  }
+
+  if (uMaint > 0.001) {
+    float s = fract(uv.y * 0.9 - t * 0.10);
+    col += maint * exp(-pow((s - 0.5) / 0.10, 2.0)) * 0.10 * uMaint;
+  }
+
+  col *= uGlow;
+  vec2 vg = uv - 0.5;
+  col *= 1.0 - dot(vg, vg) * 0.55;
+  col += (hash21(uv * uRes + fract(t)) - 0.5) * 0.010;
+  col = col / (1.0 + max(col - 0.82, vec3(0.0)));
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+
+let PUITS = null;          // l'instance vivante, ou null
+
+function puitsCompiler(gl, type, source) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, source);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.warn('puits : ' + gl.getShaderInfoLog(s));
+    gl.deleteShader(s);
+    return null;
+  }
+  return s;
+}
+
+/* Rend true si le puits tourne. Faux à chaque refus — pas de WebGL, shader qui
+   ne compile pas, animations coupées : dans tous les cas le fond d'origine
+   reste, et personne ne voit d'écran noir. */
+function allumerPuits() {
+  if (PUITS) return true;
+  if (typeof mouvementsCoupes === 'function' && mouvementsCoupes()) return false;
+  const hote = $('lock');
+  if (!hote) return false;
+
+  const cv = document.createElement('canvas');
+  cv.className = 'puits';
+  cv.setAttribute('aria-hidden', 'true');
+  const gl = cv.getContext('webgl', { antialias: false, alpha: false,
+                                      powerPreference: 'low-power' })
+          || cv.getContext('experimental-webgl');
+  if (!gl) return false;
+
+  const vs = puitsCompiler(gl, gl.VERTEX_SHADER, PUITS_VERT);
+  const fs = puitsCompiler(gl, gl.FRAGMENT_SHADER, PUITS_FRAG);
+  if (!vs || !fs) return false;
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.warn('puits : ' + gl.getProgramInfoLog(prog));
+    return false;
+  }
+  gl.useProgram(prog);
+
+  /* Un seul triangle, plus grand que l'écran : il le couvre entièrement et
+     évite la couture diagonale de deux triangles accolés. */
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const aPos = gl.getAttribLocation(prog, 'aPos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  const U = {};
+  ['uRes', 'uTime', 'uActivity', 'uLoad', 'uAlert', 'uMaint', 'uOffline',
+   'uGlow', 'uSrcX'].forEach((n) => { U[n] = gl.getUniformLocation(prog, n); });
+
+  hote.insertBefore(cv, hote.firstChild);
+
+  const CLES = ['activity', 'load', 'alert', 'maint', 'offline'];
+  const cible = {}, cur = {};
+  CLES.forEach((k) => { cur[k] = 0; cible[k] = PUITS_ETATS.nominal[k]; });
+
+  /* Le rapport de pixels est plafonné : au-delà, on paie le quadruple de
+     fragments pour un fond flou par nature. */
+  const ratio = Math.max(1, Math.min(window.devicePixelRatio || 1, 1.75));
+  let l = 0, h = 0;
+  function redimensionner() {
+    const nl = Math.max(1, Math.round((hote.clientWidth || window.innerWidth) * ratio));
+    const nh = Math.max(1, Math.round((hote.clientHeight || window.innerHeight) * ratio));
+    if (nl === l && nh === h) return;
+    l = nl; h = nh;
+    cv.width = l; cv.height = h;
+    gl.viewport(0, 0, l, h);
+    gl.uniform2f(U.uRes, l, h);
+  }
+  redimensionner();
+
+  let vivant = true;
+  const t0 = performance.now();
+  let tPrec = t0, image = 0;
+  function peindre(t) {
+    if (!vivant) return;
+    image = requestAnimationFrame(peindre);
+    if (gl.isContextLost && gl.isContextLost()) return;
+    redimensionner();
+    /* Borné : revenir d'un onglet caché ne doit pas faire un bond. */
+    const dt = Math.min((t - tPrec) / 1000, 0.05);
+    tPrec = t;
+    const k = Math.min(1, dt * 2.2);
+    CLES.forEach((key) => {
+      cur[key] += (cible[key] - cur[key]) * k;
+      gl.uniform1f(U['u' + key[0].toUpperCase() + key.slice(1)], cur[key]);
+    });
+    gl.uniform1f(U.uTime, (t - t0) / 1000);
+    gl.uniform1f(U.uGlow, 0.62);
+    gl.uniform1f(U.uSrcX, -0.06);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  image = requestAnimationFrame(peindre);
+
+  /* --- la sonde ---------------------------------------------------------
+
+     Une requête toutes les vingt secondes sur la route la plus légère du
+     serveur. Deux échecs de suite avant de vider la lumière : une coupure
+     d'une seconde ne doit pas éteindre l'atrium. Le retour, lui, est
+     immédiat — voir la lumière revenir vaut mieux que de l'attendre.
+
+     Si c'est le réseau de la tablette qui lâche et non le serveur, le fond
+     passe quand même en « offline ». Ce n'est pas faux : de là où l'on
+     regarde, Atrium est bien injoignable. */
+  let manques = 0, sonde = 0;
+  function ausculter() {
+    const abandon = new AbortController();
+    const minuteur = setTimeout(() => abandon.abort(), 8000);
+    relayFetch('/api/health', { cache: 'no-store', signal: abandon.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        manques = 0;
+        if (PUITS) PUITS.etat('nominal');
+      })
+      .catch(() => {
+        manques += 1;
+        if (manques >= 2 && PUITS) PUITS.etat('offline');
+      })
+      .then(() => clearTimeout(minuteur));
+  }
+  sonde = setInterval(ausculter, 20000);
+
+  PUITS = {
+    canvas: cv,
+    etat(nom) {
+      const s = PUITS_ETATS[nom] || PUITS_ETATS.nominal;
+      CLES.forEach((k) => { cible[k] = s[k]; });
+    },
+    eteindre() {
+      vivant = false;
+      cancelAnimationFrame(image);
+      clearInterval(sonde);
+      cv.remove();
+      /* Sans cela, le contexte survit à l'écran de connexion et occupe une des
+         rares fentes WebGL du navigateur. */
+      const perte = gl.getExtension('WEBGL_lose_context');
+      if (perte) perte.loseContext();
+      PUITS = null;
+    },
+  };
+  return true;
+}
+
+function eteindrePuits() {
+  if (PUITS) PUITS.eteindre();
+}
+
+
 /* ---- Ce que le CSS ne sait pas faire seul ---------------------------------
 
    Trois mouvements demandent de connaître une valeur : compter d'un nombre
@@ -9086,6 +9416,7 @@ async function verrouiller() {
   $('srvpage').hidden = true;
   $('lock').hidden = false;
   renderLockUi();
+  allumerPuits();
   try { await relayFetch('/api/logout', { method: 'POST' }); } catch (e) {
     /* réessayé au prochain chargement grâce à la marque */
   }
@@ -10388,6 +10719,9 @@ async function seConnecter(nom, motdepasse) {
     store.set(MARQUE_VERROU, '');
     store.set('activeUser', ACTIVE);
     $('lock').hidden = true;
+    /* Le contexte WebGL est rendu au navigateur : il n a plus rien a peindre,
+       et les fentes WebGL sont comptees. */
+    eteindrePuits();
     lockErr('');
     await pullCfg();
     renderAvatar();
@@ -10417,6 +10751,9 @@ function applyLock() {
   if (besoin) {
     PENDING_USER = -1;
     renderLockUi();
+    allumerPuits();
+  } else {
+    eteindrePuits();
   }
 }
 function tryUnlock() {
