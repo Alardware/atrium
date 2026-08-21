@@ -26,7 +26,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Une image étiquetée d'après le tag mais qui s'annonce autrement dans son
       # propre écran ne se rattrape pas : on vérifie avant de construire.
